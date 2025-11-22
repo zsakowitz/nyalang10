@@ -32,8 +32,6 @@ export interface ILocal {
   val: unknown
 }
 
-export type ILabel = null
-
 export interface Env {
   opaqueExterns: Map<Id, IOpaque>
   fns: Map<Id, IFn>
@@ -254,4 +252,12 @@ class Continue {
 
 class Return {
   constructor(readonly v: unknown) {}
+}
+
+export function env(): Env {
+  return {
+    opaqueExterns: new Map(),
+    fns: new Map(),
+    locals: new Map(),
+  }
 }

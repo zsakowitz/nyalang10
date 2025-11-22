@@ -24,3 +24,9 @@ export class Id {
     ice(`'Id' cannot be coerced to a string. Access .uid instead.`)
   }
 }
+
+const named: Record<string, Id> = Object.create(null)
+
+export function idFor(name: string) {
+  return (named[name] ??= new Id(name))
+}

@@ -4,12 +4,18 @@ export const enum ErrorLevel {
   UB,
 }
 
+const PREFIXES = {
+  [ErrorLevel.Internal]: "[ice] ",
+  [ErrorLevel.Standard]: "",
+  [ErrorLevel.UB]: "[ub] ",
+}
+
 export class NLError extends Error {
   constructor(
     readonly level: ErrorLevel,
-    readonly message: string,
+    message: string,
   ) {
-    super(message)
+    super(PREFIXES[level] + message)
   }
 }
 

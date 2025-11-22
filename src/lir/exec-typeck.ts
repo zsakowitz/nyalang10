@@ -111,7 +111,7 @@ export function assertTypeKind<N extends keyof typeof T, K extends Type["k"]>(
   }
 }
 
-export function lval(env: Env, { k, v }: Lval): Type {
+function lval(env: Env, { k, v }: Lval): Type {
   switch (k) {
     case T.ArrayIndex: {
       assertAssignable(expr(env, v.index), T_INT)
@@ -128,7 +128,7 @@ export function lval(env: Env, { k, v }: Lval): Type {
     case T.Local: {
       const local = env.locals.get(v)
       if (!local) issue(`Local $${v.debug} does not exist.`)
-      if (!local.mut) issue(`Cannot assign to local $${v.debug}.`)
+      if (!local.mut) issue(`Cannot assign to non-mut local $${v.debug}.`)
       return local.ty
     }
   }
@@ -301,4 +301,13 @@ export function decl(env: Env, name: Id, { args, ret, body }: Decl): void {
   })
   assertAssignable(expr(env, body), ret)
   env.fns.set(name, { args: args.map((x) => x.type), ret })
+}
+
+export function env(): Env {
+  return {
+    fns: new Map(),
+    labels: new Map(),
+    locals: new Map(),
+    return: null,
+  }
 }
