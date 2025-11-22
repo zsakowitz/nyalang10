@@ -1,0 +1,299 @@
+import { T } from "../enum"
+import { assertIndex, issue } from "../error"
+import type { Id } from "../id"
+import {
+  T_BOOL,
+  T_INT,
+  T_NEVER,
+  T_VOID,
+  ty,
+  type Decl,
+  type Expr,
+  type Lval,
+  type Stmt,
+  type Type,
+} from "./def"
+import { printType } from "./def-debug"
+
+export interface IFn {
+  args: Type[]
+  ret: Type
+}
+
+export interface ILocal {
+  mut: boolean
+  ty: Type
+}
+
+export interface ILabel {
+  loop: boolean
+  ty: Type
+}
+
+export interface Env {
+  fns: Map<Id, IFn>
+  locals: Map<Id, ILocal>
+  labels: Map<Id, ILabel>
+  return: Type | null
+}
+
+function forkLocals(env: Env): Env {
+  return {
+    fns: env.fns,
+    locals: new Map(env.locals),
+    labels: env.labels,
+    return: env.return,
+  }
+}
+
+function forkLabels(env: Env): Env {
+  return {
+    fns: env.fns,
+    locals: env.locals,
+    labels: new Map(env.labels),
+    return: env.return,
+  }
+}
+
+function forkForDecl(env: Env, ret: Type): Env {
+  return {
+    fns: env.fns,
+    locals: new Map(),
+    labels: new Map(),
+    return: ret,
+  }
+}
+
+function eq(src: Type, dst: Type): boolean {
+  if (src === dst) {
+    return true
+  }
+
+  if (src.k !== dst.k) {
+    return false
+  }
+
+  switch (src.k) {
+    case T.Void:
+    case T.Never:
+    case T.Int:
+    case T.Bool:
+      return true
+    case T.Extern:
+      return src.v === dst.v
+    case T.Array: {
+      const sv = src.v as Extract<Type, { k: T.Array }>["v"]
+      const dv = dst.v as Extract<Type, { k: T.Array }>["v"]
+      return sv.len === dv.len && eq(sv.el, dv.el)
+    }
+    case T.Tuple:
+    case T.Union: {
+      const sv = src.v as Extract<Type, { k: T.Tuple | T.Union }>["v"]
+      const dv = dst.v as Extract<Type, { k: T.Tuple | T.Union }>["v"]
+      return sv.length === dv.length && sv.every((s, i) => eq(s, dv[i]!))
+    }
+  }
+}
+
+function assertAssignable(src: Type, dst: Type) {
+  if (src.k != T.Never && !eq(src, dst)) {
+    issue(`Expected '${printType(dst)}', found '${printType(src)}'.`)
+  }
+}
+
+function assertTypeKind<N extends keyof typeof T, K extends Type["k"]>(
+  src: Type,
+  name: N,
+  k: (typeof T)[N] & K,
+): asserts src is Extract<Type, { k: K }> {
+  if (src.k !== k) {
+    issue(`Expected 'T.${name}'; found '${printType(src)}'.`)
+  }
+}
+
+export function lval(env: Env, { k, v }: Lval): Type {
+  switch (k) {
+    case T.ArrayIndex: {
+      assertAssignable(expr(env, v.index), T_INT)
+      const target = lval(env, v.target)
+      assertTypeKind(target, "Array", T.Array)
+      return target.v.el
+    }
+    case T.TupleIndex: {
+      const target = lval(env, v.target)
+      assertTypeKind(target, "Tuple", T.Tuple)
+      assertIndex(target.v.length, v.index)
+      return target.v[v.index]!
+    }
+    case T.Local: {
+      const local = env.locals.get(v)
+      if (!local) issue(`Local $${v.debug} does not exist.`)
+      if (!local.mut) issue(`Cannot assign to local $${v.debug}.`)
+      return local.ty
+    }
+  }
+}
+
+export function expr(env: Env, { k, v }: Expr): Type {
+  switch (k) {
+    case T.Unreachable:
+      return T_NEVER
+    case T.Int:
+      return T_INT
+    case T.Bool:
+      return T_BOOL
+    case T.Opaque:
+      return v.ty
+    case T.ArrayFill:
+      return ty(T.Array, { el: expr(env, v.el), len: v.len })
+    case T.ArrayMap: {
+      env = forkLocals(env)
+      env.locals.set(v.idx, { mut: false, ty: T_INT })
+      return ty(T.Array, { el: expr(env, v.el), len: v.len })
+    }
+    case T.ArrayElements: {
+      v.els.forEach((el) => assertAssignable(expr(env, el), v.elTy))
+      return ty(T.Array, { el: v.elTy, len: v.els.length })
+    }
+    case T.Tuple:
+      return ty(
+        T.Tuple,
+        v.map((x) => expr(env, x)),
+      )
+    case T.Union: {
+      assertTypeKind(v.unionTy, "Union", T.Union)
+      assertIndex(v.unionTy.v.length, v.variant)
+      assertAssignable(expr(env, v.data), v.unionTy.v[v.variant]!)
+      return v.unionTy
+    }
+    case T.CastNever: {
+      assertAssignable(expr(env, v.target), T_NEVER)
+      return v.into
+    }
+    case T.IfElse: {
+      assertAssignable(expr(env, v.condition), T_BOOL)
+      assertAssignable(expr(env, v.if), v.type)
+      assertAssignable(expr(env, v.else), v.type)
+      return v.type
+    }
+    case T.ArrayIndex: {
+      assertAssignable(expr(env, v.index), T_INT)
+      const target = expr(env, v.target)
+      assertTypeKind(target, "Array", T.Array)
+      return target.v.el
+    }
+    case T.TupleIndex: {
+      const target = expr(env, v.target)
+      assertTypeKind(target, "Tuple", T.Tuple)
+      assertIndex(target.v.length, v.index)
+      return target.v[v.index]!
+    }
+    case T.UnionVariant: {
+      const target = expr(env, v)
+      assertTypeKind(target, "Union", T.Union)
+      return T_INT
+    }
+    case T.UnionIndex: {
+      const target = expr(env, v.target)
+      assertTypeKind(target, "Union", T.Union)
+      assertIndex(target.v.length, v.index)
+      return target.v[v.index]!
+    }
+    case T.UnionMatch: {
+      const target = expr(env, v.target)
+      assertTypeKind(target, "Union", T.Union)
+      if (v.arms.length != target.v.length) {
+        issue(
+          `Must list '${target.v.length}' arm(s) to match '${printType(target)}'.`,
+        )
+      }
+      for (let i = 0; i < v.arms.length; i++) {
+        const data = target.v[i]!
+        const arm = v.arms[i]!
+        const locals = forkLocals(env)
+        locals.locals.set(v.data, { mut: false, ty: data })
+        assertAssignable(expr(locals, arm), v.type)
+      }
+      return v.type
+    }
+    case T.Block: {
+      if (v.length == 0) return T_VOID
+      let ret = T_VOID
+      env = forkLocals(env)
+      v.forEach((st) => (ret = stmt(env, st)))
+      return ret
+    }
+    case T.Label: {
+      env = forkLabels(env)
+      env.labels.set(v.label, { loop: v.loop, ty: v.type })
+      const body = expr(env, v.body)
+      if (!v.loop) {
+        assertAssignable(body, v.type)
+      }
+      return v.type
+    }
+    case T.Return: {
+      if (!env.return) issue(`Cannot 'return' in this context.`)
+      assertAssignable(expr(env, v), env.return)
+      return T_NEVER
+    }
+    case T.Break: {
+      const label = env.labels.get(v.label)
+      if (!label) issue(`Label '${v.label.debug} does not exist.`)
+      assertAssignable(expr(env, v.body), label.ty)
+      return T_NEVER
+    }
+    case T.Continue: {
+      const label = env.labels.get(v)
+      if (!label) issue(`Label '${v.debug} does not exist.`)
+      if (!label.loop) issue(`Cannot 'continue' to non-loop label '${v.debug}.`)
+      return T_NEVER
+    }
+    case T.Local: {
+      const local = env.locals.get(v)
+      if (!local) issue(`Local $${v.debug} does not exist.`)
+      return local.ty
+    }
+    case T.Call: {
+      const fn = env.fns.get(v.name)
+      if (!fn) {
+        issue(`Function @${v.name.debug} does not exist.`)
+      }
+      if (fn.args.length != v.args.length) {
+        issue(`Wrong number of arguments to function @${v.name.debug}.`)
+      }
+      for (let i = 0; i < fn.args.length; i++) {
+        const src = expr(env, v.args[i]!)
+        const dst = fn.args[i]!
+        assertAssignable(src, dst)
+      }
+      return fn.ret
+    }
+  }
+}
+
+export function stmt(env: Env, { k, v }: Stmt): Type {
+  switch (k) {
+    case T.Expr:
+      return expr(env, v)
+    case T.Let:
+      env.locals.set(v.name, { mut: v.mut, ty: expr(env, v.val) })
+      return T_VOID
+    case T.AssignOne:
+      assertAssignable(lval(env, v.target), expr(env, v.value))
+      return T_VOID
+    case T.AssignMany:
+      const lhs = v.target.map((x) => lval(env, x))
+      assertAssignable(ty(T.Tuple, lhs), expr(env, v.value))
+      return T_VOID
+  }
+}
+
+export function decl(env: Env, name: Id, { args, ret, body }: Decl): void {
+  env = forkForDecl(env, ret)
+  args.forEach(({ name, type }) =>
+    env.locals.set(name, { mut: false, ty: type }),
+  )
+  assertAssignable(expr(env, body), ret)
+  env.fns.set(name, { args: args.map((x) => x.type), ret })
+}

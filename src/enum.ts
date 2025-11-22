@@ -8,10 +8,11 @@ export const enum T {
   Tuple,
   Union,
 
-  Variable,
+  Local,
   Call,
 
   Unreachable,
+  Opaque,
   ArrayFill,
   ArrayMap,
   ArrayElements,

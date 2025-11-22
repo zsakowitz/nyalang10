@@ -16,6 +16,10 @@ export class Id {
     return `_${this.index.toString(36)}/*${this.name}*/`
   }
 
+  get debug() {
+    return this.name
+  }
+
   toString() {
     ice(`'Id' cannot be coerced to a string. Access .uid instead.`)
   }
