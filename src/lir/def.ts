@@ -14,7 +14,7 @@ export type Type =
 export function ty<K extends Type["k"]>(
   k: K,
   v: Extract<Type, { k: K }>["v"],
-): Type {
+): Extract<Type, { k: K }> {
   return { k, v } as any
 }
 

@@ -37,3 +37,16 @@ export function assertIndex(length: number, index: number) {
     issue(`Index '${index}' must be in range [0,${length}).`)
   }
 }
+
+export function assertIndexUB(length: number, index: number) {
+  if (
+    !(
+      index === (index | 0)
+      && length === (length | 0)
+      && 0 <= index
+      && index < length
+    )
+  ) {
+    ub(`Index '${index}' must be in range [0,${length}).`)
+  }
+}

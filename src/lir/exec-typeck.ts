@@ -101,7 +101,7 @@ function assertAssignable(src: Type, dst: Type) {
   }
 }
 
-function assertTypeKind<N extends keyof typeof T, K extends Type["k"]>(
+export function assertTypeKind<N extends keyof typeof T, K extends Type["k"]>(
   src: Type,
   name: N,
   k: (typeof T)[N] & K,
