@@ -12,15 +12,15 @@ export class Id {
     return new Id(this.name)
   }
 
-  get uid() {
+  get uid(): string {
     return `_${this.index.toString(36)}/*${this.name}*/`
   }
 
-  get debug() {
+  get debug(): string {
     return this.name
   }
 
-  toString() {
+  toString(): string {
     ice(`'Id' cannot be coerced to a string. Access .uid instead.`)
   }
 }

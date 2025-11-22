@@ -291,9 +291,14 @@ export function stmt(env: Env, { k, v }: Stmt): Type {
 
 export function decl(env: Env, name: Id, { args, ret, body }: Decl): void {
   env = forkForDecl(env, ret)
-  args.forEach(({ name, type }) =>
-    env.locals.set(name, { mut: false, ty: type }),
-  )
+  args.forEach(({ name, type }) => {
+    if (env.locals.has(name)) {
+      issue(
+        `Declaration of '@${name.debug}' cannot have more than one argument named '$${name.debug}'.`,
+      )
+    }
+    env.locals.set(name, { mut: false, ty: type })
+  })
   assertAssignable(expr(env, body), ret)
   env.fns.set(name, { args: args.map((x) => x.type), ret })
 }

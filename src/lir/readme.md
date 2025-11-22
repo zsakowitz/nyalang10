@@ -11,7 +11,8 @@ call where one of the arguments is a `T.Never` is immediate checked UB.
 if these expressions are evaluated, it is immediate checked UB:
 
 - `T.Unreachable`
-- `T.CastNever`
+- `T.CastNever { target, type }` after evaluating `target` (i.e. reaching
+  `cast_never` is okay so long as evaluating `target` diverges)
 - `T.ArrayIndex { target, index }` with an out-of-bounds `index`
 - `T.UnionIndex { target, index }` where `index` is not the active union variant
 

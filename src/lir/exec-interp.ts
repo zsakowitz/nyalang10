@@ -1,7 +1,8 @@
 import { T } from "../enum"
 import { assertIndexUB, issue, ub } from "../error"
 import type { Id } from "../id"
-import { type Expr, type Stmt, type Type } from "./def"
+import type { Decl } from "./def"
+import { type Expr, type Lval, type Stmt } from "./def"
 import { printType } from "./def-debug"
 import { assertTypeKind } from "./exec-typeck"
 
@@ -17,11 +18,14 @@ export interface VData {
 }
 
 export interface IOpaque {
-  from(data: unknown): unknown
+  // see note about `exec` vs `execi` on `IFn` below
+  execi(data: unknown): unknown
 }
 
 export interface IFn {
-  exec(args: unknown[]): unknown
+  // `exec` is called `execi` so that another executor can define its own function method and a single object can cover them all
+  // for instance, a JS executor could define `execJs`, and a single object with `execi` and `execJs` methods could be used in both executors
+  execi(args: unknown[]): unknown
 }
 
 export interface ILocal {
@@ -44,11 +48,64 @@ function forkLocals(env: Env): Env {
   }
 }
 
-function forkForDecl(env: Env, ret: Type): Env {
+function forkForDecl(env: Env): Env {
   return {
     opaqueExterns: env.opaqueExterns,
     fns: env.fns,
     locals: new Map(),
+  }
+}
+
+type LvalFrozen =
+  | { k: T.Index; v: { target: LvalFrozen; index: number } }
+  | { k: T.Local; v: Id }
+
+function lvalFreeze(env: Env, { k, v }: Lval): LvalFrozen {
+  switch (k) {
+    case T.ArrayIndex:
+      return {
+        k: T.Index,
+        v: {
+          target: lvalFreeze(env, v.target),
+          index: expr(env, v.index) as number,
+        },
+      }
+    case T.TupleIndex:
+      return {
+        k: T.Index,
+        v: {
+          target: lvalFreeze(env, v.target),
+          index: v.index,
+        },
+      }
+    case T.Local:
+      return { k, v }
+  }
+}
+
+function lvalGet(env: Env, { k, v }: LvalFrozen): unknown {
+  switch (k) {
+    case T.Index: {
+      const target = lvalGet(env, v.target) as unknown[]
+      assertIndexUB(target.length, v.index)
+      return target[v.index]!
+    }
+    case T.Local:
+      return env.locals.get(v)!.val
+  }
+}
+
+function lvalSet(env: Env, { k, v }: LvalFrozen, value: unknown) {
+  switch (k) {
+    case T.Index: {
+      const target = (lvalGet(env, v.target) as unknown[]).slice()
+      assertIndexUB(target.length, v.index)
+      target[v.index] = value
+      lvalSet(env, v.target, target)
+      break
+    }
+    case T.Local:
+      env.locals.get(v)!.val = value
   }
 }
 
@@ -64,7 +121,7 @@ export function expr(env: Env, { k, v }: Expr): unknown {
       assertTypeKind(v.ty, "Extern", T.Extern)
       const cons = env.opaqueExterns.get(v.ty.v)
       if (!cons) issue(`Cannot construct '${printType(v.ty)}' via 'T.Opaque'.`)
-      return cons!.from(v.data)
+      return cons!.execi(v.data)
     }
     case T.ArrayFill: {
       const el = expr(env, v.el)
@@ -83,7 +140,8 @@ export function expr(env: Env, { k, v }: Expr): unknown {
     case T.Union:
       return { k: v.variant, v: expr(env, v.data) }
     case T.CastNever:
-      ub(`Reached 'cast_never'.`)
+      expr(env, v.target)
+      ub(`Reached cast step of 'cast_never'.`)
     case T.IfElse:
       return expr(env, v.condition) ? expr(env, v.if) : expr(env, v.else)
     case T.ArrayIndex: {
@@ -142,12 +200,46 @@ export function expr(env: Env, { k, v }: Expr): unknown {
       return env.locals.get(v)!.val
     case T.Call: {
       const fn = env.fns.get(v.name)!
-      return fn.exec(v.args.map((x) => expr(env, x)))
+      return fn.execi(v.args.map((x) => expr(env, x)))
     }
   }
 }
 
-export function stmt(env: Env, { k, v }: Stmt): unknown {}
+export function stmt(env: Env, { k, v }: Stmt): unknown {
+  switch (k) {
+    case T.Expr:
+      return expr(env, v)
+    case T.Let:
+      env.locals.set(v.name, { val: expr(env, v.val) })
+      return null
+    case T.AssignOne: {
+      const rhs = expr(env, v.value)
+      const lhs = lvalFreeze(env, v.target)
+      lvalSet(env, lhs, rhs)
+      return null
+    }
+    case T.AssignMany: {
+      const rhs = expr(env, v.value) as unknown[]
+      for (let i = 0; i < rhs.length; i++) {
+        const lhs = lvalFreeze(env, v.target[i]!)
+        lvalSet(env, lhs, rhs[i]!)
+      }
+      return null
+    }
+  }
+}
+
+export function decl(env: Env, f: Decl): IFn {
+  const parent = forkForDecl(env)
+  const execi: IFn["execi"] = (args) => {
+    const env = forkForDecl(parent)
+    f.args.forEach(({ name }, i) => env.locals.set(name, { val: args[i]! }))
+    return expr(env, f.body)
+  }
+  const fn: IFn = { execi }
+  env.fns.set(f.name, fn)
+  return fn
+}
 
 class Break {
   constructor(

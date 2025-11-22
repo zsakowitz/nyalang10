@@ -6,6 +6,7 @@
     "moduleResolution": "bundler",
     "module": "preserve",
     "noEmit": true,
+    "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "noUncheckedSideEffectImports": true,
     "strict": true,
