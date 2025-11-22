@@ -218,7 +218,7 @@ export function expr(env: Env, { k, v }: Expr): Type {
     }
     case T.Block: {
       if (v.length == 0) return T_VOID
-      let ret = T_VOID
+      let ret: Type = T_VOID
       env = forkLocals(env)
       v.forEach((st) => (ret = stmt(env, st)))
       return ret
