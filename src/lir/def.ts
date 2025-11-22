@@ -21,9 +21,10 @@ null! as Lval satisfies Expr
 
 // an expression with a return value. expressions cannot modify data except through nested statements via T.Block
 export type Expr =
-  // constructors
-  // the constructor for `T.Void` is `T.Block` with an empty statement array
+  // variables
   | { k: T.Variable; v: Id } // gets the value of `v`, which must be accessible in the current context
+  | { k: T.Call; v: { name: Id; args: Expr[] } } // evaluates `args`, then passes those arguments to the function `name`
+  // constructors; T.Void is constructed via `T.Block`
   | { k: T.Unreachable; v: null } // reaching this statement is immediate UB; used for optimization
   | { k: T.Int; v: bigint } // returns an `int` with the specified value
   | { k: T.Bool; v: boolean } // returns a `bool` with the specified value
@@ -54,3 +55,11 @@ export type Stmt =
   | { k: T.Let; v: { name: Id; mut: boolean; val: Expr } } // evaluates `val`, then creates a new scope for the rest of the block with the result bound as `name`. returns the value of type `void`. only `mut` bindings can be mutated
   | { k: T.AssignOne; v: { target: Lval; value: Expr } } // evaluates `value`, then stores it in `target`. in particular, `target`'s array indices are evaluated AFTER `value`.
   | { k: T.AssignMany; v: { target: Lval[]; value: Expr } } // evaluates `value`, which must be a tuple of the same length as `targets`, and assigns each member of the result to the corresponding lvalue in `targets`
+
+// a function declaration, the only kind of declaration in this lir
+export interface Decl {
+  name: Id
+  args: { name: Id; type: Type }[]
+  ret: Type
+  body: Expr
+}

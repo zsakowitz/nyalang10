@@ -9,6 +9,8 @@ export const enum T {
   Union,
 
   Variable,
+  Call,
+
   Unreachable,
   ArrayFill,
   ArrayMap,
@@ -32,4 +34,6 @@ export const enum T {
   Let,
   AssignOne,
   AssignMany,
+
+  Fn,
 }
