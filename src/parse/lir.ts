@@ -1,6 +1,4 @@
-import { any, from, lazy, lazyAny, Parser, seq, State } from "."
-import { T } from "../enum"
-import { idFor } from "../id"
+import { any, from, lazy, lazyAny, Parser, seq } from "."
 import {
   ex,
   lv,
@@ -16,6 +14,8 @@ import {
   type Stmt,
   type Type,
 } from "../lir/def"
+import { T } from "../shared/enum"
+import { idFor } from "../shared/id"
 
 const ID_FN = from(/@([A-Za-z]\w*)/y).map((x) => idFor(x[1]!))
 const ID_LOCAL = from(/\$([A-Za-z]\w*)/y).map((x) => idFor(x[1]!))

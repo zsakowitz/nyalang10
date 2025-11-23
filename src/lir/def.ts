@@ -1,5 +1,5 @@
-import { T } from "../enum"
-import type { Id } from "../id"
+import { T } from "../shared/enum"
+import type { Id } from "../shared/id"
 
 export type Type =
   | { k: T.Void; v: null }

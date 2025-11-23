@@ -1,6 +1,6 @@
-import { T } from "../enum"
-import { assertIndex, issue } from "../error"
-import type { Id } from "../id"
+import { T } from "../shared/enum"
+import { assertIndex, issue } from "../shared/error"
+import type { Id } from "../shared/id"
 import {
   T_BOOL,
   T_INT,

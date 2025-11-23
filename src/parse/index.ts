@@ -1,4 +1,4 @@
-import { ice, issue } from "../error"
+import { ice, issue } from "../shared/error"
 
 const WS = /\s/
 const LETTER0 = /^\w/
