@@ -62,7 +62,7 @@ export type Expr =
 
   // control flow
   | { k: T.Block; v: Stmt[] } // evaluates each statement in `v`, returning the last one's value. if no statements are present, returns `void`
-  | { k: T.Label; v: { label: Id; type: Type; body: Expr; loop: boolean } } // if `loop`, evaluates `body` forever. otherwise, evaluates and returns `body`. `label` may be the target of `break` statements in `expr`. if `loop`, `continue` statements may also target `label`. `break` statements must return `type`, and if `!loop`, the returned `body` must also return `type`.
+  | { k: T.Label; v: { loop: boolean; label: Id; type: Type; body: Expr } } // if `loop`, evaluates `body` forever. otherwise, evaluates and returns `body`. `label` may be the target of `break` statements in `expr`. if `loop`, `continue` statements may also target `label`. `break` statements must return `type`, and if `!loop`, the returned `body` must also return `type`.
   | { k: T.Return; v: Expr } // evaluates and returns `v` from the currently executing function or example.
   | { k: T.Break; v: { label: Id; body: Expr } } // breaks from the given label construct with `body`
   | { k: T.Continue; v: Id } // jumps to the beginning of the nearest loop labeled `v`; must match a loop within the current function
