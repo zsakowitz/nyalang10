@@ -146,7 +146,7 @@ export const EXPR: Parser<Expr> = lazyAny<Expr>(() => [
   ),
 ])
 
-const STMT_RAW = lazyAny<[stmt: Stmt, needsVoid: boolean]>(() => [
+const STMT_RAW = any<[stmt: Stmt, needsVoid: boolean]>([
   // expr is last, since it's the obvious one
   seq(["let", from("mut").opt(), ID_LOCAL, "=", EXPR, ";"]).map(
     ([, mut, name, , val]) => [st(T.Let, { mut: !!mut, name, val }), false],
