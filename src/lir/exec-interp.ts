@@ -155,7 +155,7 @@ export function expr(env: Env, { k, v }: Expr): unknown {
     case T.UnionIndex: {
       const target = expr(env, v.target) as VData[T.Union]
       if (target.k != v.index) {
-        ub(`Tried to index union with non-active variant.`)
+        ub(`Indexed union with inactive variant.`)
       }
       return target.v
     }

@@ -1,5 +1,5 @@
 import { T } from "../shared/enum"
-import type { Id } from "../shared/id"
+import { idFor, type Id } from "../shared/id"
 
 export type Type =
   | { k: T.Void; v: null }
@@ -22,6 +22,8 @@ export const T_VOID = ty(T.Void, null)
 export const T_NEVER = ty(T.Never, null)
 export const T_BOOL = ty(T.Bool, null)
 export const T_INT = ty(T.Int, null)
+export const T_NUM = ty(T.Extern, idFor("num"))
+export const T_STR = ty(T.Extern, idFor("str"))
 
 // the target of an assignment
 export type Lval =

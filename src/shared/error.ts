@@ -53,6 +53,6 @@ export function assertIndexUB(length: number, index: number) {
       && index < length
     )
   ) {
-    ub(`Index '${index}' must be in range [0,${length}).`)
+    ub(`Accessed out-of-bounds index '${index}'.`)
   }
 }

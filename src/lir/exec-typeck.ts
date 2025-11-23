@@ -233,7 +233,7 @@ export function expr(env: Env, { k, v }: Expr): Type {
       return v.type
     }
     case T.Return: {
-      if (!env.return) issue(`Cannot 'return' in this context.`)
+      if (!env.return) issue(`Cannot return from this context.`)
       assertAssignable(expr(env, v), env.return)
       return T_NEVER
     }

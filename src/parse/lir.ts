@@ -6,6 +6,8 @@ import {
   T_BOOL,
   T_INT,
   T_NEVER,
+  T_NUM,
+  T_STR,
   T_VOID,
   ty,
   type Decl,
@@ -57,9 +59,6 @@ export const LVAL: Parser<Lval> = ID_LOCAL.map((x) =>
 const OPAQUE_NUM = from(/[+-]?(?:\d+(?:\.\d+)?(?:e[+-]?\d+)?|inf)|nan/y).key(0)
 const OPAQUE_STR = from(/"[^"]*"/y).key(0)
 
-export const EXTERN_NUM = ty(T.Extern, idFor("num"))
-export const EXTERN_STR = ty(T.Extern, idFor("str"))
-
 const EXPRL: Parser<Expr> = lazy(() => EXPR)
 
 export const EXPR: Parser<Expr> = lazyAny<Expr>(() => [
@@ -68,8 +67,8 @@ export const EXPR: Parser<Expr> = lazyAny<Expr>(() => [
   INT.map((x) => ex(T.Int, x)),
   from("true").as(ex(T.Bool, true)),
   from("false").as(ex(T.Bool, false)),
-  OPAQUE_NUM.map((x) => ex(T.Opaque, { ty: EXTERN_NUM, data: x })),
-  OPAQUE_STR.map((x) => ex(T.Opaque, { ty: EXTERN_STR, data: x })),
+  OPAQUE_NUM.map((x) => ex(T.Opaque, { ty: T_NUM, data: x })),
+  OPAQUE_STR.map((x) => ex(T.Opaque, { ty: T_STR, data: x })),
   seq([ID_EXTERN, "(", any([OPAQUE_NUM, OPAQUE_STR]), ")"]).map(([k, v]) =>
     ex(T.Opaque, { ty: ty(T.Extern, k), data: v }),
   ),

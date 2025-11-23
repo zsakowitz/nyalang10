@@ -9,3 +9,17 @@ export const white = "\x1b[37m"
 export const yellow = "\x1b[33m"
 export const dim = "\x1b[2m"
 export const bold = "\x1b[1m"
+
+export const all = [
+  black,
+  blue,
+  cyan,
+  green,
+  magenta,
+  red,
+  reset,
+  white,
+  yellow,
+  dim,
+  bold,
+]
