@@ -14,7 +14,7 @@ import {
   type Stmt,
   type Type,
 } from "../lir/def"
-import { printExpr } from "../lir/def-debug"
+import { printDecl, printExpr } from "../lir/def-debug"
 import { T } from "../shared/enum"
 import { idFor } from "../shared/id"
 
@@ -152,8 +152,8 @@ const STMT_RAW = lazyAny<[stmt: Stmt, needsVoid: boolean]>(() => [
   seq(["let", from("mut").opt(), ID_LOCAL, "=", EXPR, ";"]).map(
     ([, mut, name, , val]) => [st(T.Let, { mut: !!mut, name, val }), false],
   ),
-  seq(["assign", "(", LVAL.sepByRaw(), ")", "=", EXPR, ";"]).map(
-    ([, , lval, , , value]) =>
+  seq([/assign\s*\(/y, LVAL.sepByRaw(), ")", "=", EXPR, ";"]).map(
+    ([, lval, , , value]) =>
       lval.items.length == 1 && !lval.trailing ?
         [st(T.AssignOne, { target: lval.items[0]!, value }), false]
       : [st(T.AssignMany, { target: lval.items, value }), false],
@@ -216,9 +216,18 @@ break 'a 23
 continue 'a
 $val
 @double($val)
+{ 2; let $a = 23; assign $a = 4; assign ($a, $b) = (3, 4); }
 `
   .split("\n")
   .map((x) => x.trim())
   .filter((x) => x)) {
   console.log(printExpr(EXPR.parse(line)))
 }
+
+console.log(
+  printDecl(
+    DECL.parse(`
+fn @hi($param1 int, $param2 bool,) void { 45; {}; 2; }
+`),
+  ),
+)

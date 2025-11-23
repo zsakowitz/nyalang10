@@ -1,6 +1,6 @@
 import { cyan, green, magenta, red, reset, yellow } from "../shared/ansi"
 import { T } from "../shared/enum"
-import type { Decl, Expr, Stmt, Type } from "./def"
+import { ex, type Decl, type Expr, type Stmt, type Type } from "./def"
 
 export function printType({ k, v }: Type): string {
   switch (k) {
@@ -67,7 +67,7 @@ export function printExpr({ k, v }: Expr): string {
       return `match ${printExpr(v.target)} as ${yellow}$${v.data.debug} -> ${printType(v.type)} (${v.arms.map(printExpr).join(", ")}${v.arms.length == 1 ? "," : ""})`
     case T.Block:
       if (v.length == 0) return `{}`
-      return `{\n  ${v.map(printStmt).join("\n").replaceAll("\n", "\n  ")}\n}`
+      return `{\n  ${printBlockContents(v).replaceAll("\n", "\n  ")}\n}`
     case T.Label:
       return `${v.loop ? "loop " : ""}${green}'${v.label.debug} -> ${printType(v.type)} ${printExpr(v.body)}`
     case T.Return:
@@ -83,19 +83,42 @@ export function printExpr({ k, v }: Expr): string {
   }
 }
 
-export function printStmt({ k, v }: Stmt): string {
+function printStmtRaw({ k, v }: Stmt): string {
   switch (k) {
     case T.Expr:
-      return printExpr(v)
+      return printExpr(v) + ";"
     case T.Let:
+      return `let${v.mut ? " mut" : ""} ${yellow}$${v.name.debug} = ${printExpr(v.val)};`
     case T.AssignOne:
+      return `assign ${printExpr(v.target)} = ${printExpr(v.value)};`
     case T.AssignMany:
+      return `assign ${printExpr(ex(T.Tuple, v.target))} = ${printExpr(v.value)};`
   }
-  return Bun.inspect({ k, v })
+}
+
+export function printBlockContents(v: Stmt[]): string {
+  if (v.length == 0) return ""
+
+  let finalSemi = false
+  const last = v[v.length - 1]!
+  if (last.k == T.Expr && last.v.k == T.Block && last.v.v.length == 0) {
+    v = v.slice(0, -1)
+    finalSemi = true
+  }
+
+  if (v.length == 0) return ""
+
+  const text = v.map(printStmtRaw).join("\n")
+  if (v[v.length - 1]!.k == T.Expr && !finalSemi) {
+    return text.slice(0, -1)
+  } else {
+    return text
+  }
 }
 
 export function printDecl({ name, args, ret, body }: Decl): string {
+  const expr = body.k == T.Block ? printExpr(body) : `= ${printExpr(body)};`
   return `fn ${red}@${name.debug}(${args.map(
     ({ name, type }) => `${yellow}$${name.debug} ${printType(type)}`,
-  )}) ${printType(ret)} = ${printExpr(body)};`
+  )}) ${printType(ret)} ${expr}`
 }
