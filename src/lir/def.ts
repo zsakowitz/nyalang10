@@ -50,6 +50,7 @@ export type Expr =
   | { k: T.ArrayElements; v: { elTy: Type; els: Expr[] } } // constructs an array by evaluating each element in `.els` in order; each element must have type `.elTy`
   | { k: T.Tuple; v: Expr[] } // constructs a tuple which is each element of `v` evaluated, in order, then assembled into a tuple
   | { k: T.Union; v: { unionTy: Type; variant: number; data: Expr } } // `.unionTy` must be a union type, `variant` must be in the range [0,unionTy.v.length), and `data` must be of type `unionTy.v[variant]`; constructs a union given a variant index and its appropriate data
+
   // destructors
   | { k: T.CastNever; v: { target: Expr; into: Type } } // `target` must be of type `!`; returns an element of type `into` by relying on the unreachability of this statement
   | { k: T.IfElse; v: { condition: Expr; type: Type; if: Expr; else: Expr } } // `condition` must be a `bool`; returns `if` if `condition` evaluates `true`, and `false` otherwise. only one branch is ever evaluated. each branch must return `type`.
@@ -58,12 +59,14 @@ export type Expr =
   | { k: T.UnionVariant; v: Expr } // `v` must be a union; returns the variant index of `v` as an `int`
   | { k: T.UnionIndex; v: { target: Expr; index: number } } // `target` must be a union. if the active variant is not `index`, instant UB follows. returns the data stored in the union in variant `index`.
   | { k: T.UnionMatch; v: { target: Expr; type: Type; data: Id; arms: Expr[] } } // there must be as many `arms` as variants in the type of `target`, and `target` must be a union. finds the arm with index of the currently active variant, binds the union's data to `data`, and returns the matched arm. each clause must return `type`.
+
   // control flow
   | { k: T.Block; v: Stmt[] } // evaluates each statement in `v`, returning the last one's value. if no statements are present, returns `void`
   | { k: T.Label; v: { label: Id; type: Type; body: Expr; loop: boolean } } // if `loop`, evaluates `body` forever. otherwise, evaluates and returns `body`. `label` may be the target of `break` statements in `expr`. if `loop`, `continue` statements may also target `label`. `break` statements must return `type`, and if `!loop`, the returned `body` must also return `type`.
   | { k: T.Return; v: Expr } // evaluates and returns `v` from the currently executing function or example.
   | { k: T.Break; v: { label: Id; body: Expr } } // breaks from the given label construct with `body`
   | { k: T.Continue; v: Id } // jumps to the beginning of the nearest loop labeled `v`; must match a loop within the current function
+
   // variables
   | { k: T.Local; v: Id } // gets the value of `v`, which must be accessible in the current context
   | { k: T.Call; v: { name: Id; args: Expr[] } } // evaluates `args`, then passes those arguments to the function `name`
