@@ -14,6 +14,7 @@ import {
   type Stmt,
   type Type,
 } from "../lir/def"
+import { printExpr } from "../lir/def-debug"
 import { T } from "../shared/enum"
 import { idFor } from "../shared/id"
 
@@ -22,8 +23,10 @@ const ID_LOCAL = from(/\$([A-Za-z]\w*)/y).map((x) => idFor(x[1]!))
 const ID_EXTERN = from(/~([A-Za-z]\w*)/y).map((x) => idFor(x[1]!))
 const ID_LABEL = from(/'([A-Za-z]\w*)/y).map((x) => idFor(x[1]!))
 
-const INDEX = from(/\d+/y).map((x) => Number(BigInt.asIntN(32, BigInt(x[0]))))
-const INT = from(/\d+/y).map((x) => BigInt(x[0]))
+const INDEX = from(/\d+(?![.e])/y).map((x) =>
+  Number(BigInt.asIntN(32, BigInt(x[0]))),
+)
+const INT = from(/\d+(?![.e])/y).map((x) => BigInt(x[0]))
 
 export const TYPE: Parser<Type> = lazyAny<Type>(() => [
   from("void").as(T_VOID),
@@ -68,20 +71,21 @@ export const EXPR: Parser<Expr> = lazyAny<Expr>(() => [
   from("false").as(ex(T.Bool, false)),
   OPAQUE_NUM.map((x) => ex(T.Opaque, { ty: EXTERN_NUM, data: x })),
   OPAQUE_STR.map((x) => ex(T.Opaque, { ty: EXTERN_STR, data: x })),
-  seq([ID_EXTERN, any([OPAQUE_NUM, OPAQUE_STR])]).map(([k, v]) =>
+  seq([ID_EXTERN, "(", any([OPAQUE_NUM, OPAQUE_STR]), ")"]).map(([k, v]) =>
     ex(T.Opaque, { ty: ty(T.Extern, k), data: v }),
   ),
-  seq(["opaque", TYPE, any([OPAQUE_NUM, OPAQUE_STR])]).map(([, k, v]) =>
-    ex(T.Opaque, { ty: k, data: v }),
+  seq(["opaque", "<", TYPE, ">", "(", any([OPAQUE_NUM, OPAQUE_STR]), ")"]).map(
+    ([, , k, , , v]) => ex(T.Opaque, { ty: k, data: v }),
   ),
   seq([/\[\s*fill/y, EXPR, ";", INDEX, "]"]).map(([, el, , len]) =>
     ex(T.ArrayFill, { el, len }),
   ),
-  seq(["[", ID_LOCAL, "=>", EXPR, ";", INDEX, "]"]).map(
-    ([, idx, , el, , len]) => ex(T.ArrayFrom, { idx, el, len }),
-  ),
+  // T.ArrayElements is before T.ArrayFrom so it matches properly
   seq([/\[\s*each/y, TYPE, ";", EXPR.sepBy(), "]"]).map(([, elTy, , els]) =>
     ex(T.ArrayElements, { elTy, els }),
+  ),
+  seq(["[", ID_LOCAL, "=>", EXPR, ";", INDEX, "]"]).map(
+    ([, idx, , el, , len]) => ex(T.ArrayFrom, { idx, el, len }),
   ),
   seq(["(", EXPR.sepByRaw(), ")"]).map(([, el]) =>
     !el.trailing && el.items.length == 1 ? el.items[0]! : ex(T.Tuple, el.items),
@@ -187,4 +191,34 @@ export const DECL: Parser<Decl> = seq([
   ]),
 ]).map(([, name, , args, , ret, body]) => ({ name, args, ret, body }))
 
-console.log(DECL.parse(`fn @double($x int) int = $x;`))
+for (const line of `
+23
+true
+unreachable
+2.5
+[fill true; 3]
+[$a => $a; 3]
+[each int; 2, 3, 4]
+(7, 8, 9)
+union(int, void)#0(34)
+unreachable.cast(int)
+if true -> int then 23 else 45
+[each int; 2, 1, 0][2]
+$val.variant
+$val#2
+match $val as $data -> int ($data, 45)
+{}
+{ 2; 3 }
+'h -> int 2
+loop 'h -> int 2
+return 23
+break 'a 23
+continue 'a
+$val
+@double($val)
+`
+  .split("\n")
+  .map((x) => x.trim())
+  .filter((x) => x)) {
+  console.log(printExpr(EXPR.parse(line)))
+}

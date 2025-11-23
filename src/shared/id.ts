@@ -1,3 +1,4 @@
+import { dim, reset } from "./ansi"
 import { ice } from "./error"
 
 // INVARIANT: `uid` is never used as an identifier
@@ -17,7 +18,7 @@ export class Id {
   }
 
   get debug(): string {
-    return this.name
+    return `${this.name}${dim}_${this.index.toString(36)}${reset}`
   }
 
   toString(): string {
@@ -25,7 +26,7 @@ export class Id {
   }
 
   [Symbol.for("nodejs.util.inspect.custom")]() {
-    return `Id(${this.name} _${this.index.toString(36)})`
+    return this.debug
   }
 }
 
