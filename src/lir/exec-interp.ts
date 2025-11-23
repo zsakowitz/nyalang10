@@ -112,7 +112,7 @@ export function expr(env: Env, { k, v }: Expr): unknown {
     case T.Unreachable:
       ub(`Reached 'unreachable'.`)
     case T.Int:
-      return Number(v) | 0
+      return Number(BigInt.asIntN(32, v))
     case T.Bool:
       return v
     case T.Opaque: {
@@ -125,7 +125,7 @@ export function expr(env: Env, { k, v }: Expr): unknown {
       const el = expr(env, v.el)
       return Array.from({ length: Number(v.len) | 0 }).fill(el)
     }
-    case T.ArrayMap:
+    case T.ArrayFrom:
       return Array.from({ length: Number(v.len) | 0 }, (_, i) => {
         const ienv = forkLocals(env)
         ienv.locals.set(v.idx, { val: i })

@@ -55,6 +55,10 @@ export class Parser<T> {
     })
   }
 
+  as<U>(value: U): Parser<U> {
+    return this.map(() => value)
+  }
+
   skipThen<U>(rhs: ParserLike<U>): Parser<U> {
     return seq([this, rhs]).map((x) => x[1])
   }
@@ -86,7 +90,7 @@ export class Parser<T> {
   }
 
   sepByRaw(
-    sep: ParserLike<unknown>,
+    sep: ParserLike<unknown> = ",",
   ): Parser<{ items: T[]; trailing: boolean }> {
     return new Parser<{ items: T[]; trailing: boolean }>((state) => {
       const items: T[] = []
@@ -123,8 +127,18 @@ export class Parser<T> {
     })
   }
 
-  sepBy(sep: ParserLike<unknown>): Parser<T[]> {
+  sepBy(sep?: ParserLike<unknown>): Parser<T[]> {
     return this.sepByRaw(sep).key("items")
+  }
+
+  many(): Parser<T[]> {
+    return this.sepBy(always(null))
+  }
+
+  suffixedBy(f: Parser<(x: T) => T>[]): Parser<T> {
+    return seq([this as Parser<T>, any(f).many()]).map(([init, rest]) =>
+      rest.reduce((lhs, map) => map(lhs), init),
+    )
   }
 }
 
@@ -146,6 +160,12 @@ String.prototype.go = function (state: State) {
 }
 
 RegExp.prototype.go = function (state: State) {
+  if (!this.sticky) {
+    throw new Error(
+      `Only sticky regexes (ones with the 'y' flag) may be used as parsers.`,
+    )
+  }
+
   const result = state.matchRegex(this)
   if (result) {
     return { ok: true, value: result }
@@ -206,5 +226,15 @@ export function any<T>(p: readonly ParserLike<T>[]): Parser<T> {
     }
 
     return { ok: false }
+  })
+}
+
+export function lazyAny<T>(p: () => readonly ParserLike<T>[]): Parser<T> {
+  return lazy(() => any(p()))
+}
+
+export function todo<T>(): Parser<T> {
+  return new Parser(() => {
+    throw new Error("this parser hasn't been implemented yet")
   })
 }

@@ -14,7 +14,7 @@ export const enum T {
   Unreachable,
   Opaque,
   ArrayFill,
-  ArrayMap,
+  ArrayFrom,
   ArrayElements,
 
   CastNever,

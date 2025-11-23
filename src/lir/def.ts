@@ -46,7 +46,7 @@ export type Expr =
   | { k: T.Bool; v: boolean } // returns a `bool` with the specified value
   | { k: T.Opaque; v: { ty: Type; data: unknown } } // constructs a value of type `ty` by some mechanism specific to the compiler or interpreter used
   | { k: T.ArrayFill; v: { el: Expr; len: number } } // evaluates `el`, then constructs a `[typeof el; len]` with the given length, where every element is `el`
-  | { k: T.ArrayMap; v: { idx: Id; el: Expr; len: number } } // constructs an array of length `len` by evaluating `v.el` with `index` bound to 0, 1, 2, ..., `len-1`
+  | { k: T.ArrayFrom; v: { idx: Id; el: Expr; len: number } } // constructs an array of length `len` by evaluating `v.el` with `index` bound to 0, 1, 2, ..., `len-1`
   | { k: T.ArrayElements; v: { elTy: Type; els: Expr[] } } // constructs an array by evaluating each element in `.els` in order; each element must have type `.elTy`
   | { k: T.Tuple; v: Expr[] } // constructs a tuple which is each element of `v` evaluated, in order, then assembled into a tuple
   | { k: T.Union; v: { unionTy: Type; variant: number; data: Expr } } // `.unionTy` must be a union type, `variant` must be in the range [0,unionTy.v.length), and `data` must be of type `unionTy.v[variant]`; constructs a union given a variant index and its appropriate data

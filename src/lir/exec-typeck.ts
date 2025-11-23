@@ -146,7 +146,7 @@ export function expr(env: Env, { k, v }: Expr): Type {
       return v.ty
     case T.ArrayFill:
       return ty(T.Array, { el: expr(env, v.el), len: v.len })
-    case T.ArrayMap: {
+    case T.ArrayFrom: {
       env = forkLocals(env)
       env.locals.set(v.idx, { mut: false, ty: T_INT })
       return ty(T.Array, { el: expr(env, v.el), len: v.len })
@@ -255,6 +255,11 @@ export function expr(env: Env, { k, v }: Expr): Type {
       return local.ty
     }
     case T.Call: {
+      if (env.locals.get(v.name)) {
+        issue(
+          `Cannot call a function whose name is shadowed by a local variable.`,
+        )
+      }
       const fn = env.fns.get(v.name)
       if (!fn) {
         issue(`Function @${v.name.debug} does not exist.`)
