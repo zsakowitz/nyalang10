@@ -1,6 +1,8 @@
 import { ice } from "../error"
 
 const WS = /\s/
+const LETTER0 = /^\w/
+const LETTER1 = /\w$/
 
 export class State {
   constructor(
@@ -14,13 +16,26 @@ export class State {
     }
   }
 
+  // matches a string literal, but not in-between word boundaries
+  // e.g. in `State { text: "hello", index: 3 }`, "lo" does not match via `.matchText`
   matchText(text: string) {
     this.skipSpaces()
-    if (this.text.startsWith(text, this.index)) {
-      this.index += text.length
-      return true
+
+    const index = this.index
+    if (!this.text.startsWith(text, index)) {
+      return false
     }
-    return false
+
+    const len = text.length
+    if (LETTER0.test(text) && LETTER1.test(this.text.slice(0, index))) {
+      return false
+    }
+    if (LETTER1.test(text) && LETTER0.test(this.text.slice(index + len))) {
+      return false
+    }
+    this.index += len
+
+    return true
   }
 
   // assumes `regex` has the `y` flag set
@@ -161,8 +176,8 @@ String.prototype.go = function (state: State) {
 
 RegExp.prototype.go = function (state: State) {
   if (!this.sticky) {
-    throw new Error(
-      `Only sticky regexes (ones with the 'y' flag) may be used as parsers.`,
+    ice(
+      `/${this.source}/${this.flags} may not be used as a parser, since it does not specify the 'y' flag.`,
     )
   }
 
@@ -175,6 +190,11 @@ RegExp.prototype.go = function (state: State) {
 }
 
 export function from<T>(x: ParserLike<T>): Parser<T> {
+  if (x instanceof RegExp && !x.sticky) {
+    ice(
+      `/${x.source}/${x.flags} may not be used as a parser, since it does not specify the 'y' flag.`,
+    )
+  }
   return new Parser((state) => x.go(state))
 }
 
@@ -231,10 +251,4 @@ export function any<T>(p: readonly ParserLike<T>[]): Parser<T> {
 
 export function lazyAny<T>(p: () => readonly ParserLike<T>[]): Parser<T> {
   return lazy(() => any(p()))
-}
-
-export function todo<T>(): Parser<T> {
-  return new Parser(() => {
-    throw new Error("this parser hasn't been implemented yet")
-  })
 }

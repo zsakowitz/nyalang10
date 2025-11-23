@@ -1,9 +1,10 @@
-import { any, from, lazy, lazyAny, Parser, seq, todo } from "."
+import { any, from, lazy, lazyAny, Parser, seq, State, todo } from "."
 import { T } from "../enum"
 import { idFor } from "../id"
 import {
   ex,
   lv,
+  st,
   T_BOOL,
   T_INT,
   T_NEVER,
@@ -21,8 +22,8 @@ const ID_LOCAL = from(/\$([A-Za-z]\w*)/y).map((x) => idFor(x[1]!))
 const ID_EXTERN = from(/~([A-Za-z]\w*)/y).map((x) => idFor(x[1]!))
 const ID_LABEL = from(/'([A-Za-z]\w*)/y).map((x) => idFor(x[1]!))
 
-const INDEX = from(/\d+/).map((x) => Number(BigInt.asIntN(32, BigInt(x[0]))))
-const INT = from(/\d+/).map((x) => BigInt(x[0]))
+const INDEX = from(/\d+/y).map((x) => Number(BigInt.asIntN(32, BigInt(x[0]))))
+const INT = from(/\d+/y).map((x) => BigInt(x[0]))
 
 export const TYPE: Parser<Type> = lazyAny<Type>(() => [
   from("void").as(T_VOID),
@@ -101,7 +102,7 @@ export const EXPR: Parser<Expr> = lazyAny<Expr>(() => [
   ),
 
   // control flow
-  seq(["{", STMT.many(), "}"]).map((x) => ex(T.Block, x[1])),
+  seq(["{", BLOCK_CONTENTS, "}"]).map(([, x]) => ex(T.Block, x)),
   seq([from("loop").opt(), ID_LABEL, "->", TYPE, EXPR]).map(
     ([loop, label, , type, body]) =>
       ex(T.Label, { loop: !!loop, label, type, body }),
@@ -142,6 +143,35 @@ export const EXPR: Parser<Expr> = lazyAny<Expr>(() => [
   ),
 ])
 
-export const STMT: Parser<Stmt> = lazyAny<Stmt>(() => [])
+const STMT_RAW = lazyAny<[stmt: Stmt, needsVoid: boolean]>(() => [
+  // expr is last, since it's the obvious one
+  seq(["let", from("mut").opt(), ID_LOCAL, "=", EXPR, ";"]).map(
+    ([, mut, name, , val]) => [st(T.Let, { mut: !!mut, name, val }), false],
+  ),
+  seq(["assign", "(", LVAL.sepByRaw(), ")", "=", EXPR, ";"]).map(
+    ([, , lval, , , value]) =>
+      lval.items.length == 1 && !lval.trailing ?
+        [st(T.AssignOne, { target: lval.items[0]!, value }), false]
+      : [st(T.AssignMany, { target: lval.items, value }), false],
+  ),
+  seq(["assign", LVAL, "=", EXPR, ";"]).map(([, target, , value]) => [
+    st(T.AssignOne, { target, value }),
+    false,
+  ]),
+  EXPR.map((x) => st(T.Expr, x)).then(
+    any([from(/(?=\s*\}|$)/y).as(false), from(/;/y).as(true)]),
+  ),
+])
 
-export const DECL: Parser<Decl> = todo()
+export const BLOCK_CONTENTS = STMT_RAW.many().map((x) => {
+  const needsVoid = !!x[x.length - 1]?.[1]
+  const stmts = x.map((x) => x[0])
+  if (needsVoid) {
+    stmts.push(st(T.Expr, ex(T.Block, [])))
+  }
+  return stmts
+})
+
+// export const DECL: Parser<Decl> = todo()
+
+console.log(BLOCK_CONTENTS.go(new State(`2`)))
