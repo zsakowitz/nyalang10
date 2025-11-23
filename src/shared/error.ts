@@ -1,34 +1,34 @@
-export const enum ErrorLevel {
+export const enum ErrorKind {
   Internal,
   Standard,
   UB,
 }
 
 const PREFIXES = {
-  [ErrorLevel.Internal]: "[ice] ",
-  [ErrorLevel.Standard]: "",
-  [ErrorLevel.UB]: "[ub] ",
+  [ErrorKind.Internal]: "[ice] ",
+  [ErrorKind.Standard]: "",
+  [ErrorKind.UB]: "[ub] ",
 }
 
 export class NLError extends Error {
   constructor(
-    readonly level: ErrorLevel,
+    readonly kind: ErrorKind,
     message: string,
   ) {
-    super(PREFIXES[level] + message)
+    super(PREFIXES[kind] + message)
   }
 }
 
 export function ice(x: string): never {
-  throw new NLError(ErrorLevel.Internal, x)
+  throw new NLError(ErrorKind.Internal, x)
 }
 
 export function issue(x: string): never {
-  throw new NLError(ErrorLevel.Standard, x)
+  throw new NLError(ErrorKind.Standard, x)
 }
 
 export function ub(x: string): never {
-  throw new NLError(ErrorLevel.UB, x)
+  throw new NLError(ErrorKind.UB, x)
 }
 
 export function assertIndex(length: number, index: number) {
