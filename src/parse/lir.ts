@@ -1,4 +1,4 @@
-import { any, from, lazy, lazyAny, Parser, seq, State, todo } from "."
+import { any, from, lazy, lazyAny, Parser, seq, State } from "."
 import { T } from "../enum"
 import { idFor } from "../id"
 import {
@@ -172,6 +172,19 @@ export const BLOCK_CONTENTS = STMT_RAW.many().map((x) => {
   return stmts
 })
 
-// export const DECL: Parser<Decl> = todo()
+export const DECL: Parser<Decl> = seq([
+  "fn",
+  ID_FN,
+  "(",
+  seq([ID_LOCAL, TYPE])
+    .map(([name, type]) => ({ name, type }))
+    .sepBy(),
+  ")",
+  TYPE,
+  any([
+    seq(["=", EXPR, ";"]).key(1),
+    seq(["{", BLOCK_CONTENTS, "}"]).map(([, x]) => ex(T.Block, x)),
+  ]),
+]).map(([, name, , args, , ret, body]) => ({ name, args, ret, body }))
 
-console.log(BLOCK_CONTENTS.go(new State(`2`)))
+console.log(DECL.parse(`fn @double($x int) int = $x;`))

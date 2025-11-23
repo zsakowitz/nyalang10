@@ -23,6 +23,10 @@ export class Id {
   toString(): string {
     ice(`'Id' cannot be coerced to a string. Access .uid instead.`)
   }
+
+  [Symbol.for("nodejs.util.inspect.custom")]() {
+    return `Id(${this.name} _${this.index.toString(36)})`
+  }
 }
 
 const named: Record<string, Id> = Object.create(null)

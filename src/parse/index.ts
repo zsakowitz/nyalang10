@@ -1,4 +1,4 @@
-import { ice } from "../error"
+import { ice, issue } from "../error"
 
 const WS = /\s/
 const LETTER0 = /^\w/
@@ -61,6 +61,15 @@ type Result<T> = { ok: true; value: T } | { ok: false }
 
 export class Parser<T> {
   constructor(readonly go: (state: State) => Result<T>) {}
+
+  parse(text: string): T {
+    const state = new State(text)
+    const result = this.go(state)
+    if (result.ok && (state.skipSpaces(), state.index == text.length)) {
+      return result.value
+    }
+    issue("Failed to parse: " + state.debug())
+  }
 
   map<U>(f: (x: T) => U): Parser<U> {
     return new Parser((state) => {
