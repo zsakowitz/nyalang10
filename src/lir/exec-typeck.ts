@@ -295,6 +295,9 @@ export function stmt(env: Env, { k, v }: Stmt): Type {
 }
 
 export function decl(env: Env, { name, args, ret, body }: Decl): void {
+  if (env.fns.has(name)) {
+    issue(`Cannot redeclare function '@${name.debug}'.`)
+  }
   env = forkForDecl(env, ret)
   args.forEach(({ name, type }) => {
     if (env.locals.has(name)) {

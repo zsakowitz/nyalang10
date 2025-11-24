@@ -37,4 +37,6 @@ export const enum T {
   AssignMany,
 
   Index,
+
+  Param,
 }

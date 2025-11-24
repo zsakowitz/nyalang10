@@ -92,7 +92,7 @@ all executors in this repository support these methods of instantiation:
   instantiator is provided via some `opaqueExterns` property on the
   executor-specific `Env` type
 
-# finished LIR executors
+# available LIR executors
 
 all LIR executors in this repository are single-file, and have an `Env` type
 which defines functions, opaques, labels, and locals accessible in the current
@@ -106,13 +106,6 @@ executor file.
 - `exec-interp`, the interpreter. it runs expression-by-expression, and is
   always UB-checking.
 
-# projected LIR executors (not guaranteed to happen)
-
-- `exec-js`, the JavaScript compiler, is unfinished, and will be on halt until
-  the mid-level language is done
-
-- `exec-glsl`
-
-- `exec-wgsl`
-
-- `exec-wasm`
+in the future, we expect to have LIR compilers which target JavaScript and GLSL.
+however, those will not be started until the MIR and some intermediate forms are
+done.
