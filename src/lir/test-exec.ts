@@ -101,7 +101,7 @@ declare global {
 }
 
 ienv.opaqueExterns.set(num.v, {
-  execi(data) {
+  fromi(data) {
     return (
       data == "+inf" ? 1 / 0
       : data == "-inf" ? -1 / 0

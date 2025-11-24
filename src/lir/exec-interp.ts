@@ -19,7 +19,11 @@ export interface VData {
 
 export interface IOpaque {
   // see note about `exec` vs `execi` on `IFn` below
-  execi(data: unknown): unknown
+  fromi(data: unknown): unknown
+}
+
+export interface OpaqueData {
+  evali(): unknown
 }
 
 export interface IFn {
@@ -116,10 +120,18 @@ export function expr(env: Env, { k, v }: Expr): unknown {
     case T.Bool:
       return v
     case T.Opaque: {
+      if (
+        typeof v.data == "object"
+        && v.data != null
+        && "execi" in v.data
+        && typeof v.data.execi == "function"
+      ) {
+        return v.data.execi()
+      }
       assertTypeKind(v.ty, "Extern", T.Extern)
       const cons = env.opaqueExterns.get(v.ty.v)
       if (!cons) issue(`Cannot construct '${printType(v.ty)}' via 'T.Opaque'.`)
-      return cons!.execi(v.data)
+      return cons!.fromi(v.data)
     }
     case T.ArrayFill: {
       const el = expr(env, v.el)

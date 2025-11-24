@@ -40,13 +40,18 @@ export function lv<K extends Lval["k"]>(
 
 null! as Lval satisfies Expr
 
+export type OpaqueData =
+  | string // the text-based format created opaques with string data
+  | Record<string, (props: unknown) => unknown> // one recommended form is to have one method per executor, and have each method return some value-like object
+  | unknown // general opaque data
+
 // an expression with a return value. expressions cannot modify data except through nested statements via T.Block
 export type Expr =
   // constructors; T.Void is constructed via `T.Block`
   | { k: T.Unreachable; v: null } // reaching this statement is immediate UB; used for optimization
   | { k: T.Int; v: bigint } // returns an `int` with the specified value
   | { k: T.Bool; v: boolean } // returns a `bool` with the specified value
-  | { k: T.Opaque; v: { ty: Type; data: unknown } } // constructs a value of type `ty` by some mechanism specific to the compiler or interpreter used
+  | { k: T.Opaque; v: { ty: Type; data: OpaqueData } } // constructs a value of type `ty` by some mechanism specific to the compiler or interpreter used
   | { k: T.ArrayFill; v: { el: Expr; len: number } } // evaluates `el`, then constructs a `[typeof el; len]` with the given length, where every element is `el`
   | { k: T.ArrayFrom; v: { idx: Id; el: Expr; len: number } } // constructs an array of length `len` by evaluating `v.el` with `index` bound to 0, 1, 2, ..., `len-1`
   | { k: T.ArrayElements; v: { elTy: Type; els: Expr[] } } // constructs an array by evaluating each element in `.els` in order; each element must have type `.elTy`
