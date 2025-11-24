@@ -48,27 +48,37 @@ our rough strategy will be to take the "shape" of each type, and match overloads
 against that, so that `fn((int, bool))` and `fn(bool)` are allowed, but not
 `fn((int, bool))` and `fn((T, bool))` or `fn((bool, int))`.
 
-we thus define the "shell" of a type. here is the shell for each MIR type:
+we thus define the "shell" of a type. here is the shell for each MIR type
+(excluding type aliases, which are just syntax sugar):
 
-| MIR type      | Shell                                            |
-| ------------- | ------------------------------------------------ |
-| `void`        | `void`                                           |
-| `!`           | `never`                                          |
-| `int`         | `int`                                            |
-| `bool`        | `bool`                                           |
-| `[T; N]`      | `array`                                          |
-| `(A, B, ...)` | `tuple(N)`, where `N` is the length of the tuple |
-| `T`           | `any`                                            |
-| `Adt`         | `adt(I)`, where `I` is the adt id                |
-| `Extern`      | `extern(I)`, where `I` is the extern id          |
-| `in T`        | the shell of `T`                                 |
+| MIR type      | Shell                                           |
+| ------------- | ----------------------------------------------- |
+| `void`        | `void`                                          |
+| `!`           | `never`                                         |
+| `int`         | `int`                                           |
+| `bool`        | `bool`                                          |
+| `[T; N]`      | `array`                                         |
+| `(A, B, ...)` | `tuple N`, where `N` is the length of the tuple |
+| `Extern`      | `extern I`, where `I` is the extern id          |
+| `in T`        | `in I`, where `I` is the shell of `T`           |
+| `Adt`         | `adt I`, where `I` is the adt id                |
+| `T`           | `any`                                           |
 
-two type shells `A` and `B` are disjoint when neither is `any`, and `A != B`. so
-`int` and `bool` have disjoint shells, but `(int, bool)` and `(bool, str)` do
+the only shell there which allows infinite nesting is `in`; this is considered
+acceptable.
+
+to whether two type shells `A` and `B` are disjoint:
+
+- if `A` or `B` is `any`, they are joint
+- if `A` is `in T` and `B` is `in U`, return whether `T` and `U` are disjoint
+- otherwise, they are disjoint
+
+so `int` and `bool` have disjoint shells, but `(int, bool)` and `(bool, str)` do
 not.
 
 then, for a function declaration `fn name(arg1, arg2, arg3, ...) ret`, its
-"function shell" is the array `[shell(arg1), shell(arg2), ...]`.
+"function shell" is the array `[shell(arg1), shell(arg2), ...]`. note than no
+argument may be of type `in T` where `T` contains a generic parameter.
 
 two function declarations with shells `[a0, a1, ...]` and `[b0, b1, ...]` have
 disjoint shells if `disjoint(a0, b0) || disjoint(a1, b1) || ...`, although the

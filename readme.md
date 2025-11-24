@@ -17,33 +17,33 @@ the group Dn and coset computation:
     1:N, N:1, and M:N products, since coset product is different anyway
 
 ```rs
-struct D<const N: int> {
+struct D<int N> {
   rotation: int,
   flipped: bool,
 }
 
-fn *<const N: int>(lhs: D<N>, rhs: D<N>) D<N> {
+fn *<int N>(lhs: D<N>, rhs: D<N>) D<N> {
   D {
     rotation: lhs.rotation + (if flipped then -1 else 1) * rhs.rotation,
     flipped: lhs.flipped ~ rhs.flipped,
   }
 }
 
-fn *<T, const N: int>(lhs: [T; N], rhs: T) [T; N]
+fn *<T, int N>(lhs: [T; N], rhs: T) [T; N]
 where
   fn *(T, T) T,
 {
   [i => lhs[i] * rhs; N]
 }
 
-fn *<T, const N: int>(lhs: T, rhs: [T; N]) [T; N]
+fn *<T, int N>(lhs: T, rhs: [T; N]) [T; N]
 where
   fn *(T, T) T,
 {
   [i => lhs * rhs[i]; N]
 }
 
-fn *<T, const N: int>(lhs: [T; N], rhs: [T; N]) [T; N]
+fn *<T, int N>(lhs: [T; N], rhs: [T; N]) [T; N]
 where
   fn *(T, T) T,
 {
@@ -68,7 +68,7 @@ trait Semigroup<T> {
   fn *(T, T) T;
 }
 
-fn table<T: ToTypst + Semigroup, const R, const C>(rows: [T; R], cols: [T; C]) -> str {
+fn table<T: ToTypst + Semigroup, int R, int C>(rows: [T; R], cols: [T; C]) -> str {
   let mut text = "";
   for c in 0..C {
     text += ",";
@@ -92,22 +92,20 @@ definition of the identity of a group:
 - ability to call a function with reference to the desired return type
 
 ```rs
-fn id() int {
+fn id(in int) int {
   0
 }
 
-fn id() str {
+fn id(in str) str {
   ""
 }
 
 fn double_identity<T>() T
 where
-  fn id() T,
+  fn id(in T) T,
   fn +(T, T) T,
 {
-  let id1 = id(-> T); // explicit return type
-  let id2 = id(); // no explicit return type, so one from our generics is assumed
-  id1 + id2
+  id(in T) + id(in T)
 }
 ```
 
@@ -118,11 +116,11 @@ TODO
 ## multiply `Matrix<T, R int, C int>` types, generic over `T` and dimensions
 
 ```rs
-struct Matrix<T, const R, const C> {
+struct Matrix<T, int R, int C> {
   data: [[T; C]; R],
 }
 
-fn *<T, const R, const J, const C>(mat1: Matrix<T, R, J>, mat2: Matrix<T, J, C>) Matrix<T, R, C>
+fn *<T, int R, int J, int C>(mat1: Matrix<T, R, J>, mat2: Matrix<T, J, C>) Matrix<T, R, C>
 where
   fn zero() T,
   fn +(T, T) T,
@@ -229,7 +227,7 @@ let name = prompt("what is your name?");
 // look fantastic with good syntax highlighting
 
 let el =
-  &h1.text-xl[name="world", on_click |ev| { alert("hello!"); }](
+  &h1.text-xl[aria-hidden true, id "world", onclick |ev| { alert("hello!"); }](
     "my name is ", name, 45
   );
 
@@ -264,4 +262,29 @@ let el2 = &div.border-x.border-red-500.px-4.py-8."text-[orange]"(
 
 document.body.append(el);
 document.body.append(e2);
+```
+
+## zero function
+
+```rs
+fn zero(in int) int = 0;
+fn zero(in num) num = 0.0;
+fn zero(in str) str = "";
+
+fn zero<A, B>(in (A, B)) (A, B)
+where
+  fn zero(in A) A,
+  fn zero(in B) B,
+{
+  (zero(in A), zero(in B))
+}
+
+fn zero<T, int N>(in [T; N]) [T; N]
+where
+  fn zero(in T) T,
+{
+  [_ => zero(in T); N]
+}
+
+let x = zero(in [(int, [str; 3]); 4]);
 ```

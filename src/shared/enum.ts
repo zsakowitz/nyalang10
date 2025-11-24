@@ -1,4 +1,5 @@
 export const enum T {
+  // lir or mir
   Void,
   Never,
   Int,
@@ -38,5 +39,26 @@ export const enum T {
 
   Index,
 
+  // mir only
+  Adt,
   Param,
+  Struct,
+  UnitIn,
+  Type,
+  Const,
+  Alias,
+  TypeOrConst,
+  Infer,
+  FieldIndex,
+  Match,
+
+  Range,
+  Xml,
+  Closure,
+  Builtin,
+  ForIn,
+
+  XmlId,
+  XmlClass,
+  XmlAttrs,
 }
