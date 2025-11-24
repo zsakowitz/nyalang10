@@ -1,31 +1,37 @@
-import { type OpaqueData } from "../lir/def"
+import type { WithSpan } from "../parse"
 import type { T } from "../shared/enum"
-import type { Id } from "../shared/id"
+import type { Id as IdRaw } from "../shared/id"
 
-export interface Path {
-  v: [Id, ...Id[]]
-}
+type Id = WithSpan<IdRaw>
 
-export type ConstInt = { k: T.Param; v: Id } | { k: T.Int; v: number }
+export type TypedArg = WithSpan<{ name: Id; type: Type }>
 
-export type TParam<T = Type> = { k: T.Type; v: null } | { k: T.Const; v: T }
+export type Path = WithSpan<[Id, ...Id[]]>
 
-export type TArg<T = Type> =
+export type ConstInt = WithSpan<{ k: T.Param; v: Id } | { k: T.Int; v: number }>
+
+export type TParam<T = Type> = WithSpan<
+  { name: Id; kind: T.Type; type: null } | { name: Id; kind: T.Const; type: T }
+>
+
+export type TArg<T = Type> = WithSpan<
   | { k: T.Infer; v: null }
   | { k: T.TypeOrConst; v: Path }
   | { k: T.Type; v: T }
   | { k: T.Const; v: ConstInt }
+>
 
 // INVARIANT: two `AdtDefn`s with the same `id` are the same
-export interface AdtDefn<T = TypeR> {
+// intentionally has no span; this is the final form of an Adt
+export interface AdtDefn {
   id: Id
   kind: T.Struct | T.Union
-  params: { name: Id; kind: TParam<T> }[]
-  fields: { name: Id; type: T }[]
+  params: TParam<TypeR>[]
+  fields: TypedArg[]
 }
 
 // type before aliases are resolved
-export type Type =
+export type Type = WithSpan<
   // all below are same as LIR unless otherwise noted
   | { k: T.Void; v: null }
   | { k: T.Never; v: null }
@@ -39,9 +45,10 @@ export type Type =
   | { k: T.UnitIn; v: Type } // the type `in T` has a single value for any type `T`; it is used to define type-associated functions
   | { k: T.Param; v: Id } // refers to a type parameter
   | { k: T.Adt; v: { def: AdtDefn; args: TArg<Type>[] } } // refers to some struct or enum defined outside of the current context
+>
 
 // type after aliases are resolved
-export type TypeR =
+export type TypeR = WithSpan<
   | { k: T.Void; v: null }
   | { k: T.Never; v: null }
   | { k: T.Int; v: null }
@@ -52,16 +59,14 @@ export type TypeR =
   | { k: T.UnitIn; v: TypeR } // the type `in T` has a single value for any type `T`; it is used to define type-associated functions
   | { k: T.Param; v: Id } // refers to a type parameter
   | { k: T.Adt; v: { def: AdtDefn; args: TArg<TypeR>[] } } // refers to some struct or enum defined outside of the current context
+>
 
-// being an object means this can have position information
-export type Lit<T> = { v: T }
-
-export type Expr =
+export type Expr = WithSpan<
   // constructors (LIR)
   | { k: T.Unreachable; v: null }
   | { k: T.Int; v: bigint }
   | { k: T.Bool; v: boolean }
-  | { k: T.Opaque; v: { ty: Type; data: OpaqueData } }
+  | { k: T.Opaque; v: { ty: Type; data: unknown } }
   | { k: T.ArrayFill; v: { el: Expr; len: ConstInt } }
   | { k: T.ArrayFrom; v: { idx: Id; el: Expr; len: ConstInt } }
   | { k: T.ArrayElements; v: Expr[] }
@@ -89,13 +94,20 @@ export type Expr =
       k: T.Match
       v: {
         target: Expr
-        arms: { field: Id; dataBinder: Id | null; body: Expr }[]
+        arms: WithSpan<{ field: Id; dataBinder: Id | null; body: Expr }>[]
       }
     } // in the future, will be expanded to more general pattern matching
 
   // control flow
   | { k: T.Block; v: Stmt[] }
-  | { k: T.Label; v: { loop: Lit<boolean>; label: Id | null; body: Expr } }
+  | {
+      k: T.Label
+      v: {
+        loop: WithSpan<null> | null // either the 'loop' keyword or nothing
+        label: Id | null
+        body: Expr
+      }
+    }
   | { k: T.Return; v: { with: Expr | null } }
   | { k: T.Break; v: { label: Id | null; with: Expr | null } }
   | { k: T.Continue; v: { label: Id | null } }
@@ -105,53 +117,59 @@ export type Expr =
   | { k: T.Call; v: { name: Path; targs: TArg[] | null; args: Expr[] } }
 
   // MIR-specific constructs
-  | { k: T.Range; v: { lo: Expr; hi: Expr } } // for now, ranges are restricted to 0..n
+  | { k: T.Range; v: { start: Expr | null; end: Expr | null } } // for now, ranges are restricted to 0..n
   | { k: T.Closure; v: { args: { k: Id; v: Type | null }[]; body: Expr } }
   | { k: T.Builtin; v: { name: Id; args: Expr[] } }
   | { k: T.ForIn; v: { label: Id | null; item: Id; source: Expr; body: Expr } }
   | { k: T.Xml; v: Xml }
+>
 
 export interface Xml {
-  tag: Lit<string>
+  tag: WithSpan<Id>
   props: XmlProp[]
-  contents: Expr[] | null
+  contents: WithSpan<Expr[]> | null
 }
 
-export type XmlProp =
-  | { k: T.XmlId; v: Lit<string> }
-  | { k: T.XmlClass; v: Lit<string> }
-  | { k: T.XmlAttrs; v: { k: Lit<string>; v: Expr }[] }
+type Str = WithSpan<string>
 
-export type Stmt =
+export type XmlProp = WithSpan<
+  | { k: T.XmlId; v: Str }
+  | { k: T.XmlClass; v: Str }
+  | { k: T.XmlAttrs; v: { k: Str; v: Expr }[] }
+>
+
+export type Stmt = WithSpan<
   | { k: T.Expr; v: Expr }
   | { k: T.Let; v: { mut: boolean; name: Id; init: Expr } }
   | { k: T.AssignOne; v: { target: Lval; value: Expr } }
   | { k: T.AssignMany; v: { target: Lval[]; value: Expr } }
+>
 
-export type Lval =
+export type Lval = WithSpan<
   | { k: T.ArrayIndex; v: { target: Lval; field: Expr } }
   | { k: T.TupleIndex; v: { target: Lval; field: number } }
   | { k: T.FieldIndex; v: { target: Lval; field: Id } }
   | { k: T.Local; v: Id }
+>
 
-export interface DeclFn {
+export type DeclFn = WithSpan<{
   name: Id
   params: TParam[]
   args: { name: Id; type: Type }[]
   ret: Type
   where: FnSignature[]
   body: Expr
-}
+}>
 
-export interface FnSignature {
+export type FnSignature = WithSpan<{
   name: Id
   args: Type[]
   ret: Type
-}
+}>
 
-export interface DeclAdt {
+export type DeclAdt = WithSpan<{
   name: Id
   params: TParam[]
   kind: T.Struct | T.Union
   fields: { name: Id; type: Type }[]
-}
+}>

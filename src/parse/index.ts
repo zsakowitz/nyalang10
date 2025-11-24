@@ -1,18 +1,51 @@
 import { ice, issue } from "../shared/error"
 
+export interface Pos {
+  row: number // first row is 1, to match code editors
+  col: number // first col is 1, to match code editors
+}
+
+export interface Span {
+  text: string
+  start: Pos
+  end: Pos
+}
+
+export interface WithSpan<T> {
+  data: T
+  span: Span
+}
+
 const WS = /\s/
 const LETTER0 = /^\w/
 const LETTER1 = /\w$/
 
 export class State {
-  constructor(
-    readonly text: string,
-    public index = 0,
-  ) {}
+  private index_ = 0
+  private row = 1
+  private col = 1
+
+  constructor(readonly text: string) {}
+
+  get index() {
+    return this.index_
+  }
+
+  private incIndex(amount: number) {
+    for (let i = 0; i < amount; i++) {
+      if (this.text[this.index] == "\n") {
+        this.row++
+        this.col = 1
+      } else {
+        this.col++
+      }
+      this.index_++
+    }
+  }
 
   skipSpaces() {
     while (this.index < this.text.length && WS.test(this.text[this.index]!)) {
-      this.index++
+      this.incIndex(1)
     }
   }
 
@@ -33,7 +66,7 @@ export class State {
     if (LETTER1.test(text) && LETTER0.test(this.text.slice(index + len))) {
       return false
     }
-    this.index += len
+    this.incIndex(len)
 
     return true
   }
@@ -44,7 +77,7 @@ export class State {
     regex.lastIndex = this.index
     const match = regex.exec(this.text)
     if (match) {
-      this.index += match[0]!.length
+      this.incIndex(match[0]!.length)
       return match
     }
     return null
@@ -54,6 +87,13 @@ export class State {
     return (
       this.text.slice(0, this.index) + ">>>>>>" + this.text.slice(this.index)
     )
+  }
+
+  pos(): Pos {
+    return {
+      row: this.row,
+      col: this.col,
+    }
   }
 }
 
@@ -163,6 +203,22 @@ export class Parser<T> {
     return seq([this as Parser<T>, any(f).many()]).map(([init, rest]) =>
       rest.reduce((lhs, map) => map(lhs), init),
     )
+  }
+
+  span(): Parser<WithSpan<T>> {
+    return new Parser<WithSpan<T>>((state) => {
+      const start = state.pos()
+      const result = this.go(state)
+      if (!result.ok) return { ok: false }
+      const end = state.pos()
+      return {
+        ok: true,
+        value: {
+          data: result.value,
+          span: { text: state.text, start, end },
+        },
+      }
+    })
   }
 }
 
