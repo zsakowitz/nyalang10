@@ -1,15 +1,15 @@
 import { any, from, lazy, lazyAny, Parser, seq } from "."
 import {
+  bool,
   ex,
+  int,
   lv,
+  never,
+  num,
   st,
-  T_BOOL,
-  T_INT,
-  T_NEVER,
-  T_NUM,
-  T_STR,
-  T_VOID,
+  str,
   ty,
+  void_,
   type Decl,
   type Expr,
   type Lval,
@@ -30,10 +30,10 @@ const INDEX = from(/\d+(?![.e])/y).map((x) =>
 const INT = from(/\d+(?![.e])/y).map((x) => BigInt(x[0]))
 
 export const TYPE: Parser<Type> = lazyAny<Type>(() => [
-  from("void").as(T_VOID),
-  from("!").as(T_NEVER),
-  from("int").as(T_INT),
-  from("bool").as(T_BOOL),
+  from("void").as(void_),
+  from("!").as(never),
+  from("int").as(int),
+  from("bool").as(bool),
   ID_EXTERN.map((v) => ty(T.Extern, v)),
   seq(["[", TYPE, ";", INDEX, "]"])
     .keys([1, 3])
@@ -67,8 +67,8 @@ export const EXPR: Parser<Expr> = lazyAny<Expr>(() => [
   INT.map((x) => ex(T.Int, x)),
   from("true").as(ex(T.Bool, true)),
   from("false").as(ex(T.Bool, false)),
-  OPAQUE_NUM.map((x) => ex(T.Opaque, { ty: T_NUM, data: x })),
-  OPAQUE_STR.map((x) => ex(T.Opaque, { ty: T_STR, data: x })),
+  OPAQUE_NUM.map((x) => ex(T.Opaque, { ty: num, data: x })),
+  OPAQUE_STR.map((x) => ex(T.Opaque, { ty: str, data: x })),
   seq([ID_EXTERN, "(", any([OPAQUE_NUM, OPAQUE_STR]), ")"]).map(([k, v]) =>
     ex(T.Opaque, { ty: ty(T.Extern, k), data: v }),
   ),
@@ -105,8 +105,8 @@ export const EXPR: Parser<Expr> = lazyAny<Expr>(() => [
 
   // control flow
   seq(["{", BLOCK_CONTENTS, "}"]).map(([, x]) => ex(T.Block, x)),
-  seq([from("loop").opt(), ID_LABEL, "->", TYPE, EXPR]).map(
-    ([loop, label, , type, body]) =>
+  seq([from("loop").opt(), ID_LABEL, TYPE, EXPR]).map(
+    ([loop, label, type, body]) =>
       ex(T.Label, { loop: !!loop, label, type, body }),
   ),
   seq(["return", EXPR]).map((x) => ex(T.Return, x[1])),

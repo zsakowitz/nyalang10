@@ -2,11 +2,11 @@ import { T } from "../shared/enum"
 import { assertIndex, issue } from "../shared/error"
 import type { Id } from "../shared/id"
 import {
-  T_BOOL,
-  T_INT,
-  T_NEVER,
-  T_VOID,
+  bool,
+  int,
+  never,
   ty,
+  void_,
   type Decl,
   type Expr,
   type Lval,
@@ -114,7 +114,7 @@ export function assertTypeKind<N extends keyof typeof T, K extends Type["k"]>(
 function lval(env: Env, { k, v }: Lval): Type {
   switch (k) {
     case T.ArrayIndex: {
-      assertAssignable(expr(env, v.index), T_INT)
+      assertAssignable(expr(env, v.index), int)
       const target = lval(env, v.target)
       assertTypeKind(target, "Array", T.Array)
       return target.v.el
@@ -137,18 +137,18 @@ function lval(env: Env, { k, v }: Lval): Type {
 export function expr(env: Env, { k, v }: Expr): Type {
   switch (k) {
     case T.Unreachable:
-      return T_NEVER
+      return never
     case T.Int:
-      return T_INT
+      return int
     case T.Bool:
-      return T_BOOL
+      return bool
     case T.Opaque:
       return v.ty
     case T.ArrayFill:
       return ty(T.Array, { el: expr(env, v.el), len: v.len })
     case T.ArrayFrom: {
       env = forkLocals(env)
-      env.locals.set(v.idx, { mut: false, ty: T_INT })
+      env.locals.set(v.idx, { mut: false, ty: int })
       return ty(T.Array, { el: expr(env, v.el), len: v.len })
     }
     case T.ArrayElements: {
@@ -167,17 +167,17 @@ export function expr(env: Env, { k, v }: Expr): Type {
       return v.unionTy
     }
     case T.CastNever: {
-      assertAssignable(expr(env, v.target), T_NEVER)
+      assertAssignable(expr(env, v.target), never)
       return v.into
     }
     case T.IfElse: {
-      assertAssignable(expr(env, v.condition), T_BOOL)
+      assertAssignable(expr(env, v.condition), bool)
       assertAssignable(expr(env, v.if), v.type)
       assertAssignable(expr(env, v.else), v.type)
       return v.type
     }
     case T.ArrayIndex: {
-      assertAssignable(expr(env, v.index), T_INT)
+      assertAssignable(expr(env, v.index), int)
       const target = expr(env, v.target)
       assertTypeKind(target, "Array", T.Array)
       return target.v.el
@@ -191,7 +191,7 @@ export function expr(env: Env, { k, v }: Expr): Type {
     case T.UnionVariant: {
       const target = expr(env, v)
       assertTypeKind(target, "Union", T.Union)
-      return T_INT
+      return int
     }
     case T.UnionIndex: {
       const target = expr(env, v.target)
@@ -217,8 +217,8 @@ export function expr(env: Env, { k, v }: Expr): Type {
       return v.type
     }
     case T.Block: {
-      if (v.length == 0) return T_VOID
-      let ret: Type = T_VOID
+      if (v.length == 0) return void_
+      let ret: Type = void_
       env = forkLocals(env)
       v.forEach((st) => (ret = stmt(env, st)))
       return ret
@@ -235,19 +235,19 @@ export function expr(env: Env, { k, v }: Expr): Type {
     case T.Return: {
       if (!env.return) issue(`Cannot return from this context.`)
       assertAssignable(expr(env, v), env.return)
-      return T_NEVER
+      return never
     }
     case T.Break: {
       const label = env.labels.get(v.label)
       if (!label) issue(`Label '${v.label.debug} does not exist.`)
       assertAssignable(expr(env, v.body), label.ty)
-      return T_NEVER
+      return never
     }
     case T.Continue: {
       const label = env.labels.get(v)
       if (!label) issue(`Label '${v.debug} does not exist.`)
       if (!label.loop) issue(`Cannot 'continue' to non-loop label '${v.debug}.`)
-      return T_NEVER
+      return never
     }
     case T.Local: {
       const local = env.locals.get(v)
@@ -283,18 +283,18 @@ export function stmt(env: Env, { k, v }: Stmt): Type {
       return expr(env, v)
     case T.Let:
       env.locals.set(v.name, { mut: v.mut, ty: expr(env, v.val) })
-      return T_VOID
+      return void_
     case T.AssignOne:
       assertAssignable(lval(env, v.target), expr(env, v.value))
-      return T_VOID
+      return void_
     case T.AssignMany:
       const lhs = v.target.map((x) => lval(env, x))
       assertAssignable(ty(T.Tuple, lhs), expr(env, v.value))
-      return T_VOID
+      return void_
   }
 }
 
-export function decl(env: Env, name: Id, { args, ret, body }: Decl): void {
+export function decl(env: Env, { name, args, ret, body }: Decl): void {
   env = forkForDecl(env, ret)
   args.forEach(({ name, type }) => {
     if (env.locals.has(name)) {

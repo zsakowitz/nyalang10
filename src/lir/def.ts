@@ -18,12 +18,12 @@ export function ty<K extends Type["k"]>(
   return { k, v } as any
 }
 
-export const T_VOID = ty(T.Void, null)
-export const T_NEVER = ty(T.Never, null)
-export const T_BOOL = ty(T.Bool, null)
-export const T_INT = ty(T.Int, null)
-export const T_NUM = ty(T.Extern, idFor("num"))
-export const T_STR = ty(T.Extern, idFor("str"))
+export const void_ = ty(T.Void, null)
+export const never = ty(T.Never, null)
+export const bool = ty(T.Bool, null)
+export const int = ty(T.Int, null)
+export const num = ty(T.Extern, idFor("num"))
+export const str = ty(T.Extern, idFor("str"))
 
 // the target of an assignment
 export type Lval =

@@ -1,9 +1,9 @@
-import { BLOCK_CONTENTS } from "../parse/lir"
+import { BLOCK_CONTENTS, DECL } from "../parse/lir"
 import { all, cyan, reset } from "../shared/ansi"
 import { T } from "../shared/enum"
 import { ErrorKind, issue, NLError } from "../shared/error"
 import { idFor } from "../shared/id"
-import { ex, T_BOOL, T_INT, T_NUM, type Type } from "./def"
+import { bool, ex, int, num, ty, void_, type Type } from "./def"
 import * as itp from "./exec-interp"
 import * as tck from "./exec-typeck"
 
@@ -34,7 +34,7 @@ function expect(text: string, expecting: unknown) {
       `✅ Test passed with ${cyan}“${JSON.stringify(expecting)}”${reset}.`,
     )
   } catch (e) {
-    console.error(`❌ Test failed: ${e instanceof Error ? e.message : e}`)
+    console.error(`❌ Test failed:`, e instanceof Error ? e.message : e)
   }
 }
 
@@ -56,7 +56,7 @@ function expectUB(text: string, reason: string) {
         )
       }
     } else {
-      console.error(`❌ Test failed: ${e instanceof Error ? e.message : e}`)
+      console.error(`❌ Test failed:`, e instanceof Error ? e.message : e)
     }
   }
 }
@@ -81,9 +81,17 @@ function expectTyErr(text: string, reason: string) {
         )
       }
     } else {
-      console.error(`❌ Test failed: ${e instanceof Error ? e.message : e}`)
+      console.error(`❌ Test failed:`, e instanceof Error ? e.message : e)
     }
   }
+}
+
+function decl(text: string) {
+  const result = DECL.many().parse(text)
+  result.forEach((x) => {
+    tck.decl(tenv, x)
+    itp.decl(ienv, x)
+  })
 }
 
 declare global {
@@ -92,7 +100,7 @@ declare global {
   }
 }
 
-ienv.opaqueExterns.set(T_NUM.v, {
+ienv.opaqueExterns.set(num.v, {
   execi(data) {
     return (
       data == "+inf" ? 1 / 0
@@ -104,18 +112,26 @@ ienv.opaqueExterns.set(T_NUM.v, {
   },
 })
 
-fn("iadd", { x: T_INT, y: T_INT }, T_INT, ([a, b]) => (a + b) | 0)
-fn("fadd", { x: T_NUM, y: T_NUM }, T_NUM, ([a, b]) => a + b)
-fn("isub", { x: T_INT, y: T_INT }, T_INT, ([a, b]) => (a - b) | 0)
-fn("fsub", { x: T_NUM, y: T_NUM }, T_NUM, ([a, b]) => a - b)
-fn("imul", { x: T_INT, y: T_INT }, T_INT, ([a, b]) => Math.imul(a, b))
-fn("fmul", { x: T_NUM, y: T_NUM }, T_NUM, ([a, b]) => a * b)
-fn("idiv", { x: T_INT, y: T_INT }, T_INT, ([a, b]) => (a / b) | 0)
-fn("fdiv", { x: T_NUM, y: T_NUM }, T_NUM, ([a, b]) => a / b)
-fn("ineg", { x: T_INT }, T_INT, (x) => -x | 0)
-fn("fneg", { x: T_NUM }, T_NUM, (x) => -x)
-fn("ieq", { x: T_INT, y: T_INT }, T_BOOL, ([a, b]) => a == b)
-fn("feq", { x: T_NUM, y: T_NUM }, T_BOOL, ([a, b]) => a == b)
+fn("iadd", { x: int, y: int }, int, ([a, b]) => (a + b) | 0)
+fn("fadd", { x: num, y: num }, num, ([a, b]) => a + b)
+fn("isub", { x: int, y: int }, int, ([a, b]) => (a - b) | 0)
+fn("fsub", { x: num, y: num }, num, ([a, b]) => a - b)
+fn("imul", { x: int, y: int }, int, ([a, b]) => Math.imul(a, b))
+fn("fmul", { x: num, y: num }, num, ([a, b]) => a * b)
+fn("idiv", { x: int, y: int }, int, ([a, b]) => (a / b) | 0)
+fn("fdiv", { x: num, y: num }, num, ([a, b]) => a / b)
+fn("irem", { x: int, y: int }, int, ([a, b]) => a % b | 0)
+fn("frem", { x: num, y: num }, num, ([a, b]) => a % b)
+fn("imod", { x: int, y: int }, int, ([a, b]) => {
+  a = a | 0
+  b = b | 0
+  return (((a % b | 0) + b) | 0) % b | 0
+})
+fn("fmod", { x: num, y: num }, num, ([a, b]) => ((a % b) + b) % b)
+fn("ineg", { x: int }, int, ([x]) => -x | 0)
+fn("fneg", { x: num }, num, ([x]) => -x)
+fn("ieq", { x: int, y: int }, bool, ([a, b]) => a == b)
+fn("feq", { x: num, y: num }, bool, ([a, b]) => a == b)
 
 expect("23", 23)
 expect("true", true)
@@ -190,3 +206,83 @@ expectTyErr("return 23", "Cannot return from this context.")
 expectTyErr(`break 'a 23`, "Label 'a_XYZ does not exist.")
 expectTyErr("$a", "Local $a_XYZ does not exist.")
 expectTyErr(`@iadd(true, false)`, "Expected 'int', found 'bool'.")
+
+// fraction manipulation functions
+decl(`
+  fn @gcd($a int, $b int) int {
+    let mut $a = $a;
+    let mut $b = $b;
+    loop 'a ! {
+      if @ieq($b, 0) -> void then return $a else {};
+      let $t = $b;
+      assign $b = @imod($a, $b);
+      assign $a = $t;
+    }
+  }
+
+  fn @xsimp($a (int, int)) (int, int) {
+    let $gcd = @gcd($a.0, $a.1);
+    (@idiv($a.0, $gcd), @idiv($a.1, $gcd))
+  }
+
+  fn @xadd($a (int, int), $b (int, int)) (int, int) {
+    @xsimp((
+      @iadd(
+        @imul($a.0, $b.1),
+        @imul($a.1, $b.0),
+      ),
+      @imul($a.1, $b.1)
+    ))
+  }
+
+  fn @xsub($a (int, int), $b (int, int)) (int, int) {
+    @xsimp((
+      @isub(
+        @imul($a.0, $b.1),
+        @imul($a.1, $b.0),
+      ),
+      @imul($a.1, $b.1)
+    ))
+  }
+
+  fn @xmul($a (int, int), $b (int, int)) (int, int) {
+    @xsimp((@imul($a.0, $b.0), @imul($a.1, $b.1)))
+  }
+
+  fn @xdiv($a (int, int), $b (int, int)) (int, int) {
+    @xsimp((@imul($a.0, $b.1), @imul($a.1, $b.0)))
+  }
+
+  fn @xeq($a (int, int), $b (int, int)) bool {
+    @ieq(@imul($a.0, $b.1), @imul($a.1, $b.0))
+  }
+`)
+
+expect(`@xadd((2, 3), (4, 5))`, [22, 15])
+expect(`@fadd(@fdiv(2.0, 3.0), @fdiv(4.0, 5.0))`, 2 / 3 + 4 / 5)
+expect(`@gcd(25, 5)`, 5)
+expect(`@gcd(5, 25)`, 5)
+expect(`@gcd(1071, 462)`, 21)
+expect(`@xsimp((0, 1))`, [0, 1])
+expect(`@xsimp((2, 0))`, [1, 0])
+expect(`@xsimp((@ineg(2), 0))`, [1, 0])
+expect(`@xsimp((0, 0))`, [0, 0])
+expect(`@xeq((0, 0), (2, 3))`, true)
+
+const ibox = ty(T.Extern, idFor("ibox"))
+
+fn("ibox", { x: int }, ibox, ([x]) => ({ v: x }))
+
+fn("ibox_get", { x: ibox }, int, ([x]) => x.v)
+
+fn("ibox_set", { x: ibox, y: int }, void_, ([x, y]) => {
+  x.v = y
+  return null
+})
+
+expect(`@ibox(2)`, { v: 2 })
+expect(`let $a = @ibox(2); @ibox_set($a, 3); $a`, { v: 3 })
+expect(`let $a = [fill @ibox(2); 2]; @ibox_set($a[0], 4); $a`, [
+  { v: 4 },
+  { v: 4 },
+])

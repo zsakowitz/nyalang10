@@ -69,7 +69,7 @@ export function printExpr({ k, v }: Expr): string {
       if (v.length == 0) return `{}`
       return `{\n  ${printBlockContents(v).replaceAll("\n", "\n  ")}\n}`
     case T.Label:
-      return `${v.loop ? "loop " : ""}${green}'${v.label.debug} -> ${printType(v.type)} ${printExpr(v.body)}`
+      return `${v.loop ? "loop " : ""}${green}'${v.label.debug} ${printType(v.type)} ${printExpr(v.body)}`
     case T.Return:
       return `return ${printExpr(v)}`
     case T.Break:

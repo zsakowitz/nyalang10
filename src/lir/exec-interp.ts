@@ -232,7 +232,15 @@ export function decl(env: Env, f: Decl): IFn {
   const execi: IFn["execi"] = (args) => {
     const env = forkForDecl(parent)
     f.args.forEach(({ name }, i) => env.locals.set(name, { val: args[i]! }))
-    return expr(env, f.body)
+    try {
+      return expr(env, f.body)
+    } catch (e) {
+      if (e instanceof Return) {
+        return e.v
+      } else {
+        throw e
+      }
+    }
   }
   const fn: IFn = { execi }
   env.fns.set(f.name, fn)
