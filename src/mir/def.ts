@@ -84,30 +84,18 @@ type Expr = WithSpan<
       }
     }
 
-  // destructors
-  // never is implicitly promoted, so no need for `T.CastNever`
+  // destructors; `T.CastNever` and `T.UnionVariant` are not applicable here
   | { k: T.IfElse; v: { cond: Expr; if: Expr; else: Expr | null } }
   | { k: T.ArrayIndex; v: { target: Expr; index: Expr } }
   | { k: T.TupleIndex; v: { target: Expr; index: number } }
   | { k: T.FieldIndex; v: { target: Expr; field: Id } } // covers struct and union indexing
-  // no union variant, since unions have named variants now, not numerically indexed ones
-  | {
-      k: T.Match
-      v: {
-        target: Expr
-        arms: WithSpan<{ field: Id; dataBinder: Id | null; body: Expr }>[]
-      }
-    } // in the future, will be expanded to more general pattern matching
+  | { k: T.UnionMatch; v: { target: Expr; arms: MatchArm[] } }
 
   // control flow
   | { k: T.Block; v: Stmt[] }
   | {
       k: T.Label
-      v: {
-        loop: WithSpan<null> | null // either the 'loop' keyword or nothing
-        label: Id | null
-        body: Expr
-      }
+      v: { loop: WithSpan<null> | null; label: Id | null; body: Expr }
     }
   | { k: T.Return; v: { with: Expr | null } }
   | { k: T.Break; v: { label: Id | null; with: Expr | null } }
@@ -117,6 +105,8 @@ type Expr = WithSpan<
   | { k: T.Local; v: Id }
   | { k: T.Call; v: { name: Path; targs: TArg[] | null; args: Expr[] } }
 >
+
+type MatchArm = WithSpan<{ field: Id; data: Id | null; body: Expr }>
 
 type Stmt = WithSpan<
   | { k: T.Expr; v: Expr }
