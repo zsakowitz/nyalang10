@@ -192,3 +192,68 @@ much better when you allow them to be combined! why are they so cool...
 
 we'll just ignore named parameters for now, since they interact annoyingly with
 everything else.
+
+# syntax re-decisions
+
+with Rust arrays, `()` blocks, `{}` markup
+
+```rs
+fn hi(a: int, b: int) (a, b) {
+  let array: [int; 4] = [7, 8, 9, 5];
+  [i => array[i]; 2];
+  [array; 3];
+
+  let mut a = 23;
+  if (a < 23) (
+    let mut people = 45;
+    people_dict.set(78, (
+      let c = {#people #(
+        if (people == 1) {person} else {people}
+      ) currently exist.};
+      c.resolve()
+    ));
+    (people + 3) * (4 - (x ~ y));
+    4 + 5
+  ) else (
+    for i in 0..n (
+      print({hello! my name is #i});
+    )
+  )
+  list{my name}{your name}{someone else's name}{a fourth name};
+  table(cell_spacing: 4px, columns: 3){AaBb}{AB}{BA}{...};
+  a
+}
+```
+
+with Rust arrays, `.[]` indexing, `{}` blocks, and `[[]]` markup
+
+```rs
+fn hi(a: int, b: int) (a, b) {
+  let array: [int; 4] = [7, 8, 9, 5];
+  [i => array.[i]; 2];
+  [array; 3];
+
+  let mut a = 23;
+  if (a < 23) (
+    let mut people = 45;
+    people_dict.set(78, (
+      let c = [[ #people #(
+        if (people == 1) [[ person ]] else [[ people ]]
+      ) currently exist. ]];
+      c.resolve()
+    ));
+    (people + 3) * (4 - (x ~ y));
+    4 + 5
+  ) else (
+    for i in 0..n (
+      print([[hello! my name is #i]]);
+    )
+  )
+  list[my name][your name][someone else's name][a fourth name];
+  table(cell_spacing: 4px, columns: 3)[AaBb][AB][BA][...];
+  a
+}
+```
+
+nope. syntax is stupid because it can change later. i only want enough syntax
+that i know this will eventually be possible.

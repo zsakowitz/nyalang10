@@ -83,15 +83,7 @@ export type Expr = WithSpan<
 
   // constructors (MIR-exclusive)
   | { k: T.UnitIn; v: Type }
-  | {
-      // same syntax for structs and unions; users can create wrapper functions if they want
-      k: T.Adt
-      v: {
-        name: Path
-        targs: TArg[] | null
-        fields: { name: Id; value: Expr }[]
-      }
-    }
+  | { k: T.Adt; v: { name: Path; targs: TArg[] | null; fields: FieldArg[] } }
 
   // destructors; `T.CastNever` and `T.UnionVariant` are not applicable here
   | { k: T.IfElse; v: { cond: Expr; if: Expr; else: Expr | null } }
@@ -111,8 +103,7 @@ export type Expr = WithSpan<
   | { k: T.Continue; v: { label: Id | null } }
 
   // variables
-  | { k: T.Local; v: Id }
-  | { k: T.Call; v: { name: Path; targs: TArg[] | null; args: Expr[] } }
+  | { k: T.Path; v: { name: Path; targs: TArg[] | null; args: Expr[] | null } }
 >
 
 export function ex<K extends Expr["data"]["k"]>(
@@ -172,4 +163,9 @@ export type DeclAdt = WithSpan<{
   params: TParam[]
   kind: T.Struct | T.Union
   fields: { name: Id; type: Type }[]
+}>
+
+export type FieldArg = WithSpan<{
+  name: Id
+  value: Expr
 }>

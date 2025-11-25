@@ -140,8 +140,15 @@ export class Parser<T> {
     return seq([this as Parser<T>, rhs])
   }
 
-  alt(rhs: ParserLike<T>): Parser<T> {
-    return any([this as Parser<T>, rhs])
+  or(rhs: ParserLike<T>): Parser<T> {
+    return any<T>([this, rhs])
+  }
+
+  alt<U>(rhs: ParserLike<U>): Parser<[0, T] | [1, U]> {
+    return any<[0, T] | [1, U]>([
+      this.map((x) => [0, x]),
+      from(rhs).map((x) => [1, x]),
+    ])
   }
 
   key<K extends keyof T>(key: K): Parser<T[K]> {
