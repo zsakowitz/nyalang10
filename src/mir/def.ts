@@ -71,6 +71,7 @@ type Expr = WithSpan<
   | { k: T.ArrayFrom; v: { idx: Id; el: Expr; len: ConstInt } }
   | { k: T.ArrayElements; v: Expr[] }
   | { k: T.Tuple; v: Expr[] }
+
   // constructors (MIR-exclusive)
   | { k: T.UnitIn; v: Type }
   | {
