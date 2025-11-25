@@ -51,14 +51,16 @@ export const enum T {
   Infer,
   FieldIndex,
   Match,
-
   Range,
   Xml,
   Closure,
   Builtin,
   ForIn,
-
   XmlId,
   XmlClass,
   XmlAttrs,
+  Num,
+  Str,
+  StrRaw,
+  Maybe,
 }

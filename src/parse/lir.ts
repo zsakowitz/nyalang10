@@ -19,15 +19,15 @@ import {
 import { T } from "../shared/enum"
 import { idFor } from "../shared/id"
 
-const ID_FN = from(/@([A-Za-z]\w*)/y).map((x) => idFor(x[1]!))
-const ID_LOCAL = from(/\$([A-Za-z]\w*)/y).map((x) => idFor(x[1]!))
-const ID_EXTERN = from(/~([A-Za-z]\w*)/y).map((x) => idFor(x[1]!))
-const ID_LABEL = from(/'([A-Za-z]\w*)/y).map((x) => idFor(x[1]!))
+const ID_FN = from(/@([A-Za-z]\w*)/y).map((x) => idFor(x.slice(1)))
+const ID_LOCAL = from(/\$([A-Za-z]\w*)/y).map((x) => idFor(x.slice(1)))
+const ID_EXTERN = from(/~([A-Za-z]\w*)/y).map((x) => idFor(x.slice(1)))
+const ID_LABEL = from(/'([A-Za-z]\w*)/y).map((x) => idFor(x.slice(1)))
 
 const INDEX = from(/\d+(?![.e])/y).map((x) =>
-  Number(BigInt.asIntN(32, BigInt(x[0]))),
+  Number(BigInt.asIntN(32, BigInt(x))),
 )
-const INT = from(/\d+(?![.e])/y).map((x) => BigInt(x[0]))
+const INT = from(/\d+(?![.e])/y).map((x) => BigInt(x))
 
 export const TYPE: Parser<Type> = lazyAny<Type>(() => [
   from("void").as(void_),

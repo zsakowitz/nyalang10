@@ -138,7 +138,52 @@ where
 }
 ```
 
-## convert `.md` file to HTML, including scripting and math (not latex) support
+## write stylized markup, including inline scripting and math
+
+tbd: how do we combine markup, scripts, and math? ideas:
+
+| system | markup     | scripts    | math     | tradeoffs                  |
+| ------ | ---------- | ---------- | -------- | -------------------------- |
+| typst  | `[markup]` | `#script`  | `$math$` | no tuple/array distinction |
+| mdx    | only JSX   | `{script}` | `$math$` | no markup                  |
+| latex  | n/a        | n/a        | `$math$` | no markup                  |
+
+Q: do we need a tuple/array distinction? maybe we consider everything to be a
+tuple, but with the additional condition that homogeneous tuples can be indexed
+arbitrarily. syntax becomes:
+
+```rs
+// expressions
+(1, 2, 3)       // array / homogeneous tuple
+(1, "23")       // regular tuple
+(i => i + 1; 4) // tuple by index
+(i + 1; 4)      // tuple by fill
+
+(1, 2, 3).0     // tuple indexing also permitted on arrays
+(1, "23").0     // tuple indexing
+```
+
+nope, this actually fails because a tuple like `(2.0, 3.0 * i)` doesn't
+auto-coerce elements into the most general type, i.e. `Complex`. it also
+conflicts weirdly with the whole type shell thing, and will make it hard to
+implement functions generic over the length of an array.
+
+can we use `` ` `` instead? maybe, but it doesn't have different opening and
+closing delimeters, which makes the following ambiguous:
+
+```rs
+`#hello` - 23 - ``
+// using [] as markup brackets, both these parses are possible:
+// [#hello] - 23 - []
+// [#hello[- 23 -]]
+```
+
+so. we need some kind of delimeter, but they're all taken:
+
+- `()` for grouping and tuples
+- `[]` for arrays
+- `{}` for statement blocks
+- `<>` for order comparison
 
 TODO
 

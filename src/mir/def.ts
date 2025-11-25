@@ -72,6 +72,9 @@ export type Expr = WithSpan<
   | { k: T.ArrayElements; v: Expr[] }
   | { k: T.Tuple; v: Expr[] }
   // constructors (MIR-exclusive)
+  | { k: T.Num; v: string }
+  | { k: T.Str; v: string }
+  | { k: T.StrRaw; v: string }
   | { k: T.UnitIn; v: Type }
   | {
       // same syntax for structs and unions; users can create wrapper functions if they want
@@ -89,7 +92,7 @@ export type Expr = WithSpan<
   | { k: T.ArrayIndex; v: { target: Expr; index: Expr } }
   | { k: T.TupleIndex; v: { target: Expr; index: number } }
   | { k: T.FieldIndex; v: { target: Expr; field: Id } } // covers struct and union indexing
-  | { k: T.UnionVariant; v: { target: Expr } }
+  // no union variant, since unions have named variants now, not numerically indexed ones
   | {
       k: T.Match
       v: {

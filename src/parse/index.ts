@@ -74,11 +74,12 @@ export class State {
   // assumes `regex` has the `y` flag set
   matchRegex(regex: RegExp) {
     this.skipSpaces()
-    regex.lastIndex = this.index
-    const match = regex.exec(this.text)
+    const start = (regex.lastIndex = this.index)
+    const match = regex.test(this.text)
     if (match) {
-      this.incIndex(match[0]!.length)
-      return match
+      const end = regex.lastIndex
+      this.incIndex(end - start)
+      return this.text.slice(start, end)
     }
     return null
   }
@@ -228,7 +229,7 @@ export interface ParserLike<T> {
 
 declare global {
   interface String extends ParserLike<string> {}
-  interface RegExp extends ParserLike<RegExpExecArray> {}
+  interface RegExp extends ParserLike<string> {}
 }
 
 String.prototype.go = function (state: State) {
@@ -247,7 +248,7 @@ RegExp.prototype.go = function (state: State) {
   }
 
   const result = state.matchRegex(this)
-  if (result) {
+  if (result != null) {
     return { ok: true, value: result }
   } else {
     return { ok: false }

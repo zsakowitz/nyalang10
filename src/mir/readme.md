@@ -101,3 +101,56 @@ since every declaration needs to check for conflicts with every other shape.
 however, computers are fast, and even with 50 overloads, that will still be only
 around a thousand checks. until that's an actual problem, we won't bother
 optimizing.
+
+# all ascii puncutation on a standard keyboard
+
+| character | usage                                      |
+| --------- | ------------------------------------------ |
+| `~`       | op: symmetric difference                   |
+| backtick  | md: code                                   |
+| `!`       | op: negate, compare                        |
+| `@`       | _none yet_                                 |
+| `#`       | ctx: starts scripting                      |
+| `$`       | ctx: delimits math                         |
+| `%`       | op: modulus                                |
+| `^`       | op: power                                  |
+| `&`       | op: and/intersection; starts html literals |
+| `*`       | op: product                                |
+| `()`      | op: parenthesize, tuple, call              |
+| `-`       | op: negate, subtract                       |
+| `_`       | identifier, hole                           |
+| `=`       | op: compare, assign                        |
+| `+`       | op: add                                    |
+| `[]`      | op: array, index                           |
+| `{}`      | syntax: block, instantiate struct          |
+| backslash | md: escape                                 |
+| bar       | op: or/union                               |
+| `;`       | syntax: terminate statement                |
+| `:`       | syntax: type definition,                   |
+| `'`       | md: apostrophe                             |
+| `"`       | syntax: string                             |
+| `,`       | syntax: separate items                     |
+| `.`       | md: period, numeric list                   |
+| `<`       | op: compare                                |
+| `>`       | op: compare                                |
+| `?`       | op: option                                 |
+| `/`       | op: divide                                 |
+
+seeing how we expect to use this language both for serious scripting (e.g.
+advent of code, where arrays should be compact; or meowboxes, where computation
+is more important than display) and for markup (where it should be easy to embed
+markup into other regions of text), we would like syntax which is concise for
+both cases.
+
+our current syntax shall be the following. it is subject to change based on
+whether it is easy to use.
+
+| what it is         | syntax                     |
+| ------------------ | -------------------------- |
+| array by fill      | `(el; len)`                |
+| array by index     | `(index => el; len)`       |
+| array by elements  | `@(el0, el1, el2, ...)`    |
+| array index        | `data(N)`                  |
+| array type         | `(T; N)`                   |
+| embedded markup    | `[= _markup_ goes *here*]` |
+| markup as argument | `table_cell[23]`           |
