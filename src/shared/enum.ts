@@ -46,7 +46,7 @@ export const enum T {
   UnitIn,
   Type,
   Const,
-  Alias,
+  Path,
   TypeOrConst,
   Infer,
   FieldIndex,

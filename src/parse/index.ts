@@ -16,6 +16,10 @@ export interface WithSpan<T> {
   span: Span
 }
 
+export function at<T>(data: T, span: Span): WithSpan<T> {
+  return { data, span }
+}
+
 const WS = /\s/
 const LETTER0 = /^\w/
 const LETTER1 = /\w$/
@@ -196,6 +200,21 @@ export class Parser<T> {
     return this.sepByRaw(sep).key("items")
   }
 
+  filter(f: (data: T) => boolean): Parser<T> {
+    return new Parser((state) => {
+      const result = this.go(state)
+      if (!result.ok) return { ok: false }
+      if (!f(result.value)) return { ok: false }
+      return result
+    })
+  }
+
+  sepBy1(sep?: ParserLike<unknown>): Parser<[T, ...T[]]> {
+    return this.sepByRaw(sep)
+      .key("items")
+      .filter((x) => x.length > 0) as Parser<[T, ...T[]]>
+  }
+
   many(): Parser<T[]> {
     return this.sepBy(always(null))
   }
@@ -219,6 +238,16 @@ export class Parser<T> {
           span: { text: state.text, start, end },
         },
       }
+    })
+  }
+
+  switch<U>(p: (x: T) => Parser<U>): Parser<[T, U]> {
+    return new Parser<[T, U]>((state) => {
+      const result1 = this.go(state)
+      if (!result1.ok) return { ok: false }
+      const result2 = p(result1.value).go(state)
+      if (!result2.ok) return { ok: false }
+      return { ok: true, value: [result1.value, result2.value] }
     })
   }
 }

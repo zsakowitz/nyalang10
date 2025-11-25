@@ -1,5 +1,7 @@
 # type coercion
 
+we need some form of type coercion, so that
+
 # type-associated functions
 
 to allow working with groups from abstract algebra, we must be able to define
@@ -109,7 +111,7 @@ optimizing.
 | `~`       | op: symmetric difference                   |
 | backtick  | md: code                                   |
 | `!`       | op: negate, compare                        |
-| `@`       | _none yet_                                 |
+| `@`       | syntax: builtin                            |
 | `#`       | ctx: starts scripting                      |
 | `$`       | ctx: delimits math                         |
 | `%`       | op: modulus                                |
@@ -126,7 +128,7 @@ optimizing.
 | backslash | md: escape                                 |
 | bar       | op: or/union                               |
 | `;`       | syntax: terminate statement                |
-| `:`       | syntax: type definition,                   |
+| `:`       | syntax: type definition                    |
 | `'`       | md: apostrophe                             |
 | `"`       | syntax: string                             |
 | `,`       | syntax: separate items                     |
@@ -145,12 +147,48 @@ both cases.
 our current syntax shall be the following. it is subject to change based on
 whether it is easy to use.
 
-| what it is         | syntax                     |
-| ------------------ | -------------------------- |
-| array by fill      | `(el; len)`                |
-| array by index     | `(index => el; len)`       |
-| array by elements  | `@(el0, el1, el2, ...)`    |
-| array index        | `data(N)`                  |
-| array type         | `(T; N)`                   |
-| embedded markup    | `[= _markup_ goes *here*]` |
-| markup as argument | `table_cell[23]`           |
+| what it is         | syntax                      |
+| ------------------ | --------------------------- |
+| array by fill      | `(el; len)`                 |
+| array by index     | `(index => el; len)`        |
+| array by elements  | `array(el0, el1, el2, ...)` |
+| array index        | `data.(N)`                  |
+| array type         | `(T; N)`                    |
+| embedded markup    | `[= _markup_ goes *here*]`  |
+| markup as argument | `table_cell[23]`            |
+
+# named function parameters
+
+typst has named function parameters and it seems useful; why not add them to our
+system? the simple solution is that `join(2, 3, hi: [world])` is rewritten as
+`join(2, 3).hi[world]`, no fuss needed, but that would interact badly with
+`#set` equivalents, since it's converted to a `hi` and `join` call.
+
+idea: named arguments are always optional, and so they are declared via `?:`
+instead.
+
+```rs
+fn scaled(base: int, scale?: int) int {
+  base * (scale ?? 1)
+}
+
+scaled(2); // 2
+scaled(2, scale: 3); // 6
+```
+
+is that too much bloat? probably. do i care? no. wait actually, yes. because it
+means `where` clauses become extra complicated.
+
+(this is now an existential crisis.)
+
+maybe this shouldn't be a statically typed language.
+
+no. that's wrong, because then shaders will be impossible. so it still needs to
+be statically typed. it just also need to be dynamic enough to do well in a
+markup environment. ugh, language design is difficult when you're trying to
+write one language which can do ten unrelated things. it should just be two
+high-level ones, one for code and one for markup. but typst proved it works so
+much better when you allow them to be combined! why are they so cool...
+
+we'll just ignore named parameters for now, since they interact annoyingly with
+everything else.
