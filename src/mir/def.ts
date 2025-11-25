@@ -4,17 +4,17 @@ import type { Id as IdRaw } from "../shared/id"
 
 type Id = WithSpan<IdRaw>
 
-export type TypedArg = WithSpan<{ name: Id; type: Type }>
+type TypedArg = WithSpan<{ name: Id; type: Type }>
 
-export type Path = WithSpan<[Id, ...Id[]]>
+type Path = WithSpan<[Id, ...Id[]]>
 
-export type ConstInt = WithSpan<{ k: T.Param; v: Id } | { k: T.Int; v: number }>
+type ConstInt = WithSpan<{ k: T.Param; v: Id } | { k: T.Int; v: number }>
 
-export type TParam<T = Type> = WithSpan<
+type TParam<T = Type> = WithSpan<
   { name: Id; kind: T.Type; type: null } | { name: Id; kind: T.Const; type: T }
 >
 
-export type TArg<T = Type> = WithSpan<
+type TArg<T = Type> = WithSpan<
   | { k: T.Infer; v: null }
   | { k: T.TypeOrConst; v: Path }
   | { k: T.Type; v: T }
@@ -23,7 +23,7 @@ export type TArg<T = Type> = WithSpan<
 
 // INVARIANT: two `AdtDefn`s with the same `id` are the same
 // intentionally has no span; this is the final form of an Adt
-export interface AdtDefn {
+interface AdtDefn {
   id: Id
   kind: T.Struct | T.Union
   params: TParam<TypeR>[]
@@ -31,7 +31,7 @@ export interface AdtDefn {
 }
 
 // type before aliases are resolved
-export type Type = WithSpan<
+type Type = WithSpan<
   // all below are same as LIR unless otherwise noted
   | { k: T.Void; v: null }
   | { k: T.Never; v: null }
@@ -48,7 +48,7 @@ export type Type = WithSpan<
 >
 
 // type after aliases are resolved
-export type TypeR = WithSpan<
+type TypeR = WithSpan<
   | { k: T.Void; v: null }
   | { k: T.Never; v: null }
   | { k: T.Int; v: null }
@@ -61,7 +61,7 @@ export type TypeR = WithSpan<
   | { k: T.Adt; v: { def: AdtDefn; args: TArg<TypeR>[] } } // refers to some struct or enum defined outside of the current context
 >
 
-export type Expr = WithSpan<
+type Expr = WithSpan<
   // constructors (LIR)
   | { k: T.Unreachable; v: null }
   | { k: T.Int; v: bigint }
@@ -72,9 +72,6 @@ export type Expr = WithSpan<
   | { k: T.ArrayElements; v: Expr[] }
   | { k: T.Tuple; v: Expr[] }
   // constructors (MIR-exclusive)
-  | { k: T.Num; v: string }
-  | { k: T.Str; v: string }
-  | { k: T.StrRaw; v: string }
   | { k: T.UnitIn; v: Type }
   | {
       // same syntax for structs and unions; users can create wrapper functions if they want
@@ -118,37 +115,16 @@ export type Expr = WithSpan<
   // variables
   | { k: T.Local; v: Id }
   | { k: T.Call; v: { name: Path; targs: TArg[] | null; args: Expr[] } }
-
-  // MIR-specific constructs
-  | { k: T.Range; v: { start: Expr | null; end: Expr | null } } // for now, ranges are restricted to 0..n
-  | { k: T.Closure; v: { args: { k: Id; v: Type | null }[]; body: Expr } }
-  | { k: T.Builtin; v: { name: Id; args: Expr[] } }
-  | { k: T.ForIn; v: { label: Id | null; item: Id; source: Expr; body: Expr } }
-  | { k: T.Xml; v: Xml }
 >
 
-export interface Xml {
-  tag: WithSpan<Id>
-  props: XmlProp[]
-  contents: WithSpan<Expr[]> | null
-}
-
-type Str = WithSpan<string>
-
-export type XmlProp = WithSpan<
-  | { k: T.XmlId; v: Str }
-  | { k: T.XmlClass; v: Str }
-  | { k: T.XmlAttrs; v: { k: Str; v: Expr }[] }
->
-
-export type Stmt = WithSpan<
+type Stmt = WithSpan<
   | { k: T.Expr; v: Expr }
   | { k: T.Let; v: { mut: boolean; name: Id; init: Expr } }
   | { k: T.AssignOne; v: { target: Lval; value: Expr } }
   | { k: T.AssignMany; v: { target: Lval[]; value: Expr } }
 >
 
-export type Lval = WithSpan<
+type Lval = WithSpan<
   | { k: T.ArrayIndex; v: { target: Lval; field: Expr } }
   | { k: T.TupleIndex; v: { target: Lval; field: number } }
   | { k: T.FieldIndex; v: { target: Lval; field: Id } }
@@ -164,7 +140,7 @@ export type DeclFn = WithSpan<{
   body: Expr
 }>
 
-export type FnSignature = WithSpan<{
+type FnSignature = WithSpan<{
   name: Id
   args: Type[]
   ret: Type
