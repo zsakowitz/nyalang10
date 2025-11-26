@@ -87,12 +87,6 @@ export function tyr<K extends TypeR["data"]["k"]>(
   return { k, v } as any
 }
 
-export const void_ = tyr(T.Void, null)
-export const never = tyr(T.Never, null)
-export const int = tyr(T.Int, null)
-export const bool = tyr(T.Bool, null)
-// export const num = tyr(T.Extern, idFor("num"))
-
 export type Expr = WithSpan<
   // constructors (LIR)
   | { k: T.Unreachable; v: null }

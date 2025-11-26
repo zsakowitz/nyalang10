@@ -18,3 +18,14 @@ export interface WithSpan<T> {
 export function at<T>(data: T, span: Span): WithSpan<T> {
   return { data, span }
 }
+
+export const VSPAN = {
+  path: "<virtual>",
+  text: "",
+  start: { row: 1, col: 1 },
+  end: { row: 1, col: 1 },
+}
+
+export function vspan<T>(data: T): WithSpan<T> {
+  return at(data, VSPAN)
+}

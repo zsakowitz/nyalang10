@@ -9,8 +9,8 @@ export interface Coercion {
   span: Span
   from: TypeR
   into: TypeR
-  exec(env: Env, value: lir.Expr): lir.Expr
   auto: boolean
+  exec(env: Env, value: lir.Expr): lir.Expr
 }
 
 function compose(span: Span, ab: Coercion, bc: Coercion): Coercion {
@@ -22,10 +22,10 @@ function compose(span: Span, ab: Coercion, bc: Coercion): Coercion {
     span,
     from: ab.from,
     into: bc.into,
+    auto: true,
     exec(env, value) {
       return bc.exec(env, ab.exec(env, value))
     },
-    auto: true,
   }
 }
 
