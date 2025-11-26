@@ -1,6 +1,7 @@
 import { T } from "@/shared/enum"
 import { nextUid } from "@/shared/id"
 import type { TypeR } from "./def"
+import { printTypeR } from "./def-debug"
 import { issue } from "./error"
 
 export type CoercionKey = number & { readonly __coercion_key: unique symbol }
@@ -13,7 +14,7 @@ const CKEY_BOOL = nextUid() as CoercionKey
 const CKEY_EXTERN: Record<number, CoercionKey> = Object.create(null)
 const CKEY_ADT: Record<number, CoercionKey> = Object.create(null)
 
-export function asCkey(type: TypeR): CoercionKey {
+export function tryAsCkey(type: TypeR): CoercionKey | null {
   const { k, v } = type.data
 
   switch (k) {
@@ -29,22 +30,26 @@ export function asCkey(type: TypeR): CoercionKey {
       return (CKEY_EXTERN[v.data.index] ??= nextUid() as CoercionKey)
     case T.Adt:
       if (v.def.params.length) {
-        issue(
-          `Structs and unions with type parameters cannot participate in coercion.`,
-          type.span,
-        )
+        return null
       }
       return (CKEY_ADT[v.def.id.data.index] ??= nextUid() as CoercionKey)
     case T.Array:
-      issue(`Arrays cannot participate in coercion.`, type.span)
+      return null
     case T.Tuple:
-      issue(`Tuples cannot participate in coercion.`, type.span)
+      return null
     case T.Param:
-      issue(
-        `Unresolved type parameters cannot participate in coercion.`,
-        type.span,
-      )
+      return null
     case T.UnitIn:
-      issue(`Contextual unit types cannot participate in coercion.`, type.span)
+      return null
+    case T.Maybe:
+      return null
   }
+}
+
+export function asCkey(type: TypeR): CoercionKey {
+  const key = tryAsCkey(type)
+  if (key == null) {
+    issue(`Cannot define coercions on '${printTypeR(type)}'.`, type.span)
+  }
+  return key
 }

@@ -1,15 +1,15 @@
 import * as lir from "@/lir/def"
 import type { Span } from "@/parse"
-import { asCkey, type CoercionKey } from "./coerce-key"
+import { asCkey, tryAsCkey, type CoercionKey } from "./coerce-key"
 import type { TypeR } from "./def"
-import { assert, issue } from "./error"
 import type { Env } from "./env"
+import { assert, issue } from "./error"
 
 export interface Coercion {
   span: Span
   from: TypeR
   into: TypeR
-  exec(env: Env, from: lir.Expr): lir.Expr
+  exec(env: Env, value: lir.Expr): lir.Expr
   auto: boolean
 }
 
@@ -22,8 +22,8 @@ function compose(span: Span, ab: Coercion, bc: Coercion): Coercion {
     span,
     from: ab.from,
     into: bc.into,
-    exec(env, from) {
-      return bc.exec(env, ab.exec(env, from))
+    exec(env, value) {
+      return bc.exec(env, ab.exec(env, value))
     },
     auto: true,
   }
@@ -32,6 +32,8 @@ function compose(span: Span, ab: Coercion, bc: Coercion): Coercion {
 export class Coercions {
   private byFrom: Record<CoercionKey, Coercion[]> = Object.create(null)
   private byInto: Record<CoercionKey, Coercion[]> = Object.create(null)
+  private both: Record<CoercionKey, Record<CoercionKey, Coercion>> =
+    Object.create(null)
 
   push(bc: Coercion) {
     // let X->Y mean "there exists a coercion from X to Y"
@@ -88,5 +90,21 @@ export class Coercions {
       ;(this.byFrom[A] ??= []).push(coercion)
       ;(this.byInto[B] ??= []).push(coercion)
     }
+
+    ;(this.both[A] ??= Object.create(null))[B] = coercion
+  }
+
+  has(from: TypeR, into: TypeR): boolean {
+    const ka = tryAsCkey(from)
+    const kb = tryAsCkey(into)
+    if (ka != null) return false
+    if (kb != null) return false
+    if (ka == kb) return true
+    return this.both[ka] != null && kb in this.both[ka]
+  }
+
+  // assumes that `.has()` has previously checked that a coercion exists
+  unsafeExec(env: Env, from: TypeR, into: TypeR, value: lir.Expr): lir.Expr {
+    return this.both[asCkey(from)]![asCkey(into)!]!.exec(env, value)
   }
 }

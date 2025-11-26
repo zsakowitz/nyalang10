@@ -1,6 +1,6 @@
 import type { WithSpan } from "../parse"
-import type { T } from "../shared/enum"
-import type { Id as IdRaw } from "../shared/id"
+import { T } from "../shared/enum"
+import { type Id as IdRaw } from "../shared/id"
 
 type Id = WithSpan<IdRaw>
 
@@ -16,6 +16,10 @@ export type ConstInt = WithSpan<
   { k: T.Path; v: Path } | { k: T.Int; v: bigint }
 >
 
+export type ConstIntR = WithSpan<
+  { k: T.Param; v: Id } | { k: T.Int; v: bigint }
+>
+
 export type TParam<T = Type> = WithSpan<
   { name: Id; kind: T.Type; type: null } | { name: Id; kind: T.Const; type: T }
 >
@@ -28,7 +32,7 @@ export type TArg = WithSpan<
 >
 
 export type TArgR = WithSpan<
-  { k: T.Type; v: TypeR } | { k: T.Const; v: ConstInt }
+  { k: T.Type; v: TypeR } | { k: T.Const; v: ConstIntR }
 >
 
 // INVARIANT: two `AdtDefn`s with the same `id` are the same
@@ -48,16 +52,17 @@ export type Type = WithSpan<
   | { k: T.Bool; v: null }
   | { k: T.Array; v: { el: Type; len: ConstInt } }
   | { k: T.Tuple; v: Type[] }
-  | { k: T.Extern; v: Id } // not nameable in textual language, only creatable by builtins
+  | { k: T.Extern; v: Id } // mostly not nameable in textual language, only creatable by builtins
   | { k: T.UnitIn; v: Type } // the type `in T` has a single value for any type `T`; it is used to define type-associated functions
+  | { k: T.Maybe; v: Type } // spelled `?T`, acts like Rust `Option<T>` or Zig `?T`; isomorphic to `union(void, T)`
   | { k: T.Path; v: { path: Path; args: TArg[] } } // needs to be checked for "is it actually a type parameter or adt"
 >
 
 export function ty<K extends Type["data"]["k"]>(
   k: K,
   v: Extract<Type["data"], { k: K }>["v"],
-) {
-  return { k, v } as Type["data"]
+): Extract<Type["data"], { k: K }> {
+  return { k, v } as any
 }
 
 // type after resolution
@@ -66,13 +71,27 @@ export type TypeR = WithSpan<
   | { k: T.Never; v: null }
   | { k: T.Int; v: null }
   | { k: T.Bool; v: null }
-  | { k: T.Array; v: { el: TypeR; len: ConstInt } }
+  | { k: T.Array; v: { el: TypeR; len: ConstIntR } }
   | { k: T.Tuple; v: TypeR[] }
   | { k: T.Extern; v: Id }
-  | { k: T.UnitIn; v: TypeR } // the type `in T` has a single value for any type `T`; it is used to define type-associated functions
+  | { k: T.UnitIn; v: TypeR }
+  | { k: T.Maybe; v: TypeR }
   | { k: T.Param; v: Id } // refers to a type parameter
   | { k: T.Adt; v: { def: AdtDefn; args: TArgR[] } } // refers to some struct or enum defined outside of the current context
 >
+
+export function tyr<K extends TypeR["data"]["k"]>(
+  k: K,
+  v: Extract<TypeR["data"], { k: K }>["v"],
+): Extract<TypeR["data"], { k: K }> {
+  return { k, v } as any
+}
+
+export const void_ = tyr(T.Void, null)
+export const never = tyr(T.Never, null)
+export const int = tyr(T.Int, null)
+export const bool = tyr(T.Bool, null)
+// export const num = tyr(T.Extern, idFor("num"))
 
 export type Expr = WithSpan<
   // constructors (LIR)
