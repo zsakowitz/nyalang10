@@ -13,7 +13,7 @@ import {
   type Type,
 } from "./def"
 import { printType } from "./def-debug"
-import { assertIndex, assertTypeKind, issue } from "./error"
+import { lAssertIndex, lAssertTypeKind, lIssue } from "./error"
 
 export interface IFn {
   args: Type[]
@@ -97,7 +97,7 @@ function eq(src: Type, dst: Type): boolean {
 
 function assertAssignable(src: Type, dst: Type) {
   if (src.k != T.Never && !eq(src, dst)) {
-    issue(`Expected '${printType(dst)}', found '${printType(src)}'.`)
+    lIssue(`Expected '${printType(dst)}', found '${printType(src)}'.`)
   }
 }
 
@@ -106,19 +106,19 @@ function lval(env: Env, { k, v }: Lval): Type {
     case T.ArrayIndex: {
       assertAssignable(expr(env, v.index), int)
       const target = lval(env, v.target)
-      assertTypeKind(target, "Array", T.Array)
+      lAssertTypeKind(target, "Array", T.Array)
       return target.v.el
     }
     case T.TupleIndex: {
       const target = lval(env, v.target)
-      assertTypeKind(target, "Tuple", T.Tuple)
-      assertIndex(target.v.length, v.index)
+      lAssertTypeKind(target, "Tuple", T.Tuple)
+      lAssertIndex(target.v.length, v.index)
       return target.v[v.index]!
     }
     case T.Local: {
       const local = env.locals.get(v)
-      if (!local) issue(`Local $${v.debug} does not exist.`)
-      if (!local.mut) issue(`Cannot assign to non-mut local $${v.debug}.`)
+      if (!local) lIssue(`Local $${v.debug} does not exist.`)
+      if (!local.mut) lIssue(`Cannot assign to non-mut local $${v.debug}.`)
       return local.ty
     }
   }
@@ -151,8 +151,8 @@ export function expr(env: Env, { k, v }: Expr): Type {
         v.map((x) => expr(env, x)),
       )
     case T.Union: {
-      assertTypeKind(v.unionTy, "Union", T.Union)
-      assertIndex(v.unionTy.v.length, v.variant)
+      lAssertTypeKind(v.unionTy, "Union", T.Union)
+      lAssertIndex(v.unionTy.v.length, v.variant)
       assertAssignable(expr(env, v.data), v.unionTy.v[v.variant]!)
       return v.unionTy
     }
@@ -169,31 +169,31 @@ export function expr(env: Env, { k, v }: Expr): Type {
     case T.ArrayIndex: {
       assertAssignable(expr(env, v.index), int)
       const target = expr(env, v.target)
-      assertTypeKind(target, "Array", T.Array)
+      lAssertTypeKind(target, "Array", T.Array)
       return target.v.el
     }
     case T.TupleIndex: {
       const target = expr(env, v.target)
-      assertTypeKind(target, "Tuple", T.Tuple)
-      assertIndex(target.v.length, v.index)
+      lAssertTypeKind(target, "Tuple", T.Tuple)
+      lAssertIndex(target.v.length, v.index)
       return target.v[v.index]!
     }
     case T.UnionVariant: {
       const target = expr(env, v)
-      assertTypeKind(target, "Union", T.Union)
+      lAssertTypeKind(target, "Union", T.Union)
       return int
     }
     case T.UnionIndex: {
       const target = expr(env, v.target)
-      assertTypeKind(target, "Union", T.Union)
-      assertIndex(target.v.length, v.index)
+      lAssertTypeKind(target, "Union", T.Union)
+      lAssertIndex(target.v.length, v.index)
       return target.v[v.index]!
     }
     case T.UnionMatch: {
       const target = expr(env, v.target)
-      assertTypeKind(target, "Union", T.Union)
+      lAssertTypeKind(target, "Union", T.Union)
       if (v.arms.length != target.v.length) {
-        issue(
+        lIssue(
           `Must list '${target.v.length}' arm(s) to match '${printType(target)}'.`,
         )
       }
@@ -223,39 +223,40 @@ export function expr(env: Env, { k, v }: Expr): Type {
       return v.type
     }
     case T.Return: {
-      if (!env.return) issue(`Cannot return from this context.`)
+      if (!env.return) lIssue(`Cannot return from this context.`)
       assertAssignable(expr(env, v), env.return)
       return never
     }
     case T.Break: {
       const label = env.labels.get(v.label)
-      if (!label) issue(`Label '${v.label.debug} does not exist.`)
+      if (!label) lIssue(`Label '${v.label.debug} does not exist.`)
       assertAssignable(expr(env, v.body), label.ty)
       return never
     }
     case T.Continue: {
       const label = env.labels.get(v)
-      if (!label) issue(`Label '${v.debug} does not exist.`)
-      if (!label.loop) issue(`Cannot 'continue' to non-loop label '${v.debug}.`)
+      if (!label) lIssue(`Label '${v.debug} does not exist.`)
+      if (!label.loop)
+        lIssue(`Cannot 'continue' to non-loop label '${v.debug}.`)
       return never
     }
     case T.Local: {
       const local = env.locals.get(v)
-      if (!local) issue(`Local $${v.debug} does not exist.`)
+      if (!local) lIssue(`Local $${v.debug} does not exist.`)
       return local.ty
     }
     case T.Call: {
       if (env.locals.get(v.name)) {
-        issue(
+        lIssue(
           `Cannot call a function whose name is shadowed by a local variable.`,
         )
       }
       const fn = env.fns.get(v.name)
       if (!fn) {
-        issue(`Function @${v.name.debug} does not exist.`)
+        lIssue(`Function @${v.name.debug} does not exist.`)
       }
       if (fn.args.length != v.args.length) {
-        issue(`Wrong number of arguments to function @${v.name.debug}.`)
+        lIssue(`Wrong number of arguments to function @${v.name.debug}.`)
       }
       for (let i = 0; i < fn.args.length; i++) {
         const src = expr(env, v.args[i]!)
@@ -286,12 +287,12 @@ export function stmt(env: Env, { k, v }: Stmt): Type {
 
 export function decl(env: Env, { name, args, ret, body }: Decl): void {
   if (env.fns.has(name)) {
-    issue(`Cannot redeclare function '@${name.debug}'.`)
+    lIssue(`Cannot redeclare function '@${name.debug}'.`)
   }
   env = forkForDecl(env, ret)
   args.forEach(({ name, type }) => {
     if (env.locals.has(name)) {
-      issue(
+      lIssue(
         `Declaration of '@${name.debug}' cannot have more than one argument named '$${name.debug}'.`,
       )
     }

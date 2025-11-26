@@ -1,4 +1,4 @@
-import { ice as iceLir } from "@/lir/error"
+import { lIce as iceLir } from "@/lir/error"
 import { ice, issue } from "@/mir/error"
 
 export interface Pos {

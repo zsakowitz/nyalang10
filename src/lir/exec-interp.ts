@@ -3,7 +3,7 @@ import type { Id } from "../shared/id"
 import type { Decl } from "./def"
 import { type Expr, type Lval, type Stmt } from "./def"
 import { printType } from "./def-debug"
-import { assertIndexUB, assertTypeKind, issue, ub } from "./error"
+import { lAssertIndexUB, lAssertTypeKind, lIssue, lUB } from "./error"
 
 export interface VData {
   [T.Void]: null
@@ -88,7 +88,7 @@ function lvalGet(env: Env, { k, v }: LvalFrozen): unknown {
   switch (k) {
     case T.Index: {
       const target = lvalGet(env, v.target) as unknown[]
-      assertIndexUB(target.length, v.index)
+      lAssertIndexUB(target.length, v.index)
       return target[v.index]!
     }
     case T.Local:
@@ -100,7 +100,7 @@ function lvalSet(env: Env, { k, v }: LvalFrozen, value: unknown) {
   switch (k) {
     case T.Index: {
       const target = (lvalGet(env, v.target) as unknown[]).slice()
-      assertIndexUB(target.length, v.index)
+      lAssertIndexUB(target.length, v.index)
       target[v.index] = value
       lvalSet(env, v.target, target)
       break
@@ -113,7 +113,7 @@ function lvalSet(env: Env, { k, v }: LvalFrozen, value: unknown) {
 export function expr(env: Env, { k, v }: Expr): unknown {
   switch (k) {
     case T.Unreachable:
-      ub(`Reached 'unreachable'.`)
+      lUB(`Reached 'unreachable'.`)
     case T.Int:
       return Number(BigInt.asIntN(32, v))
     case T.Bool:
@@ -127,9 +127,9 @@ export function expr(env: Env, { k, v }: Expr): unknown {
       ) {
         return v.data.execi()
       }
-      assertTypeKind(v.ty, "Extern", T.Extern)
+      lAssertTypeKind(v.ty, "Extern", T.Extern)
       const cons = env.opaqueExterns.get(v.ty.v)
-      if (!cons) issue(`Cannot construct '${printType(v.ty)}' via 'T.Opaque'.`)
+      if (!cons) lIssue(`Cannot construct '${printType(v.ty)}' via 'T.Opaque'.`)
       return cons!.fromi(v.data)
     }
     case T.ArrayFill: {
@@ -150,13 +150,13 @@ export function expr(env: Env, { k, v }: Expr): unknown {
       return { k: v.variant, v: expr(env, v.data) }
     case T.CastNever:
       expr(env, v.target)
-      ub(`Reached cast step of 'cast_never'.`)
+      lUB(`Reached cast step of 'cast_never'.`)
     case T.IfElse:
       return expr(env, v.condition) ? expr(env, v.if) : expr(env, v.else)
     case T.ArrayIndex: {
       const target = expr(env, v.target) as VData[T.Array]
       const index = expr(env, v.index) as number
-      assertIndexUB(target.length, index)
+      lAssertIndexUB(target.length, index)
       return target[index]
     }
     case T.TupleIndex:
@@ -166,7 +166,7 @@ export function expr(env: Env, { k, v }: Expr): unknown {
     case T.UnionIndex: {
       const target = expr(env, v.target) as VData[T.Union]
       if (target.k != v.index) {
-        ub(`Indexed union with inactive variant.`)
+        lUB(`Indexed union with inactive variant.`)
       }
       return target.v
     }

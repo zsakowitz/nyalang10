@@ -1,4 +1,4 @@
-import { ice as iceLir } from "@/lir/error"
+import { lIce as iceLir } from "@/lir/error"
 import { dim, reset } from "./ansi"
 
 // INVARIANT: `uid` is never used as an identifier

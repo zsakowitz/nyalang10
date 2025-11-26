@@ -4,7 +4,7 @@ import { T } from "../shared/enum"
 import { ErrorKind, NLError } from "../shared/error"
 import { idFor } from "../shared/id"
 import { bool, ex, int, num, ty, void_, type Type } from "./def"
-import { issue } from "./error"
+import { lIssue } from "./error"
 import * as itp from "./exec-interp"
 import * as tck from "./exec-typeck"
 
@@ -27,7 +27,7 @@ function expect(text: string, expecting: unknown) {
     tck.expr(tenv, parsed)
     const result = itp.expr(ienv, parsed)
     if (JSON.stringify(result) != JSON.stringify(expecting)) {
-      issue(
+      lIssue(
         `Expected '${JSON.stringify(expecting)}', received '${JSON.stringify(result)}'.`,
       )
     }
