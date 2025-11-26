@@ -1,5 +1,5 @@
 import * as lir from "@/lir/def"
-import type { Span } from "@/parse"
+import type { Span } from "@/parse/span"
 import { asCkey, tryAsCkey, type CoercionKey } from "./coerce-key"
 import type { TypeR } from "./def"
 import type { Env } from "./env"

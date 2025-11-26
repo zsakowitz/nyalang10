@@ -1,4 +1,4 @@
-import type { WithSpan } from "../parse"
+import type { WithSpan } from "../parse/span"
 import { T } from "../shared/enum"
 import { type Id as IdRaw } from "../shared/id"
 

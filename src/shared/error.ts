@@ -1,4 +1,4 @@
-import type { Span } from "@/parse"
+import type { Span } from "@/parse/span"
 
 export const enum ErrorKind {
   Internal,

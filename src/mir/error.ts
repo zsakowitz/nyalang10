@@ -1,4 +1,4 @@
-import type { Span } from "@/parse"
+import type { Span } from "@/parse/span"
 import { ErrorKind, NLError } from "@/shared/error"
 
 export function assert(x: unknown, span: Span): asserts x {

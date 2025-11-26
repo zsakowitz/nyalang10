@@ -1,25 +1,6 @@
 import { lIce as iceLir } from "@/lir/error"
 import { ice, issue } from "@/mir/error"
-
-export interface Pos {
-  row: number // first row is 1, to match code editors
-  col: number // first col is 1, to match code editors
-}
-
-export interface Span {
-  text: string
-  start: Pos
-  end: Pos
-}
-
-export interface WithSpan<T> {
-  data: T
-  span: Span
-}
-
-export function at<T>(data: T, span: Span): WithSpan<T> {
-  return { data, span }
-}
+import type { Pos, Span, WithSpan } from "./span"
 
 const WS = /\s/
 const LETTER0 = /^\w/
@@ -30,7 +11,10 @@ export class State {
   private row = 1
   private col = 1
 
-  constructor(readonly text: string) {}
+  constructor(
+    readonly text: string,
+    readonly path: string,
+  ) {}
 
   get index() {
     return this.index_
@@ -101,29 +85,25 @@ export class State {
       col: this.col,
     }
   }
-}
 
-type Result<T> = { ok: true; value: T } | { ok: false }
-
-function spanAtCurrent(state: State): Span {
-  return {
-    text: state.text,
-    start: state.pos(),
-    end: state.pos(),
+  span(start = this.pos(), end = this.pos()): Span {
+    return { path: this.path, text: this.text, start, end }
   }
 }
+
+export type Result<T> = { ok: true; value: T } | { ok: false }
 
 export class Parser<T> {
   constructor(readonly go: (state: State) => Result<T>) {}
 
-  parse(text: string): T {
-    const state = new State(text)
+  parse(text: string, path = "<unknown>"): T {
+    const state = new State(text, path)
     const result = this.go(state)
     if (result.ok && (state.skipSpaces(), state.index == text.length)) {
       return result.value
     }
 
-    issue("Failed to parse: " + state.debug(), spanAtCurrent(state))
+    issue("Failed to parse: " + state.debug(), state.span())
   }
 
   map<U>(f: (x: T) => U): Parser<U> {
@@ -190,7 +170,7 @@ export class Parser<T> {
           if (state.index == start1) {
             ice(
               `Infinite loop detected while parsing ` + state.debug(),
-              spanAtCurrent(state),
+              state.span(),
             )
           }
           items.push(result1.value)
@@ -250,12 +230,12 @@ export class Parser<T> {
       const start = state.pos()
       const result = this.go(state)
       if (!result.ok) return { ok: false }
-      const end = state.pos()
+
       return {
         ok: true,
         value: {
           data: result.value,
-          span: { text: state.text, start, end },
+          span: state.span(start),
         },
       }
     })
@@ -293,7 +273,7 @@ RegExp.prototype.go = function (state: State) {
   if (!this.sticky) {
     ice(
       `/${this.source}/${this.flags} may not be used as a parser, since it does not specify the 'y' flag.`,
-      spanAtCurrent(state),
+      state.span(),
     )
   }
 
