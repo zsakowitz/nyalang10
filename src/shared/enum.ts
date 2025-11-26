@@ -1,10 +1,13 @@
 export const enum T {
-  // lir or mir
+  // types which can be coerced into each other
   Void,
   Never,
   Int,
   Bool,
   Extern,
+  Adt,
+
+  // types which cannot have coercions
   Array,
   Tuple,
   Union,
@@ -39,8 +42,6 @@ export const enum T {
 
   Index,
 
-  // mir only
-  Adt,
   Param,
   Struct,
   UnitIn,

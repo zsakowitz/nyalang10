@@ -1,4 +1,5 @@
-import { ice, issue } from "../shared/error"
+import { ice as iceLir } from "@/lir/error"
+import { ice, issue } from "@/mir/error"
 
 export interface Pos {
   row: number // first row is 1, to match code editors
@@ -104,6 +105,14 @@ export class State {
 
 type Result<T> = { ok: true; value: T } | { ok: false }
 
+function spanAtCurrent(state: State): Span {
+  return {
+    text: state.text,
+    start: state.pos(),
+    end: state.pos(),
+  }
+}
+
 export class Parser<T> {
   constructor(readonly go: (state: State) => Result<T>) {}
 
@@ -113,7 +122,8 @@ export class Parser<T> {
     if (result.ok && (state.skipSpaces(), state.index == text.length)) {
       return result.value
     }
-    issue("Failed to parse: " + state.debug())
+
+    issue("Failed to parse: " + state.debug(), spanAtCurrent(state))
   }
 
   map<U>(f: (x: T) => U): Parser<U> {
@@ -178,7 +188,10 @@ export class Parser<T> {
         const result1 = this.go(state)
         if (result1.ok) {
           if (state.index == start1) {
-            ice(`Infinite loop detected while parsing ` + state.debug())
+            ice(
+              `Infinite loop detected while parsing ` + state.debug(),
+              spanAtCurrent(state),
+            )
           }
           items.push(result1.value)
           trailing = false
@@ -280,6 +293,7 @@ RegExp.prototype.go = function (state: State) {
   if (!this.sticky) {
     ice(
       `/${this.source}/${this.flags} may not be used as a parser, since it does not specify the 'y' flag.`,
+      spanAtCurrent(state),
     )
   }
 
@@ -293,7 +307,7 @@ RegExp.prototype.go = function (state: State) {
 
 export function from<T>(x: ParserLike<T>): Parser<T> {
   if (x instanceof RegExp && !x.sticky) {
-    ice(
+    iceLir(
       `/${x.source}/${x.flags} may not be used as a parser, since it does not specify the 'y' flag.`,
     )
   }

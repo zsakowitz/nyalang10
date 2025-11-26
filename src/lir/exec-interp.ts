@@ -1,10 +1,9 @@
 import { T } from "../shared/enum"
-import { assertIndexUB, issue, ub } from "../shared/error"
 import type { Id } from "../shared/id"
 import type { Decl } from "./def"
 import { type Expr, type Lval, type Stmt } from "./def"
 import { printType } from "./def-debug"
-import { assertTypeKind } from "./exec-typeck"
+import { assertIndexUB, assertTypeKind, issue, ub } from "./error"
 
 export interface VData {
   [T.Void]: null

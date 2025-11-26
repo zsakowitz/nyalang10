@@ -1,5 +1,5 @@
+import { ice as iceLir } from "@/lir/error"
 import { dim, reset } from "./ansi"
-import { ice } from "./error"
 
 // INVARIANT: `uid` is never used as an identifier
 let uid = 0
@@ -22,12 +22,16 @@ export class Id {
   }
 
   toString(): string {
-    ice(`'Id' cannot be coerced to a string. Access .uid instead.`)
+    iceLir(`'Id' cannot be coerced to a string. Access .uid instead.`)
   }
 
   [Symbol.for("nodejs.util.inspect.custom")]() {
     return this.debug
   }
+}
+
+export function nextUid() {
+  return uid++
 }
 
 const named: Record<string, Id> = Object.create(null)

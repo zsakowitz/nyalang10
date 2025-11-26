@@ -1,9 +1,10 @@
 import { BLOCK_CONTENTS, DECL } from "../parse/lir"
 import { all, cyan, reset } from "../shared/ansi"
 import { T } from "../shared/enum"
-import { ErrorKind, issue, NLError } from "../shared/error"
+import { ErrorKind, NLError } from "../shared/error"
 import { idFor } from "../shared/id"
 import { bool, ex, int, num, ty, void_, type Type } from "./def"
+import { issue } from "./error"
 import * as itp from "./exec-interp"
 import * as tck from "./exec-typeck"
 

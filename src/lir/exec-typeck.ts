@@ -1,5 +1,4 @@
 import { T } from "../shared/enum"
-import { assertIndex, issue } from "../shared/error"
 import type { Id } from "../shared/id"
 import {
   bool,
@@ -14,6 +13,7 @@ import {
   type Type,
 } from "./def"
 import { printType } from "./def-debug"
+import { assertIndex, assertTypeKind, issue } from "./error"
 
 export interface IFn {
   args: Type[]
@@ -98,16 +98,6 @@ function eq(src: Type, dst: Type): boolean {
 function assertAssignable(src: Type, dst: Type) {
   if (src.k != T.Never && !eq(src, dst)) {
     issue(`Expected '${printType(dst)}', found '${printType(src)}'.`)
-  }
-}
-
-export function assertTypeKind<N extends keyof typeof T, K extends Type["k"]>(
-  src: Type,
-  name: N,
-  k: (typeof T)[N] & K,
-): asserts src is Extract<Type, { k: K }> {
-  if (src.k !== k) {
-    issue(`Expected 'T.${name}'; found '${printType(src)}'.`)
   }
 }
 
