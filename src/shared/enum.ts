@@ -5,7 +5,6 @@ export const enum T {
   Int,
   Bool,
   Extern,
-  Adt,
 
   // types which cannot have coercions
   Array,
@@ -41,27 +40,4 @@ export const enum T {
   AssignMany,
 
   Index,
-
-  Param,
-  Struct,
-  UnitIn,
-  Type,
-  Const,
-  Path,
-  TypeOrConst,
-  Infer,
-  FieldIndex,
-  Match,
-  Range,
-  Xml,
-  Closure,
-  Builtin,
-  ForIn,
-  XmlId,
-  XmlClass,
-  XmlAttrs,
-  Num,
-  Str,
-  StrRaw,
-  Maybe,
 }
