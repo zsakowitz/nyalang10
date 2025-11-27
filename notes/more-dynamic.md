@@ -211,3 +211,68 @@ fn pick(x: str) int {
 ```
 
 `dyn str` is its runtime js-only equivalent.
+
+# definition of a group
+
+we still need some way for functions to be generic over types, so that groups
+can work. for instance, to validate something is a monoid, we would previously
+have written:
+
+```rs
+fn validate_group<T>(in T) bool {
+  // closure
+  for a in elements(in T) {
+    for b in elements(in T) {
+      if ((a * b) !in elements(in T)) {
+        return false
+      }
+    }
+  }
+
+  // identity exists
+  if (id(in T) !in elements(in T)) {
+    return false
+  }
+
+  // `id` is an identity
+  for a in elements(in T) {
+    if (a * id(in T) != id(in T) * a) {
+      return false
+    }
+  }
+
+  // has associativity
+  for a in elements(in T) {
+    for b in elements(in T) {
+      for c in elements(in T) {
+        if ((a * b) * c != a * (b * c)) {
+          return false
+        }
+      }
+    }
+  }
+
+  true
+}
+```
+
+how do we do this now, seeing as types cannot be passed to functions? the main
+power of generics is calling functions on them without having access to a value
+of the given type.
+
+actually, types like `in any` would work perfectly for this. just pass `in int`,
+and everything is solved! we'll thus ignore this problem.
+
+so is `in any` our equivalent of Zig's `type` type? not quite, since it
+separates types and values syntactically, and is specific to the underlying
+type, so that overloading works. `in any` is essentially syntax sugar for
+`<T> ... in T`, but we don't have generics anymore, so only `in any` works.
+
+so this function would be written identically, but with a header of
+`validate_group(T: in any)` instead, and `elements(T)` and `id(T)` instead of
+`elements(in T)` and `id(in T)` respectively.
+
+works for me! i don't think special generic notation should be necessary; the
+only remaining primitive for `in T` to be as powerful as generics is a way to
+construct an `in T` given a value of type `T`. `in typeof x` could work for now,
+but we should make sure it's marked as a work-in-progress.
