@@ -1,5 +1,5 @@
 import { lIce as iceLir } from "@/lir/error"
-import { ice, issue } from "@/mir/error"
+import { ice, issue } from "@/mir1/error"
 import type { Pos, Span, WithSpan } from "./span"
 
 const WS = /\s/
