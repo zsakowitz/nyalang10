@@ -23,3 +23,7 @@ export const all = [
   dim,
   bold,
 ]
+
+export function quote(x: string, color: string) {
+  return reset + color + dim + "'" + reset + color + x + dim + "'" + reset
+}

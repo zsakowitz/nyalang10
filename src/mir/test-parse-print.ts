@@ -1,6 +1,7 @@
 import { printExpr, printType } from "@/lir/def-debug"
 import * as mir from "@/mir/exec"
 import { expr, fn } from "@/parse/mir"
+import { reset } from "@/shared/ansi"
 import { NLError } from "@/shared/error"
 import { env } from "./env"
 
@@ -25,7 +26,7 @@ function test(x: string) {
     console.log(printExpr(e.v), "::", printType(mir.type(menv, e.k)))
   } catch (e) {
     if (e instanceof NLError) {
-      console.error(e.message)
+      console.error("[error] " + reset + e.message)
     } else {
       throw e
     }

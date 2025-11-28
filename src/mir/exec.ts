@@ -1,6 +1,7 @@
 import * as lir from "@/lir/def"
 import { ex } from "@/lir/def"
 import { at, Reason, type Span } from "@/parse/span"
+import { blue, quote, red } from "@/shared/ansi"
 import { T } from "@/shared/enum"
 import {
   bool,
@@ -15,6 +16,7 @@ import {
   type Type,
   type Value,
 } from "./def"
+import { printTFinal, printType } from "./def-debug"
 import { R } from "./enum"
 import { forkForDecl, forkLocals, type Env } from "./env"
 import { issue } from "./error"
@@ -215,7 +217,7 @@ export function declFn(env: Env, { data: fn, span }: DeclFn) {
       const tx = matches(env.cx, body.k, retResolved)
       if (!tx) {
         issue(
-          `Function returned a different type than it declared.`,
+          `Function said it would return ${quote(printType(retResolved), blue)}, but it actually returned ${quote(printTFinal(body.k), red)}.`,
           fn.ret.span.for(Reason.TyExpected).with(body.s.for(Reason.TyActual)),
         )
       }
