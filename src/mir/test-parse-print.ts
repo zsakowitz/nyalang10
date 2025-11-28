@@ -41,17 +41,35 @@ function test(x: string) {
   }
 }
 
+function bench(x: string) {
+  console.time()
+  const items = fn.alt(expr).sepBy("").parse(x)
+
+  for (let i = 0; i < 1e4; i++) {
+    const menv = env()
+    for (const item of items) {
+      if (item[0] == 0) {
+        mir.declFn(menv, item[1])
+      } else {
+        mir.expr(menv, item[1])
+      }
+    }
+  }
+  console.timeEnd()
+}
+
 test(`
   fn hi(x: int) int { x }
   hi(2)
 `)
 
-test(`
+bench(`
   fn f(x: int) int { 2 }
   f(3)
 
   fn f(x: [int]) [int] { [2; len(x)] }
   f([7; 78])
   f([7; 2])
+  f([4; 78])
   f([4; 78])
 `)
