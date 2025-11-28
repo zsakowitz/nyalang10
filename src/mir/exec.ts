@@ -77,7 +77,10 @@ export function type(env: Env, ty: TFinal): lir.Type {
 
 export function asConstInt(span: Span, value: Value): number | null {
   if (value.k.k != R.Int) {
-    issue(`Array length must be an 'int'.`, span)
+    issue(
+      `Array length must be an ${quote("int", blue)}.`,
+      span.for(Reason.ExpectedInt),
+    )
   }
   if (value.v.k == T.Int) {
     const v = value.v.v

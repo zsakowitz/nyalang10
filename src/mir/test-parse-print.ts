@@ -1,4 +1,4 @@
-import { printExpr, printType } from "@/lir/def-debug"
+import { printDecl, printExpr, printType } from "@/lir/def-debug"
 import * as mir from "@/mir/exec"
 import { expr, fn } from "@/parse/mir"
 import { reset } from "@/shared/ansi"
@@ -23,10 +23,15 @@ function test(x: string) {
       return
     }
 
+    for (const el of menv.lirDecls) {
+      console.log(printDecl(el))
+    }
     console.log(printExpr(e.v), "::", printType(mir.type(menv, e.k)))
+    console.log()
   } catch (e) {
     if (e instanceof NLError) {
       console.error("[error] " + reset + e.message)
+      console.log()
     } else {
       throw e
     }
@@ -34,6 +39,11 @@ function test(x: string) {
 }
 
 test(`
-  fn hi(x: int) int { true }
-  hi(7)
+  fn hi(x: int) int { x }
+  hi(2)
+`)
+
+test(`
+  fn fill_with_two(x: [int]) [int] { [2; len(x)] }
+  fill_with_two([7; 78])
 `)

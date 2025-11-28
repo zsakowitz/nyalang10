@@ -64,7 +64,7 @@ export class Span {
   private highlightSelf(): string {
     const color = COLORS[this.kind ?? "null"]
 
-    let r0 = Math.max(this.start.row - 1, 0)
+    let r0 = Math.max(this.start.row, 0)
     let r1 = this.end.row + 1
     let lines = this.text.split("\n").slice(r0, r1)
     while (lines.length && !lines[0]!.trim()) {
@@ -136,6 +136,7 @@ export enum Reason {
   TyActual,
   TraceStart,
   Trace,
+  ExpectedInt,
 }
 
 export interface WithSpan<T> {
@@ -163,6 +164,7 @@ const COLORS = {
   [Reason.TyExpected]: blue,
   [Reason.Trace]: "",
   [Reason.TraceStart]: red,
+  [Reason.ExpectedInt]: red,
   null: "",
 }
 
@@ -170,6 +172,7 @@ const REASONS = {
   [Reason.TyActual]: "actual expression",
   [Reason.TyExpected]: "expected type",
   [Reason.Trace]: "call stack",
-  [Reason.TraceStart]: "invalid function call",
+  [Reason.TraceStart]: "erroneous call",
+  [Reason.ExpectedInt]: "not an 'int'",
   null: "",
 }

@@ -75,7 +75,7 @@ const expr_ = any<Expr["data"]>([
   kw("true").as(kv(R.Bool, true)),
   kw("false").as(kv(R.Bool, false)),
   seq([kw("len"), "(", expr, from(",").opt(), ")"]).map((x) => kv(R.Len, x[2])),
-  seq(["[", expr, seq(["=>", expr]).opt(), ";", expr]).map((x) => {
+  seq(["[", expr, seq(["=>", expr]).opt(), ";", expr, "]"]).map((x) => {
     const el = x[1]
     const snd = x[2]?.[1]
     const len = x[4]

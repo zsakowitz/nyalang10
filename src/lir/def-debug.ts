@@ -42,7 +42,7 @@ export function printExpr({ k, v }: Expr): string {
     case T.Opaque:
       return `opaque<${printType(v.ty)}>(${magenta}${JSON.stringify(v.data)}${reset})`
     case T.ArrayFill:
-      return `[fill ${printExpr(v.el)}; ${v.len}]`
+      return `[${printExpr(v.el)}; ${v.len}]`
     case T.ArrayFrom:
       return `[${yellow}$${v.idx.debug} => ${printExpr(v.el)}; ${v.len}]`
     case T.ArrayElements:
