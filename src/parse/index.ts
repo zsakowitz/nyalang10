@@ -1,5 +1,6 @@
 import { lIce as iceLir } from "@/lir/error"
 import { ice, issue } from "@/mir/error"
+import { blue, bold, red, reset } from "@/shared/ansi"
 import type { Pos, Span, WithSpan } from "./span"
 
 const WS = /\s/
@@ -75,12 +76,19 @@ export class State {
 
   debug(): string {
     return (
-      this.text.slice(0, this.index) + ">>>>>>" + this.text.slice(this.index)
+      blue
+      + bold
+      + this.text.slice(0, this.index)
+      + reset
+      + red
+      + this.text.slice(this.index)
+      + reset
     )
   }
 
   pos(): Pos {
     return {
+      idx: this.index,
       row: this.row,
       col: this.col,
     }

@@ -19,6 +19,7 @@ import { R } from "./enum"
 import { forkForDecl, forkLocals, type Env } from "./env"
 import { issue } from "./error"
 import { call, type Fn } from "./fn"
+import { matches } from "./matches"
 
 export function resolve(env: Env, ty: TTyped): Type {
   const { k, v } = ty.data
@@ -175,11 +176,15 @@ export function declFn(env: Env, { data: fn, span }: DeclFn) {
     used.add(id.index)
   }
 
+  const argsResolved = fn.args.map((x) => resolve(env, x.type))
+  const retResolved = resolve(env, fn.ret)
+
   const final: Fn = {
     name: fn.name.data,
     span,
-    args: fn.args.map((x) => resolve(env, x.type)),
+    args: argsResolved,
     argsNamed: Object.create(null),
+    ret: retResolved,
     exec(_, args, _argsNamed) {
       const fname = fn.name.data.fresh()
 
@@ -199,6 +204,14 @@ export function declFn(env: Env, { data: fn, span }: DeclFn) {
 
       const body = expr(env, fn.body)
 
+      const tx = matches(env.cx, body.k, retResolved)
+      if (!tx) {
+        issue(
+          `Function returned a different type than it declared.`,
+          fn.ret.span,
+        )
+      }
+
       const decl: lir.Decl = {
         name: fname,
         args: declArgs,
@@ -216,7 +229,6 @@ export function declFn(env: Env, { data: fn, span }: DeclFn) {
         }),
       )
     },
-    ret: resolve(env, fn.ret),
   }
 
   const idx = fn.name.data.index
