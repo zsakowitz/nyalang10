@@ -33,10 +33,30 @@ export class State {
     }
   }
 
+  clone() {
+    const s = new State(this.text, this.path)
+    this.copyOnto(s)
+    return s
+  }
+
+  copyOnto(state: State) {
+    state.col = this.col
+    state.row = this.row
+    state.index_ = this.index_
+  }
+
   skipSpaces() {
     while (this.index < this.text.length && WS.test(this.text[this.index]!)) {
       this.incIndex(1)
     }
+  }
+
+  indexAfterSkippedSpaces() {
+    let i = this.index
+    while (i < this.text.length && WS.test(this.text[i]!)) {
+      i++
+    }
+    return i
   }
 
   // matches a string literal, but not in-between word boundaries
@@ -235,6 +255,7 @@ export class Parser<T> {
 
   span(): Parser<WithSpan<T>> {
     return new Parser<WithSpan<T>>((state) => {
+      state.skipSpaces()
       const start = state.pos()
       const result = this.go(state)
       if (!result.ok) return { ok: false }
@@ -337,14 +358,15 @@ export function seq<const T extends readonly ParserLike<unknown>[]>(
 
 export function any<T>(p: readonly ParserLike<T>[]): Parser<T> {
   return new Parser((state) => {
-    state.skipSpaces()
-    const start = state.index
+    const max = state.indexAfterSkippedSpaces()
 
     for (let i = 0; i < p.length; i++) {
-      const result = p[i]!.go(state)
+      const mystate = state.clone()
+      const result = p[i]!.go(mystate)
       // if a parser partially matches, consider the match to fail
       // this avoids unnecessary backtracking at the cost of forcing parser authors to factor out common prefixes
-      if (result.ok || state.index != start) {
+      if (result.ok || state.index > max) {
+        mystate.copyOnto(state)
         return result
       }
     }

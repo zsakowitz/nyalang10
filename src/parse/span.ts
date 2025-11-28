@@ -65,7 +65,7 @@ export class Span {
     const color = COLORS[this.kind ?? "null"]
 
     let r0 = Math.max(this.start.row - 1, 0)
-    let r1 = this.end.row + 2
+    let r1 = this.end.row + 1
     let lines = this.text.split("\n").slice(r0, r1)
     while (lines.length && !lines[0]!.trim()) {
       lines.shift()
@@ -108,12 +108,15 @@ export class Span {
           return (
             reset
             + dim
-            + ("\n" + (r + "").padStart(4) + " | ")
+            + ("\n" + (r + 1 + "").padStart(4) + " | ")
             + x.slice(0, start)
             + (reset + color + bold + x.slice(start, end))
             + (reset + dim + x.slice(end))
             + (r == this.end.row ?
-              "\n     | " + " ".repeat(start) + "^".repeat(end - start)
+              "\n     | "
+              + " ".repeat(start)
+              + (color + "^".repeat(end - start))
+              + (" " + reset + color + REASONS[this.kind ?? "null"])
             : "")
           )
         })
