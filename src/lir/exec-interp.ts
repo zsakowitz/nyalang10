@@ -1,7 +1,6 @@
 import { T } from "../shared/enum"
 import type { Id } from "../shared/id"
-import type { Decl } from "./def"
-import { type Expr, type Lval, type Stmt } from "./def"
+import type { Decl, Expr, Lval, Stmt } from "./def"
 import { printType } from "./def-debug"
 import { lAssertIndexUB, lAssertTypeKind, lIssue, lUB } from "./error"
 

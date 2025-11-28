@@ -1,84 +1,44 @@
-import type { Span } from "@/parse/span"
-import { NLError } from "@/shared/error"
-import { Id } from "@/shared/id"
+import type { Id } from "@/shared/id"
 import { Coercions } from "./coerce"
-import type { Type, Value } from "./def"
-import { issue } from "./error"
-import { matches } from "./matches"
-import { execTx, type Tx } from "./tx"
+import type { TFinal, Type } from "./def"
+import type { Fn } from "./fn"
 
-export class Env {
-  declare private __env
+export interface ILocal {
+  mut: boolean
+  ty: TFinal
+  value: Id // the ID used in LIR for this local
+}
 
-  readonly cx = new Coercions()
-  readonly fn = new Map<Id, Fn[]>()
+export interface Env {
+  cx: Coercions
+  fn: Map<number, Fn[]>
+  ty: Map<number, Type>
+  vr: Map<number, ILocal>
+}
 
-  call(span: Span, name: Id, args: Value[], argsNamed: Record<string, Value>) {
-    const fns = this.fn.get(name) ?? []
-    for (const f of fns) {
-      const ret = tryCall(this, span, f, args, argsNamed)
-      if (ret != null) return ret
-    }
-
-    issue(`No matching overload of '${name.debug}' exists.`, span)
+export function env(): Env {
+  return {
+    cx: new Coercions(),
+    fn: new Map(),
+    ty: new Map(),
+    vr: new Map(),
   }
 }
 
-export interface Fn {
-  name: Id
-  span: Span
-  args: Type[]
-  argsNamed: Record<string, Type>
-  ret: Type
-  exec(env: Env, args: Value[], argsNamed: Record<string, Value>): Value
+export function forkLocals(env: Env): Env {
+  return {
+    cx: env.cx,
+    fn: env.fn,
+    ty: env.ty,
+    vr: new Map(env.vr),
+  }
 }
 
-function tryCall(
-  env: Env,
-  span: Span,
-  fn: Fn,
-  args: Value[],
-  namedArgs: Record<string, Value>,
-): Value | null {
-  if (args.length != fn.args.length) {
-    return null
-  }
-
-  const argTx: Tx[] = []
-  for (let i = 0; i < args.length; i++) {
-    const tx = matches(env.cx, args[i]!.k, fn.args[i]!)
-    if (!tx) return null
-    argTx.push(tx)
-  }
-
-  const namedArgTx: Record<string, Tx> = Object.create(null)
-  for (const key in namedArgs) {
-    if (!(key in fn.argsNamed)) {
-      return null
-    }
-
-    const tx = matches(env.cx, namedArgs[key]!.k, fn.argsNamed[key]!)
-    if (!tx) return null
-    namedArgTx[key] = tx
-  }
-
-  const argsMapped = []
-  for (let i = 0; i < args.length; i++) {
-    argsMapped.push(execTx(env, argTx[i]!, args[i]!))
-  }
-
-  const namedArgsMapped = Object.create(null)
-  for (const key in namedArgs) {
-    namedArgsMapped[key] = execTx(env, namedArgTx[key]!, namedArgs[key]!)
-  }
-
-  try {
-    return fn.exec(env, argsMapped, namedArgsMapped)
-  } catch (e) {
-    if (e instanceof NLError) {
-      e.push(span)
-    }
-
-    throw e
+export function forkForDecl(env: Env): Env {
+  return {
+    cx: env.cx,
+    fn: new Map(Array.from(env.fn).map(([k, v]) => [k, v.slice()])),
+    ty: new Map(env.ty),
+    vr: new Map(),
   }
 }
