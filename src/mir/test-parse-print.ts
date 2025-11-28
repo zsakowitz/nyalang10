@@ -51,10 +51,12 @@ test(`
   f(3)
 
   fn f(x: [int]) [int] { [2; len(x)] }
+  fn cloak(x: int) int { x }
   f([7; 78])
   f([7; 2])
   f([4; 78])
   f([4; 78])
+  f([4; cloak(4)])
 `)
 
 test(`
