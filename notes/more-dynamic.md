@@ -1,13 +1,23 @@
-strict typing and generics and `where` clauses are tricky to implement. the
-tradeoff is that the language is stable. however, we are targeting markup,
-websites, advent of code, and one-off homework problems. do we actually want
-incredibly strict type safety?
+we are targeting markup, websites, advent of code, and one-off homework
+problems. do we actually want incredibly strict type safety? probably not.
+instead, let's align more with how Desmos, project nya, and typst currently
+work, rather than Rust.
 
-probably not. so what if MIR is more relaxed and defers type checking? this is
-one idea behind the More Dynamic™ proposal.
+the tldr is that function parameters and return types can be much more exotic
+types, and when don't resolve them until we actually compile or execute the
+program. this is essentially how zig works, but with different restrictions.
 
-the core idea: we want to be dynamic, so let's align MIR more with how Desmos,
-project nya, and typst currently work, rather than Rust.
+# overview
+
+- union types: `a | b`
+- `any`
+- split arrays into `[T; N]` and `dyn [T]`; both are assignable to `[T]`
+- overloads, recursion, and coercion work
+- branches must still return the same concrete type
+- `len(x)` for `x: [T; N]` returns the constant `N`, for array types
+- optional/named parameters exist; they are different names for one thing
+- `str` is like `any` so that string-typed enums work
+- `in T` is still a valid type; `in typeof v` gives `in T` for `v: T`
 
 # union types
 
@@ -276,3 +286,80 @@ works for me! i don't think special generic notation should be necessary; the
 only remaining primitive for `in T` to be as powerful as generics is a way to
 construct an `in T` given a value of type `T`. `in typeof x` could work for now,
 but we should make sure it's marked as a work-in-progress.
+
+# matrices
+
+how do we define a matrix type? the simplest way is:
+
+```rs
+struct Matrix<T> { data: [[T]] }
+
+fn +(a: Matrix, b: Matrix) Matrix {
+  // assuming column-packed format, how do we get the number of columns?
+  // `len(a.data)` gets the number of rows
+  // `len(a.data[0])` gets the number of columns, but UBs is there are no rows
+  // maybe `len(a.data, 1)` to get the inner array's length?
+  // or `len(a.data?[0])`, and let `len` accept an `?T`
+  // so finally, we have:
+
+  Matrix {
+    data: [row =>
+      [col =>
+        a[row][col] + b[row][col
+      ; len a.data[0]]
+    ; len a.data]
+  }
+}
+
+fn det(a: Matrix<int>) int {
+  ...
+}
+```
+
+# how to be generic over tuples?
+
+maybe we add a type `(...)`, to represent all tuples. maybe it's just called
+`tuple`. how do we iterate over each field? a `(i => ...)` construct could work,
+but that implies the `i` is also a constant integer each time, which is weird.
+
+maybe we don't allow being generic over tuples. is it even that useful?
+
+let's add it later.
+
+# final typesystem
+
+concrete types which have glsl equivalents:
+
+- [x] `void`
+- [x] `!`
+- [x] `int`
+- [x] `bool`
+- [x] extern types
+- [ ] `str T` (not directly typable)
+- [x] `[T; N]` for `N: int`
+- [ ] `(A, B, ...)`
+- [ ] `?T`
+- [ ] `in T`
+- [ ] `Adt<T, U, ...>`
+- [ ] unnameable function type
+
+concrete types, but only in js land:
+
+- [ ] `dyn str`
+- [ ] `dyn [T]` for concrete `T`
+- [ ] `dyn |T, U, V, ...| R` for concrete `T`, `U`, ..., `R`
+
+non-concrete types not listed above:
+
+- [ ] `[T; N]` for `N: expr`
+- [ ] `Adt<T, U, ...>`
+- [ ] `[T]`
+- [ ] `any`
+- [ ] `str`
+- [ ] `|T, U, V, ...| R`
+
+# final notes
+
+we will need to add support for recursive functions to lir, which does not yet
+support them. that should be doable, except that glsl will be unhappy. oh well,
+it can deal with those in its own way.
