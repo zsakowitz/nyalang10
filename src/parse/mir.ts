@@ -1,5 +1,5 @@
 import { lIce } from "@/lir/error"
-import { kv, type Expr, type Type } from "@/mir/def"
+import { kv, type Expr, type TTyped } from "@/mir/def"
 import { R } from "@/mir/enum"
 import { issue } from "@/mir/error"
 import { Id, idFor } from "@/shared/id"
@@ -31,7 +31,7 @@ const id = from(
   .map(idFor)
   .span()
 
-const type: Parser<Type> = lazy(() => type_)
+const type: Parser<TTyped> = lazy(() => type_)
 const expr: Parser<Expr> = lazy(() => expr_)
 const block = seq(["{", expr, "}"]).key(1)
 
@@ -46,7 +46,7 @@ const namedParam = any([
 
 const namedArg = seq([id, ":", expr]).map((x) => ({ name: x[0], value: x[2] }))
 
-const typeOne_ = any<Type["data"]>([
+const typeOne_ = any<TTyped["data"]>([
   kw("void").as(kv(R.Void, null)),
   from("!").as(kv(R.Never, null)),
   kw("int").as(kv(R.Int, null)),
@@ -61,9 +61,10 @@ const typeOne_ = any<Type["data"]>([
     return kv(R.ArrayFixed, { el, len })
   }),
   seq([kw("dyn"), "[", type, "]"]).map((x) => kv(R.ArrayDyn, x[2])),
+  id.map((x) => kv(R.Local, x)),
 ]).span()
 
-const type_: Parser<Type> = typeOne_
+const type_: Parser<TTyped> = typeOne_
   .then(seq(["|", type]).opt())
   .map(([a, b]) => (b ? kv(R.Either, { a, b: b[1] }) : a.data))
   .span()
