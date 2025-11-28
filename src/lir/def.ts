@@ -8,6 +8,7 @@ export type Type =
   | { k: T.Bool; v: null }
   | { k: T.Extern; v: Id }
   | { k: T.Array; v: { el: Type; len: number } }
+  | { k: T.DynArray; v: Type }
   | { k: T.Tuple; v: Type[] }
   | { k: T.Union; v: Type[] }
 
@@ -28,6 +29,7 @@ export const str = ty(T.Extern, idFor("str"))
 // the target of an assignment
 export type Lval =
   | { k: T.ArrayIndex; v: { target: Lval; index: Expr } }
+  | { k: T.DynArrayIndex; v: { target: Lval; index: Expr } }
   | { k: T.TupleIndex; v: { target: Lval; index: number } }
   | { k: T.Local; v: Id }
 
@@ -50,6 +52,9 @@ export type Expr =
   | { k: T.ArrayFill; v: { el: Expr; len: number } } // evaluates `el`, then constructs a `[typeof el; len]` with the given length, where every element is `el`
   | { k: T.ArrayFrom; v: { idx: Id; el: Expr; len: number } } // constructs an array of length `len` by evaluating `v.el` with `index` bound to 0, 1, 2, ..., `len-1`
   | { k: T.ArrayElements; v: { elTy: Type; els: Expr[] } } // constructs an array by evaluating each element in `.els` in order; each element must have type `.elTy`
+  | { k: T.DynArrayFill; v: { el: Expr; len: Expr } } // same as for fixed-length arrays, but constructs a dynamic-length array
+  | { k: T.DynArrayFrom; v: { idx: Id; el: Expr; len: Expr } } // same as for fixed-length arrays, but constructs a dynamic-length array
+  | { k: T.DynArrayElements; v: { elTy: Type; els: Expr[] } } // same as for fixed-length arrays, but constructs a dynamic-length array
   | { k: T.Tuple; v: Expr[] } // constructs a tuple which is each element of `v` evaluated, in order, then assembled into a tuple
   | { k: T.Union; v: { unionTy: Type; variant: number; data: Expr } } // `.unionTy` must be a union type, `variant` must be in the range [0,unionTy.v.length), and `data` must be of type `unionTy.v[variant]`; constructs a union given a variant index and its appropriate data
 
@@ -57,7 +62,9 @@ export type Expr =
   | { k: T.CastNever; v: { target: Expr; into: Type } } // `target` must be of type `!`; returns an element of type `into` by relying on the unreachability of this statement
   | { k: T.IfElse; v: { condition: Expr; type: Type; if: Expr; else: Expr } } // `condition` must be a `bool`; returns `if` if `condition` evaluates `true`, and `false` otherwise. only one branch is ever evaluated. each branch must return `type`.
   | { k: T.ArrayIndex; v: { target: Expr; index: Expr } } // gets the `index`th element of `array`. it is instant UB for `index` to be out of bounds; this transitively means any access on an array of length zero is instant UB.
+  | { k: T.DynArrayIndex; v: { target: Expr; index: Expr } } // same as for fixed-length arrays, but on a dynamic-length array
   | { k: T.TupleIndex; v: { target: Expr; index: number } } // index into a constant position in a tuple
+  | { k: T.DynArrayLen; v: Expr } // get the length of a `dyn [T]`
   | { k: T.UnionVariant; v: Expr } // `v` must be a union; returns the variant index of `v` as an `int`
   | { k: T.UnionIndex; v: { target: Expr; index: number } } // `target` must be a union. if the active variant is not `index`, instant UB follows. returns the data stored in the union in variant `index`.
   | { k: T.UnionMatch; v: { target: Expr; type: Type; data: Id; arms: Expr[] } } // there must be as many `arms` as variants in the type of `target`, and `target` must be a union. finds the arm with index of the currently active variant, binds the union's data to `data`, and returns the matched arm. each clause must return `type`.

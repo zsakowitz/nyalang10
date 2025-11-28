@@ -16,6 +16,8 @@ export function printType({ k, v }: Type): string {
       return cyan + "~" + v.debug + reset
     case T.Array:
       return `[${printType(v.el)}; ${v.len}]`
+    case T.DynArray:
+      return `dyn [${printType(v)}]`
     case T.Tuple:
       return `(${v.map(printType).join(", ")}${v.length == 1 ? "," : ""})`
     case T.Union:
@@ -47,6 +49,12 @@ export function printExpr({ k, v }: Expr): string {
       return `[${yellow}$${v.idx.debug} => ${printExpr(v.el)}; ${v.len}]`
     case T.ArrayElements:
       return `[each ${printType(v.elTy)}; ${v.els.map(printExpr).join(", ")}]`
+    case T.DynArrayFill:
+      return `dyn [${printExpr(v.el)}; ${printExpr(v.len)}]`
+    case T.DynArrayFrom:
+      return `dyn [${yellow}$${v.idx.debug} => ${printExpr(v.el)}; ${printExpr(v.len)}]`
+    case T.DynArrayElements:
+      return `dyn [each ${printType(v.elTy)}; ${v.els.map(printExpr).join(", ")}]`
     case T.Tuple:
       return `(${v.map(printExpr).join(", ")}${v.length == 1 ? "," : ""})`
     case T.Union:
@@ -56,9 +64,13 @@ export function printExpr({ k, v }: Expr): string {
     case T.IfElse:
       return `if ${printExpr(v.condition)} -> ${printType(v.type)} then ${printExpr(v.if)} else ${printExpr(v.else)}`
     case T.ArrayIndex:
-      return `${wrap(v.target)}[${printExpr(v.index)}]`
+      return `${wrap(v.target)}.[${printExpr(v.index)}]`
+    case T.DynArrayIndex:
+      return `${wrap(v.target)}.dyn[${printExpr(v.index)}]`
     case T.TupleIndex:
       return `${wrap(v.target)}.${v.index}`
+    case T.DynArrayLen:
+      return `${wrap(v)}.len`
     case T.UnionVariant:
       return `${wrap(v)}.variant`
     case T.UnionIndex:

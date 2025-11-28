@@ -63,6 +63,7 @@ type LvalFrozen =
 function lvalFreeze(env: Env, { k, v }: Lval): LvalFrozen {
   switch (k) {
     case T.ArrayIndex:
+    case T.DynArrayIndex:
       return {
         k: T.Index,
         v: {
@@ -93,6 +94,8 @@ function lvalGet(env: Env, { k, v }: LvalFrozen): unknown {
     case T.Local:
       return env.locals.get(v)!.val
   }
+
+  k satisfies never
 }
 
 function lvalSet(env: Env, { k, v }: LvalFrozen, value: unknown) {
@@ -102,11 +105,14 @@ function lvalSet(env: Env, { k, v }: LvalFrozen, value: unknown) {
       lAssertIndexUB(target.length, v.index)
       target[v.index] = value
       lvalSet(env, v.target, target)
-      break
+      return
     }
     case T.Local:
       env.locals.get(v)!.val = value
+      return
   }
+
+  k satisfies never
 }
 
 export function expr(env: Env, { k, v }: Expr): unknown {
@@ -135,13 +141,26 @@ export function expr(env: Env, { k, v }: Expr): unknown {
       const el = expr(env, v.el)
       return Array.from({ length: Number(v.len) | 0 }).fill(el)
     }
+    case T.DynArrayFill: {
+      const len = expr(env, v.len)
+      const el = expr(env, v.el)
+      return Array.from({ length: len as number }).fill(el)
+    }
     case T.ArrayFrom:
       return Array.from({ length: Number(v.len) | 0 }, (_, i) => {
         const ienv = forkLocals(env)
         ienv.locals.set(v.idx, { val: i })
         return expr(ienv, v.el)
       })
+    case T.DynArrayFrom:
+      return Array.from({ length: expr(env, v.len) as number }, (_, i) => {
+        const ienv = forkLocals(env)
+        ienv.locals.set(v.idx, { val: i })
+        return expr(ienv, v.el)
+      })
     case T.ArrayElements:
+      return v.els.map((x) => expr(env, x))
+    case T.DynArrayElements:
       return v.els.map((x) => expr(env, x))
     case T.Tuple:
       return v.map((x) => expr(env, x))
@@ -152,7 +171,8 @@ export function expr(env: Env, { k, v }: Expr): unknown {
       lUB(`Reached cast step of 'cast_never'.`)
     case T.IfElse:
       return expr(env, v.condition) ? expr(env, v.if) : expr(env, v.else)
-    case T.ArrayIndex: {
+    case T.ArrayIndex:
+    case T.DynArrayIndex: {
       const target = expr(env, v.target) as VData[T.Array]
       const index = expr(env, v.index) as number
       lAssertIndexUB(target.length, index)
@@ -160,6 +180,8 @@ export function expr(env: Env, { k, v }: Expr): unknown {
     }
     case T.TupleIndex:
       return (expr(env, v.target) as VData[T.Tuple])[v.index]
+    case T.DynArrayLen:
+      return (expr(env, v) as VData[T.Array]).length
     case T.UnionVariant:
       return (expr(env, v) as VData[T.Union]).k
     case T.UnionIndex: {
@@ -211,6 +233,8 @@ export function expr(env: Env, { k, v }: Expr): unknown {
       return fn.execi(v.args.map((x) => expr(env, x)))
     }
   }
+
+  k satisfies never
 }
 
 export function stmt(env: Env, { k, v }: Stmt): unknown {

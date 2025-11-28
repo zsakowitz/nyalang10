@@ -86,6 +86,11 @@ function eq(src: Type, dst: Type): boolean {
       const dv = dst.v as Extract<Type, { k: T.Array }>["v"]
       return sv.len === dv.len && eq(sv.el, dv.el)
     }
+    case T.DynArray: {
+      const sv = src.v as Extract<Type, { k: T.DynArray }>["v"]
+      const dv = dst.v as Extract<Type, { k: T.DynArray }>["v"]
+      return eq(sv, dv)
+    }
     case T.Tuple:
     case T.Union: {
       const sv = src.v as Extract<Type, { k: T.Tuple | T.Union }>["v"]
@@ -108,6 +113,12 @@ function lval(env: Env, { k, v }: Lval): Type {
       const target = lval(env, v.target)
       lAssertTypeKind(target, "Array", T.Array)
       return target.v.el
+    }
+    case T.DynArrayIndex: {
+      assertAssignable(expr(env, v.index), int)
+      const target = lval(env, v.target)
+      lAssertTypeKind(target, "DynArray", T.DynArray)
+      return target.v
     }
     case T.TupleIndex: {
       const target = lval(env, v.target)
@@ -145,6 +156,19 @@ export function expr(env: Env, { k, v }: Expr): Type {
       v.els.forEach((el) => assertAssignable(expr(env, el), v.elTy))
       return ty(T.Array, { el: v.elTy, len: v.els.length })
     }
+    case T.DynArrayFill:
+      assertAssignable(expr(env, v.len), int)
+      return ty(T.DynArray, expr(env, v.el))
+    case T.DynArrayFrom: {
+      assertAssignable(expr(env, v.len), int)
+      env = forkLocals(env)
+      env.locals.set(v.idx, { mut: false, ty: int })
+      return ty(T.DynArray, expr(env, v.el))
+    }
+    case T.DynArrayElements: {
+      v.els.forEach((el) => assertAssignable(expr(env, el), v.elTy))
+      return ty(T.DynArray, v.elTy)
+    }
     case T.Tuple:
       return ty(
         T.Tuple,
@@ -172,11 +196,22 @@ export function expr(env: Env, { k, v }: Expr): Type {
       lAssertTypeKind(target, "Array", T.Array)
       return target.v.el
     }
+    case T.DynArrayIndex: {
+      assertAssignable(expr(env, v.index), int)
+      const target = expr(env, v.target)
+      lAssertTypeKind(target, "DynArray", T.DynArray)
+      return target.v
+    }
     case T.TupleIndex: {
       const target = expr(env, v.target)
       lAssertTypeKind(target, "Tuple", T.Tuple)
       lAssertIndex(target.v.length, v.index)
       return target.v[v.index]!
+    }
+    case T.DynArrayLen: {
+      const target = expr(env, v)
+      lAssertTypeKind(target, "DynArray", T.DynArray)
+      return int
     }
     case T.UnionVariant: {
       const target = expr(env, v)

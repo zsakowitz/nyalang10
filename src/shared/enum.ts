@@ -1,13 +1,12 @@
 export const enum T {
-  // types which can be coerced into each other
   Void,
   Never,
   Int,
   Bool,
   Extern,
 
-  // types which cannot have coercions
   Array,
+  DynArray,
   Tuple,
   Union,
 
@@ -16,14 +15,21 @@ export const enum T {
 
   Unreachable,
   Opaque,
+
   ArrayFill,
   ArrayFrom,
   ArrayElements,
 
+  DynArrayFill,
+  DynArrayFrom,
+  DynArrayElements,
+
   CastNever,
   IfElse,
   ArrayIndex,
+  DynArrayIndex,
   TupleIndex,
+  DynArrayLen,
   UnionVariant,
   UnionIndex,
   UnionMatch,
