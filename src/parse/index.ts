@@ -1,7 +1,7 @@
 import { lIce as iceLir } from "@/lir/error"
 import { ice, issue } from "@/mir/error"
 import { blue, bold, red, reset } from "@/shared/ansi"
-import type { Pos, Span, WithSpan } from "./span"
+import { Span, type Pos, type WithSpan } from "./span"
 
 const WS = /\s/
 const LETTER0 = /^\w/
@@ -95,7 +95,7 @@ export class State {
   }
 
   span(start = this.pos(), end = this.pos()): Span {
-    return { path: this.path, text: this.text, start, end }
+    return new Span(this.path, this.text, start, end)
   }
 }
 

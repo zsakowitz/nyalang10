@@ -1,5 +1,4 @@
-import { highlight, type Span } from "@/parse/span"
-import { blue, red } from "./ansi"
+import { Reason, type Span } from "@/parse/span"
 
 export const enum ErrorKind {
   Internal,
@@ -17,18 +16,16 @@ export class NLError extends Error {
   constructor(
     readonly kind: ErrorKind,
     readonly header: string,
-    readonly span: Span[] = [],
+    public span?: Span,
   ) {
-    super(
-      PREFIXES[kind]
-        + header
-        + span
-          .map((x, i) => "\n\n" + highlight(x, [blue, red][i % 2]!))
-          .join(""),
-    )
+    super(PREFIXES[kind] + header + (span ? "\n\n" + span.highlight() : ""))
   }
 
-  push(span: Span) {
-    this.span.push(span)
+  with(span: Span, why: Reason) {
+    if (this.span) {
+      this.span = this.span.with(span.for(why))
+    } else {
+      this.span = span.for(why)
+    }
   }
 }

@@ -1,6 +1,6 @@
 import * as lir from "@/lir/def"
 import { ex } from "@/lir/def"
-import { at, type Span } from "@/parse/span"
+import { at, Reason, type Span } from "@/parse/span"
 import { T } from "@/shared/enum"
 import {
   bool,
@@ -216,8 +216,7 @@ export function declFn(env: Env, { data: fn, span }: DeclFn) {
       if (!tx) {
         issue(
           `Function returned a different type than it declared.`,
-          fn.ret.span,
-          body.s,
+          fn.ret.span.for(Reason.TyExpected).with(body.s.for(Reason.TyActual)),
         )
       }
 

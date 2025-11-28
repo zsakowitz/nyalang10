@@ -1,4 +1,4 @@
-import type { Span } from "@/parse/span"
+import { Reason, type Span } from "@/parse/span"
 import { NLError } from "@/shared/error"
 import { Id } from "@/shared/id"
 import type { Type, Value } from "./def"
@@ -64,7 +64,7 @@ export function tryCall(
     return fn.exec(env, span, argsMapped, namedArgsMapped)
   } catch (e) {
     if (e instanceof NLError) {
-      e.push(span)
+      e.with(span, Reason.Trace)
     }
 
     throw e
@@ -84,5 +84,8 @@ export function call(
     if (ret != null) return ret
   }
 
-  issue(`No matching overload of '${name.debug}' exists.`, span)
+  issue(
+    `No matching overload of function '${name.name}' found.`,
+    span.for(Reason.TraceStart),
+  )
 }
