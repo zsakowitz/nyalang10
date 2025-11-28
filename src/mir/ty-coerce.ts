@@ -1,6 +1,6 @@
 import type { Span } from "@/parse/span"
 import { nextUid } from "@/shared/id"
-import type { TPrim } from "./def"
+import type { TCoercable } from "./def"
 import { R } from "./enum"
 import { assert, issue } from "./error"
 import { execTx, type Tx } from "./exec-tx"
@@ -10,7 +10,7 @@ const CKEY_BOOL = nextUid()
 const CKEY_INT = nextUid()
 const CKEY_EXTERN: Record<number, number> = Object.create(null)
 
-function asCkey({ k, v }: TPrim): number {
+function asCkey({ k, v }: TCoercable): number {
   switch (k) {
     case R.Void:
       return CKEY_VOID
@@ -24,8 +24,8 @@ function asCkey({ k, v }: TPrim): number {
 }
 
 export interface Coercion {
-  from: TPrim
-  into: TPrim
+  from: TCoercable
+  into: TCoercable
   exec: Tx
   auto: boolean
 }
@@ -115,7 +115,7 @@ export class Coercions {
     ;(this.both[A] ??= Object.create(null))[B] = coercion
   }
 
-  get(from: TPrim, into: TPrim): Tx | false {
+  get(from: TCoercable, into: TCoercable): Tx | false {
     const ka = asCkey(from)
     const kb = asCkey(into)
     if (ka == kb) return true

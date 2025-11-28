@@ -6,14 +6,17 @@ import { R } from "./enum"
 export type Id = WithSpan<IdRaw>
 
 // coercable types
-export type TPrim =
+export type TCoercable =
   | { k: R.Void; v: null }
   | { k: R.Int; v: null }
   | { k: R.Bool; v: null }
   | { k: R.Extern; v: Id }
 
+// primitive types
+export type TPrim = TCoercable | { k: R.Never; v: null }
+
 type __T<K> = WithSpan<
-  | TPrim
+  | TCoercable
   | { k: R.Never; v: null }
   | { k: R.Any; v: null }
   | { k: R.ArrayFixed; v: { el: __T<K>; len: number } }
@@ -31,7 +34,7 @@ export type Type = __T<never>
 
 // a type which can be exported to MIR
 export type TFinal =
-  | TPrim
+  | TCoercable
   | { k: R.Never; v: null }
   | { k: R.ArrayFixed; v: { el: TFinal; len: number } }
   | { k: R.ArrayDyn; v: TFinal }
@@ -68,10 +71,10 @@ export function kv<const K, V>(k: K, v: V) {
   return { k, v }
 }
 
-export const void_: TFinal = kv(R.Void, null)
-export const never: TFinal = kv(R.Never, null)
-export const int: TFinal = kv(R.Int, null)
-export const bool: TFinal = kv(R.Bool, null)
+export const void_: TPrim = kv(R.Void, null)
+export const never: TPrim = kv(R.Never, null)
+export const int: TPrim = kv(R.Int, null)
+export const bool: TPrim = kv(R.Bool, null)
 
 export type DeclFn = WithSpan<{
   name: Id

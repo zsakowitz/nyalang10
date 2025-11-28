@@ -31,6 +31,16 @@ export function env(): Env {
   }
 }
 
+export function pushFn(env: Env, fn: Fn) {
+  const i = fn.name.index
+  let el = env.fn.get(i)
+  if (!el) {
+    el = []
+    env.fn.set(i, el)
+  }
+  el.push(fn)
+}
+
 export function forkLocals(env: Env): Env {
   return {
     cx: env.cx,

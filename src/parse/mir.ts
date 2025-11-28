@@ -25,14 +25,29 @@ const u32 = bigint.span().map(({ data, span }) => {
   return Number(data)
 })
 
-const id = from(
-  new RegExp(`\\b(?!(?:${RESERVED})\\b)[A-Za-z][A-Za-z0-9_]*\\b`, "y"),
+const ID_REGEX = new RegExp(
+  `\\b(?!(?:${RESERVED})\\b)[A-Za-z][A-Za-z0-9_]*\\b`,
+  "y",
+)
+
+const id = from(ID_REGEX).map(idFor).span()
+
+const PUNC_BINARY = /\*>|<\*|\*\*|\+>|<\+|\+\+|[=<!>]=|[+\-/^*%&|~<>]/y
+const PUNC_UNARY_PREFIX = /[-+!]/y // we still want some dedicated 1/x symbol, akin to 0-x. `/` is a possible candidate
+
+const idOrSym = from(
+  new RegExp(
+    ID_REGEX.source + "|" + PUNC_BINARY.source + "|" + PUNC_UNARY_PREFIX.source,
+    "y",
+  ),
 )
   .map(idFor)
   .span()
 
 const type: Parser<TTyped> = lazy(() => type_)
-const expr: Parser<Expr> = lazy(() => expr_)
+
+const expr: Parser<Expr> = lazy(() => exprWithOps_)
+
 const block = seq(["{", expr, "}"]).key(1)
 
 const namedParam = any([
@@ -118,6 +133,42 @@ const expr_ = any<Expr["data"]>([
     .map((x) => x.data),
   block.map((x) => x.data),
 ]).span()
+
+const exprWithUnary = from(PUNC_UNARY_PREFIX)
+  .map(idFor)
+  .span()
+  .many()
+  .then(expr_)
+  .map(([a, b]) =>
+    a.reduceRight(
+      (arg, op) =>
+        op.data.name == "+" ?
+          at(arg.data, arg.span.join(op.span))
+        : at(
+            kv(R.Call, {
+              name: op,
+              args: [arg],
+              argsNamed: [],
+            }),
+            arg.span.join(op.span),
+          ),
+      b,
+    ),
+  )
+
+const exprWithOps_ = exprWithUnary
+  .then(seq([from(PUNC_BINARY).map(idFor).span(), exprWithUnary]).opt())
+  .map(([arg, op]): Expr => {
+    if (op == null) return arg
+    return at(
+      kv(R.Call, {
+        name: op[0],
+        args: [arg, op[1]],
+        argsNamed: [],
+      }),
+      arg.span.join(op[1].span),
+    )
+  })
 
 const fn: Parser<DeclFn> = seq([
   kw("fn"),

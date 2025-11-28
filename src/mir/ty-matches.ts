@@ -1,4 +1,4 @@
-import type { TFinal, TPrim, Type } from "./def"
+import type { TFinal, TCoercable, Type } from "./def"
 import { R } from "./enum"
 import type { Tx } from "./exec-tx"
 import type { Coercions } from "./ty-coerce"
@@ -21,7 +21,7 @@ export function matches(
   }
 
   if (cx && sk <= R.Extern && dk <= R.Extern) {
-    return cx.get(given as TPrim, expected.data as TPrim)
+    return cx.get(given as TCoercable, expected.data as TCoercable)
   }
 
   switch (sk) {

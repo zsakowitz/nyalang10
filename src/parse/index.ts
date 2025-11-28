@@ -365,7 +365,7 @@ export function any<T>(p: readonly ParserLike<T>[]): Parser<T> {
       const result = p[i]!.go(mystate)
       // if a parser partially matches, consider the match to fail
       // this avoids unnecessary backtracking at the cost of forcing parser authors to factor out common prefixes
-      if (result.ok || state.index > max) {
+      if (result.ok || mystate.index > max) {
         mystate.copyOnto(state)
         return result
       }

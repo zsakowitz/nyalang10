@@ -1,13 +1,84 @@
+import { ex, type Decl } from "@/lir/def"
 import { printDecl, printExpr, printType } from "@/lir/def-debug"
+import {
+  decl as eiDecl,
+  expr as eiExpr,
+  env as lirInterpEnv,
+  type IFn as IEFn,
+} from "@/lir/exec-interp"
+import {
+  decl as etDecl,
+  expr as etExpr,
+  env as lirTypeckEnv,
+  type IFn as ITFn,
+} from "@/lir/exec-typeck"
 import * as mir from "@/mir/exec-body"
 import { expr, fn } from "@/parse/mir"
+import { vspan, VSPAN } from "@/parse/span"
 import { reset } from "@/shared/ansi"
+import { T } from "@/shared/enum"
 import { NLError } from "@/shared/error"
-import { env } from "./exec-env"
+import { Id, idFor } from "@/shared/id"
+import { int, val, type TPrim } from "./def"
+import type { Fn } from "./exec-call"
+import { env as mirEnv, pushFn } from "./exec-env"
+
+function setup() {
+  const m = mirEnv()
+  const li = lirInterpEnv()
+  const lt = lirTypeckEnv()
+
+  dec("-", [int], int, ([a]) => -a | 0)
+  dec("+", [int, int], int, ([a, b]) => (a + b) | 0)
+  dec("-", [int, int], int, ([a, b]) => (a - b) | 0)
+  dec("*", [int, int], int, ([a, b]) => (a * b) | 0)
+  dec("/", [int, int], int, ([a, b]) => (a / b) | 0)
+
+  return { m, li, lt }
+
+  function dec(
+    name: string,
+    args: TPrim[],
+    ret: TPrim,
+    exec: (v: any[]) => any,
+  ) {
+    const lirId = new Id(name)
+
+    const lirFn: IEFn & ITFn = {
+      args: args.map((x) => mir.type(m, x)),
+      ret: mir.type(m, ret),
+      execi: exec,
+    }
+
+    const mirFn: Fn = {
+      name: idFor(name),
+      args: args.map(vspan),
+      argsNamed: Object.create(null),
+      ret: vspan(ret),
+      span: VSPAN,
+      exec(_, span, args, _argsNamed) {
+        return val(
+          ret,
+          ex(T.Call, {
+            name: lirId,
+            args: args.map((x) => x.v),
+          }),
+          span,
+        )
+      },
+    }
+
+    pushFn(m, mirFn)
+    li.fns.set(lirId, lirFn)
+    lt.fns.set(lirId, lirFn)
+  }
+}
 
 function test(x: string) {
+  const { m: menv, li, lt } = setup()
+  const done = new Set<Decl>()
+
   try {
-    const menv = env()
     const items = fn.alt(expr).sepBy("").parse(x)
     const e: string[] = []
 
@@ -16,10 +87,28 @@ function test(x: string) {
         mir.declFn(menv, item[1])
       } else {
         const ex = mir.expr(menv, item[1])
-        const text = printExpr(ex.v) + " :: " + printType(mir.type(menv, ex.k))
+
+        menv.lirDecls.forEach((decl) => {
+          if (done.has(decl)) return
+          etDecl(lt, decl)
+          eiDecl(li, decl)
+          done.add(decl)
+        })
+
+        etExpr(lt, ex.v)
+        const value = eiExpr(li, ex.v)
+
+        const text =
+          printExpr(ex.v)
+          + " :: "
+          + printType(mir.type(menv, ex.k))
+          + " = "
+          + (globalThis as any).Bun.inspect(value, { colors: true })
+
         e.push(text)
       }
     }
+
     if (e == null) {
       return
     }
@@ -42,25 +131,7 @@ function test(x: string) {
 }
 
 test(`
-  fn hi(x: int) int { x }
-  hi(2)
-`)
+  fn +(a: bool, b: bool) bool { a + b }
 
-test(`
-  fn f(x: int) int { 2 }
-  f(3)
-
-  fn f(x: [int]) [int] { [2; len(x)] }
-  fn cloak(x: int) int { x }
-  f([7; 78])
-  f([7; 2])
-  f([4; 78])
-  f([4; 78])
-  f([4; cloak(4)])
-`)
-
-test(`
-  fn f(x: int) [int] { [2; x] }
-
-  f(4)
+  -2 + 3
 `)

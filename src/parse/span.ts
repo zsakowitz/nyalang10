@@ -44,6 +44,15 @@ export class Span {
     }
   }
 
+  join(other: Span) {
+    return new Span(
+      this.path,
+      this.text,
+      this.start.idx < other.start.idx ? this.start : other.start,
+      this.end.idx > other.end.idx ? this.end : other.end,
+    )
+  }
+
   for(kind: Reason) {
     return new Span(this.path, this.text, this.start, this.end, kind, this.also)
   }

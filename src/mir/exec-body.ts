@@ -21,7 +21,7 @@ import { printTFinal, printType } from "./def-debug"
 import { R } from "./enum"
 import { issue } from "./error"
 import { call, type Fn } from "./exec-call"
-import { forkForDecl, forkLocals, type Env } from "./exec-env"
+import { forkForDecl, forkLocals, pushFn, type Env } from "./exec-env"
 import { hashList, type Hash } from "./ty-hash"
 import { matches } from "./ty-matches"
 
@@ -267,13 +267,7 @@ export function declFn(env: Env, { data: fn, span }: DeclFn) {
     },
   }
 
-  const idx = fn.name.data.index
-  if (!env.fn.has(idx)) {
-    env.fn.set(idx, [])
-  }
-  env.fn.get(idx)!.push(final)
-}
+  pushFn(env, final)
 
-function todo(_: string): never {
-  throw new Error("tbd")
+  return final
 }
