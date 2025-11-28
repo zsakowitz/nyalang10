@@ -172,7 +172,7 @@ const exprWithOps_ = exprWithUnary
 
 const fn: Parser<DeclFn> = seq([
   kw("fn"),
-  id,
+  idOrSym,
   "(",
   namedParam.sepBy(","),
   ")",
