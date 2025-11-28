@@ -1,7 +1,7 @@
 import { lIce as iceLir } from "@/lir/error"
 import { ice, issue } from "@/mir/error"
 import { blue, bold, red, reset } from "@/shared/ansi"
-import { Span, type Pos, type WithSpan } from "./span"
+import { at, Span, type Pos, type WithSpan } from "./span"
 
 const WS = /\s/
 const LETTER0 = /^\w/
@@ -250,6 +250,19 @@ export class Parser<T> {
   suffixedBy(f: Parser<(x: T) => T>[]): Parser<T> {
     return seq([this as Parser<T>, any(f).many()]).map(([init, rest]) =>
       rest.reduce((lhs, map) => map(lhs), init),
+    )
+  }
+
+  suffixedBySpan<U>(
+    this: Parser<WithSpan<U>>,
+    f: Parser<(x: WithSpan<U>) => U>[],
+  ): Parser<WithSpan<U>> {
+    return seq([this as Parser<WithSpan<U>>, any(f).span().many()]).map(
+      ([init, rest]) =>
+        rest.reduce(
+          (lhs, map) => at(map.data(lhs), lhs.span.join(map.span)),
+          init,
+        ),
     )
   }
 

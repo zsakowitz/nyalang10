@@ -132,7 +132,15 @@ const expr_ = any<Expr["data"]>([
     .key(1)
     .map((x) => x.data),
   block.map((x) => x.data),
-]).span()
+])
+  .span()
+  .suffixedBySpan([
+    seq(["[", expr, "]"]).map(
+      (index) =>
+        (target): Expr["data"] =>
+          kv(R.Index, { target, index: index[1] }),
+    ),
+  ])
 
 const exprWithUnary = from(PUNC_UNARY_PREFIX)
   .map(idFor)

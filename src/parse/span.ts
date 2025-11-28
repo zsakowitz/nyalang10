@@ -146,6 +146,7 @@ export enum Reason {
   TraceStart,
   Trace,
   ExpectedInt,
+  ExpectedArray,
 }
 
 export interface WithSpan<T> {
@@ -174,6 +175,7 @@ const COLORS = {
   [Reason.Trace]: "",
   [Reason.TraceStart]: red,
   [Reason.ExpectedInt]: red,
+  [Reason.ExpectedArray]: red,
   null: "",
 }
 
@@ -183,5 +185,6 @@ const REASONS = {
   [Reason.Trace]: "call stack",
   [Reason.TraceStart]: "erroneous call",
   [Reason.ExpectedInt]: "not an 'int'",
+  [Reason.ExpectedArray]: "not an array",
   null: "",
 }

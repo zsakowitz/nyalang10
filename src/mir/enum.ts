@@ -21,4 +21,5 @@ export const enum R {
   ArrayFrom,
   Local,
   Call,
+  Index,
 }

@@ -183,6 +183,28 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
 
       return call(env, span, v.name.data, args, argsNamed)
     }
+    case R.Index: {
+      const target = expr(env, v.target)
+      const index = expr(env, v.index)
+      if (index.k.k != R.Never && index.k.k != R.Int) {
+        issue(`Arrays are indexed by 'int'.`, index.s.for(Reason.ExpectedInt))
+      }
+      if (target.k.k == R.ArrayFixed) {
+        return val(
+          target.k.v.el,
+          ex(T.ArrayIndex, { target: target.v, index: index.v }),
+          span,
+        )
+      }
+      if (target.k.k == R.ArrayDyn) {
+        return val(
+          target.k.v,
+          ex(T.DynArrayIndex, { target: target.v, index: index.v }),
+          span,
+        )
+      }
+      issue(`Only arrays can be indexed.`, target.s.for(Reason.ExpectedArray))
+    }
   }
 }
 

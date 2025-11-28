@@ -131,7 +131,7 @@ function test(x: string) {
 }
 
 test(`
-  fn +(a: bool, b: bool) bool { a + b }
+  fn +(a: any, b: [any]) [any] { [i => a + b[i]; len(b)] }
 
-  -2 + 3
+  [i => i; 4]
 `)

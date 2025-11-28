@@ -55,6 +55,7 @@ export type Expr = WithSpan<
         argsNamed: { name: Id; value: Expr }[]
       }
     }
+  | { k: R.Index; v: { target: Expr; index: Expr } }
 >
 
 export interface Value {
