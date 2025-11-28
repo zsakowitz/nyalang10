@@ -44,13 +44,13 @@ export function printExpr({ k, v }: Expr): string {
     case T.Opaque:
       return `opaque<${printType(v.ty)}>(${magenta}${JSON.stringify(v.data)}${reset})`
     case T.ArrayFill:
-      return `[${printExpr(v.el)}; ${v.len}]`
+      return `[fill ${printExpr(v.el)}; ${v.len}]`
     case T.ArrayFrom:
       return `[${yellow}$${v.idx.debug} => ${printExpr(v.el)}; ${v.len}]`
     case T.ArrayElements:
       return `[each ${printType(v.elTy)}; ${v.els.map(printExpr).join(", ")}]`
     case T.DynArrayFill:
-      return `dyn [${printExpr(v.el)}; ${printExpr(v.len)}]`
+      return `dyn [fill ${printExpr(v.el)}; ${printExpr(v.len)}]`
     case T.DynArrayFrom:
       return `dyn [${yellow}$${v.idx.debug} => ${printExpr(v.el)}; ${printExpr(v.len)}]`
     case T.DynArrayElements:
@@ -64,7 +64,7 @@ export function printExpr({ k, v }: Expr): string {
     case T.IfElse:
       return `if ${printExpr(v.condition)} -> ${printType(v.type)} then ${printExpr(v.if)} else ${printExpr(v.else)}`
     case T.ArrayIndex:
-      return `${wrap(v.target)}.[${printExpr(v.index)}]`
+      return `${wrap(v.target)}[${printExpr(v.index)}]`
     case T.DynArrayIndex:
       return `${wrap(v.target)}.dyn[${printExpr(v.index)}]`
     case T.TupleIndex:

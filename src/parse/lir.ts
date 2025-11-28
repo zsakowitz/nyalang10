@@ -35,9 +35,9 @@ export const TYPE: Parser<Type> = lazyAny<Type>(() => [
   from("int").as(int),
   from("bool").as(bool),
   ID_EXTERN.map((v) => ty(T.Extern, v)),
-  seq(["[", TYPE, ";", INDEX, "]"])
-    .keys([1, 3])
-    .map(([el, len]) => ty(T.Array, { el, len })),
+  seq([from("dyn").opt(), "[", TYPE, ";", INDEX, "]"])
+    .keys([0, 2, 4])
+    .map(([dyn, el, len]) => ty(dyn ? T.DynArray : T.Array, { el, len })),
   seq(["(", TYPE.sepByRaw(), ")"]).map(([, el]) =>
     !el.trailing && el.items.length == 1 ? el.items[0]! : ty(T.Tuple, el.items),
   ),
@@ -48,12 +48,16 @@ export const TYPE: Parser<Type> = lazyAny<Type>(() => [
 
 const TUPLE_INDEX = from(".").skipThen(INDEX)
 const ARRAY_INDEX = seq(["[", lazy(() => EXPR), "]"]).key(1)
+const DYN_ARRAY_INDEX = seq([".dyn[", lazy(() => EXPR), "]"]).key(1)
 
 export const LVAL: Parser<Lval> = ID_LOCAL.map((x) =>
   lv(T.Local, x),
 ).suffixedBy([
   TUPLE_INDEX.map((index) => (target) => lv(T.TupleIndex, { target, index })),
   ARRAY_INDEX.map((index) => (target) => lv(T.ArrayIndex, { target, index })),
+  DYN_ARRAY_INDEX.map(
+    (index) => (target) => lv(T.DynArrayIndex, { target, index }),
+  ),
 ])
 
 const OPAQUE_NUM = from(/[+-]?(?:\d+(?:\.\d+)?(?:e[+-]?\d+)?|inf)|nan/y).key(0)
@@ -84,6 +88,16 @@ export const EXPR: Parser<Expr> = lazyAny<Expr>(() => [
   ),
   seq(["[", ID_LOCAL, "=>", EXPR, ";", INDEX, "]"]).map(
     ([, idx, , el, , len]) => ex(T.ArrayFrom, { idx, el, len }),
+  ),
+  seq([/dyn\s*\[\s*fill/y, EXPR, ";", EXPR, "]"]).map(([, el, , len]) =>
+    ex(T.DynArrayFill, { el, len }),
+  ),
+  // T.ArrayElements is before T.ArrayFrom so it matches properly
+  seq([/dyn\s*\[\s*each/y, TYPE, ";", EXPR.sepBy(), "]"]).map(
+    ([, elTy, , els]) => ex(T.DynArrayElements, { elTy, els }),
+  ),
+  seq(["dyn", "[", ID_LOCAL, "=>", EXPR, ";", EXPR, "]"]).map(
+    ([, , idx, , el, , len]) => ex(T.DynArrayFrom, { idx, el, len }),
   ),
   seq(["(", EXPR.sepByRaw(), ")"]).map(([, el]) =>
     !el.trailing && el.items.length == 1 ? el.items[0]! : ex(T.Tuple, el.items),
@@ -131,8 +145,14 @@ export const EXPR: Parser<Expr> = lazyAny<Expr>(() => [
       (target) =>
         ex(T.ArrayIndex, { target, index }),
   ),
+  seq([".dyn", "[", EXPRL, "]"]).map(
+    ([, , index]) =>
+      (target) =>
+        ex(T.DynArrayIndex, { target, index }),
+  ),
   // T.UnionVariant comes before T.TupleIndex so it parses properly
   from(".variant").map(() => (target) => ex(T.UnionVariant, target)),
+  from(".len").map(() => (target) => ex(T.DynArrayLen, target)),
   seq([".", INDEX]).map(
     ([, index]) =>
       (target) =>

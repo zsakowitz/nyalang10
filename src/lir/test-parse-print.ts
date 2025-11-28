@@ -19,14 +19,15 @@ $val#2
 match $val as $data -> int ($data, 45)
 {}
 { 2; 3 }
-'h -> int 2
-loop 'h -> int 2
+'h int 2
+loop 'h int 2
 return 23
 break 'a 23
 continue 'a
 $val
 @double($val)
 { 2; let $a = 23; assign $a = 4; assign ($a, $b) = (3, 4); }
+dyn [fill 2; 3]
 `
   .split("\n")
   .map((x) => x.trim())
