@@ -1,9 +1,9 @@
 import type { Decl } from "@/lir/def"
 import type { Span } from "@/parse/span"
 import type { Id } from "@/shared/id"
-import { Coercions } from "./coerce"
 import type { TFinal, Type } from "./def"
-import type { Fn } from "./fn"
+import type { Fn } from "./exec-call"
+import { Coercions } from "./ty-coerce"
 
 export interface ILocal {
   mut: boolean

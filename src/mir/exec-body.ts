@@ -19,11 +19,11 @@ import {
 } from "./def"
 import { printTFinal, printType } from "./def-debug"
 import { R } from "./enum"
-import { forkForDecl, forkLocals, type Env } from "./env"
 import { issue } from "./error"
-import { call, type Fn } from "./fn"
-import { matches } from "./matches"
+import { call, type Fn } from "./exec-call"
+import { forkForDecl, forkLocals, type Env } from "./exec-env"
 import { hashList, type Hash } from "./ty-hash"
+import { matches } from "./ty-matches"
 
 export function resolve(env: Env, ty: TTyped): Type {
   const { k, v } = ty.data

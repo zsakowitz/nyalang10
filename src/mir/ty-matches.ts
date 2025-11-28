@@ -1,7 +1,7 @@
-import type { Coercions } from "./coerce"
 import type { TFinal, TPrim, Type } from "./def"
 import { R } from "./enum"
-import type { Tx } from "./tx"
+import type { Tx } from "./exec-tx"
+import type { Coercions } from "./ty-coerce"
 
 // arrays and other nested types explicitly cannot be coerced into one another
 export function matches(

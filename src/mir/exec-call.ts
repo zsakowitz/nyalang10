@@ -2,10 +2,10 @@ import { Reason, type Span } from "@/parse/span"
 import { NLError } from "@/shared/error"
 import { Id } from "@/shared/id"
 import type { Type, Value } from "./def"
-import type { Env } from "./env"
 import { issue } from "./error"
-import { matches } from "./matches"
-import { execTx, type Tx } from "./tx"
+import type { Env } from "./exec-env"
+import { execTx, type Tx } from "./exec-tx"
+import { matches } from "./ty-matches"
 
 export interface Fn {
   name: Id

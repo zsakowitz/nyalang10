@@ -1,9 +1,9 @@
 import { printDecl, printExpr, printType } from "@/lir/def-debug"
-import * as mir from "@/mir/exec"
+import * as mir from "@/mir/exec-body"
 import { expr, fn } from "@/parse/mir"
 import { reset } from "@/shared/ansi"
 import { NLError } from "@/shared/error"
-import { env } from "./env"
+import { env } from "./exec-env"
 
 function test(x: string) {
   try {
