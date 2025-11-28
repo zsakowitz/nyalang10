@@ -14,12 +14,11 @@ export class Id {
   }
 
   get uid(): string {
-    return `_${this.index.toString(36)}/*${this.name}*/`
+    return `_${this.index}/*${this.name}*/`
   }
 
   get debug(): string {
-    return `${this.name}${dim}${reset}`
-    return `${this.name}${dim}_${this.index.toString(36)}${reset}`
+    return `${this.name}${dim}_${this.index}${reset}`
   }
 
   toString(): string {

@@ -3,6 +3,7 @@ import { ex } from "@/lir/def"
 import { at, Reason, type Span } from "@/parse/span"
 import { blue, quote, red } from "@/shared/ansi"
 import { T } from "@/shared/enum"
+import type { Id } from "@/shared/id"
 import {
   bool,
   int,
@@ -22,6 +23,7 @@ import { forkForDecl, forkLocals, type Env } from "./env"
 import { issue } from "./error"
 import { call, type Fn } from "./fn"
 import { matches } from "./matches"
+import { hashList, type Hash } from "./ty-hash"
 
 export function resolve(env: Env, ty: TTyped): Type {
   const { k, v } = ty.data
@@ -191,6 +193,8 @@ export function declFn(env: Env, { data: fn, span }: DeclFn) {
   const argsResolved = fn.args.map((x) => resolve(env, x.type))
   const retResolved = resolve(env, fn.ret)
 
+  const fs: Record<Hash, { fname: Id; ty: TFinal }> = Object.create(null)
+
   const final: Fn = {
     name: fn.name.data,
     span,
@@ -198,6 +202,18 @@ export function declFn(env: Env, { data: fn, span }: DeclFn) {
     argsNamed: Object.create(null),
     ret: retResolved,
     exec(_, span, args, _argsNamed) {
+      const fhash = hashList(args.map((x) => x.k))
+      if (fhash in fs) {
+        return val(
+          fs[fhash]!.ty,
+          lir.ex(T.Call, {
+            name: fs[fhash]!.fname,
+            args: args.map((x) => x.v),
+          }),
+          span,
+        )
+      }
+
       const fname = fn.name.data.fresh()
 
       const declArgs = fn.args.map(({ name }, i) => ({
@@ -234,12 +250,10 @@ export function declFn(env: Env, { data: fn, span }: DeclFn) {
 
       _.lirDecls.push(decl)
 
+      fs[fhash] = { fname, ty: body.k }
       return val(
         body.k,
-        lir.ex(T.Call, {
-          name: fname,
-          args: args.map((x) => x.v),
-        }),
+        lir.ex(T.Call, { name: fname, args: args.map((x) => x.v) }),
         span,
       )
     },
