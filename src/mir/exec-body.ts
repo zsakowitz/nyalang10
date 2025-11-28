@@ -73,7 +73,7 @@ export function type(env: Env, ty: TFinal): lir.Type {
     case R.ArrayFixed:
       return lir.ty(T.Array, { el: type(env, ty.v.el), len: ty.v.len })
     case R.ArrayDyn:
-      todo("LIR cannot handle dynamic arrays yet")
+      return lir.ty(T.DynArray, type(env, ty.v))
   }
 }
 
@@ -103,13 +103,13 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
     case R.Bool:
       return val(bool, ex(T.Bool, v), span)
     case R.Len:
-      // note: calling `expr` isn't UB, since it doesn't execute any code
+      // note: calling `expr` will not actually execute any code
       const target = expr(env, v)
       if (target.k.k == R.ArrayFixed) {
         return val(int, ex(T.Int, BigInt(target.k.v.len)), span)
       }
       if (target.k.k == R.ArrayDyn) {
-        todo("LIR cannot handle dyn arrays yet")
+        return val(int, ex(T.DynArrayLen, target.v), span)
       }
       issue(`The argument to 'len(...)' must be an array.`, v.span)
     case R.ArrayFill: {
@@ -117,7 +117,11 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
       const len = asConstInt(v.len.span, lenRaw)
       const el = expr(env, v.el)
       if (len == null) {
-        todo("LIR cannot handle dyn arrays yet")
+        return val(
+          kv(R.ArrayDyn, el.k),
+          ex(T.DynArrayFill, { el: el.v, len: lenRaw.v }),
+          span,
+        )
       }
       return val(
         kv(R.ArrayFixed, { el: el.k, len }),
@@ -140,7 +144,11 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
       const el = expr(subenv, v.el)
 
       if (len == null) {
-        todo("LIR cannot handle dyn arrays yet")
+        return val(
+          kv(R.ArrayDyn, el.k),
+          ex(T.DynArrayFrom, { idx, el: el.v, len: lenRaw.v }),
+          span,
+        )
       }
       return val(
         kv(R.ArrayFixed, { el: el.k, len }),
