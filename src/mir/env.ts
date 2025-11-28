@@ -1,6 +1,9 @@
-import type { Id } from "@/shared/id"
+import type { Span } from "@/parse/span"
+import { NLError } from "@/shared/error"
+import { Id } from "@/shared/id"
 import { Coercions } from "./coerce"
 import type { Type, Value } from "./def"
+import { issue } from "./error"
 import { matches } from "./matches"
 import { execTx, type Tx } from "./tx"
 
@@ -8,18 +11,31 @@ export class Env {
   declare private __env
 
   readonly cx = new Coercions()
+  readonly fn = new Map<Id, Fn[]>()
+
+  call(span: Span, name: Id, args: Value[], argsNamed: Record<string, Value>) {
+    const fns = this.fn.get(name) ?? []
+    for (const f of fns) {
+      const ret = tryCall(this, span, f, args, argsNamed)
+      if (ret != null) return ret
+    }
+
+    issue(`No matching overload of '${name.debug}' exists.`, span)
+  }
 }
 
 export interface Fn {
   name: Id
+  span: Span
   args: Type[]
   argsNamed: Record<string, Type>
   ret: Type
   exec(env: Env, args: Value[], argsNamed: Record<string, Value>): Value
 }
 
-export function tryCall(
+function tryCall(
   env: Env,
+  span: Span,
   fn: Fn,
   args: Value[],
   namedArgs: Record<string, Value>,
@@ -56,5 +72,13 @@ export function tryCall(
     namedArgsMapped[key] = execTx(env, namedArgTx[key]!, namedArgs[key]!)
   }
 
-  return fn.exec(env, argsMapped, namedArgsMapped)
+  try {
+    return fn.exec(env, argsMapped, namedArgsMapped)
+  } catch (e) {
+    if (e instanceof NLError) {
+      e.push(span)
+    }
+
+    throw e
+  }
 }

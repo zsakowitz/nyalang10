@@ -16,8 +16,12 @@ export class NLError extends Error {
   constructor(
     readonly kind: ErrorKind,
     message: string,
-    readonly span?: Span,
+    public span?: Span[],
   ) {
     super(PREFIXES[kind] + message)
+  }
+
+  push(span: Span) {
+    ;(this.span ??= []).push(span)
   }
 }
