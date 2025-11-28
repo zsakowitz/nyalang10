@@ -72,10 +72,10 @@ export function kv<const K, V>(k: K, v: V) {
   return { k, v }
 }
 
-export const void_: TPrim = kv(R.Void, null)
+export const void_: TCoercable = kv(R.Void, null)
 export const never: TPrim = kv(R.Never, null)
-export const int: TPrim = kv(R.Int, null)
-export const bool: TPrim = kv(R.Bool, null)
+export const int: TCoercable = kv(R.Int, null)
+export const bool: TCoercable = kv(R.Bool, null)
 
 export type DeclFn = WithSpan<{
   name: Id

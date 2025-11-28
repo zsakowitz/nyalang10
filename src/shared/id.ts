@@ -18,6 +18,7 @@ export class Id {
   }
 
   get debug(): string {
+    // return `${this.name}${dim}${reset}`
     return `${this.name}${dim}_${this.index}${reset}`
   }
 

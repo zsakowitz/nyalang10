@@ -130,7 +130,7 @@ export function printBlockContents(v: Stmt[]): string {
 
 export function printDecl({ name, args, ret, body }: Decl): string {
   const expr = body.k == T.Block ? printExpr(body) : `= ${printExpr(body)};`
-  return `fn ${red}@${name.debug}(${args.map(
-    ({ name, type }) => `${yellow}$${name.debug} ${printType(type)}`,
-  )}) ${printType(ret)} ${expr}`
+  return `fn ${red}@${name.debug}(${args
+    .map(({ name, type }) => `${yellow}$${name.debug} ${printType(type)}`)
+    .join(", ")}) ${printType(ret)} ${expr}`
 }

@@ -19,7 +19,8 @@ import { reset } from "@/shared/ansi"
 import { T } from "@/shared/enum"
 import { NLError } from "@/shared/error"
 import { Id, idFor } from "@/shared/id"
-import { int, val, type TPrim } from "./def"
+import { int, kv, val, type TPrim } from "./def"
+import { R } from "./enum"
 import type { Fn } from "./exec-call"
 import { env as mirEnv, pushFn } from "./exec-env"
 
@@ -33,6 +34,26 @@ function setup() {
   dec("-", [int, int], int, ([a, b]) => (a - b) | 0)
   dec("*", [int, int], int, ([a, b]) => (a * b) | 0)
   dec("/", [int, int], int, ([a, b]) => (a / b) | 0)
+
+  const complexP: TPrim = kv(R.Extern, vspan(idFor("complex")))
+
+  dec("re", [complexP], int, ([a]) => a.re)
+  dec("im", [complexP], int, ([a]) => a.im)
+  const c = dec("complex", [int, int], complexP, ([re, im]) => ({ re, im }))
+  m.ty.set(idFor("complex").index, vspan(complexP))
+  m.cx.push(VSPAN, {
+    from: int,
+    into: complexP,
+    exec(env, value) {
+      return c.exec(
+        env,
+        VSPAN,
+        [value, val(int, ex(T.Int, 0n), VSPAN)],
+        Object.create(null),
+      )
+    },
+    auto: false,
+  })
 
   return { m, li, lt }
 
@@ -71,6 +92,8 @@ function setup() {
     pushFn(m, mirFn)
     li.fns.set(lirId, lirFn)
     lt.fns.set(lirId, lirFn)
+
+    return mirFn
   }
 }
 
@@ -131,7 +154,15 @@ function test(x: string) {
 }
 
 test(`
+  fn +(a: complex, b: complex) complex { complex(re(a) + re(b), im(a) + im(b)) }
+  fn -(a: complex, b: complex) complex { complex(re(a) - re(b), im(a) - im(b)) }
+  fn *(a: complex, b: complex) complex {
+    complex(
+      (re(a) * re(b)) - (im(a) * im(b)),
+      (im(a) * re(b)) + (re(a) * im(b)),
+    )
+  }
   fn +(a: any, b: [any]) [any] { [i => a + b[i]; len(b)] }
 
-  [i => i; 4]
+  (3 * complex(4, 2)) * complex(0, 1)
 `)
