@@ -8,15 +8,16 @@ import { env } from "./env"
 function test(x: string) {
   try {
     const menv = env()
-
     const items = fn.alt(expr).sepBy("").parse(x)
-    let e
+    const e: string[] = []
+
     for (const item of items) {
       if (item[0] == 0) {
         mir.declFn(menv, item[1])
       } else {
-        e = mir.expr(menv, item[1])
-        break
+        const ex = mir.expr(menv, item[1])
+        const text = printExpr(ex.v) + " :: " + printType(mir.type(menv, ex.k))
+        e.push(text)
       }
     }
     if (e == null) {
@@ -26,7 +27,9 @@ function test(x: string) {
     for (const el of menv.lirDecls) {
       console.log(printDecl(el))
     }
-    console.log(printExpr(e.v), "::", printType(mir.type(menv, e.k)))
+    for (const el of e) {
+      console.log(el)
+    }
     console.log()
   } catch (e) {
     if (e instanceof NLError) {
@@ -44,6 +47,9 @@ test(`
 `)
 
 test(`
-  fn fill_with_two(x: [int]) [int] { [2; len(x)] }
-  fill_with_two([7; 78])
+  fn f(x: int) int { 2 }
+  f(3)
+
+  fn f(x: [int]) [int] { [2; len(x)] }
+  f([7; 78])
 `)
