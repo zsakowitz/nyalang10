@@ -9,7 +9,7 @@ export function matches(
   given: TFinal,
   expected: Type,
 ): Tx | false {
-  const { k: sk, v: sv } = given.data
+  const { k: sk, v: sv } = given
   const { k: dk, v: dv } = expected.data
 
   if (dk == R.Any) {
@@ -21,7 +21,7 @@ export function matches(
   }
 
   if (cx && sk <= R.Extern && dk <= R.Extern) {
-    return cx.get(given as TPrim, expected as TPrim)
+    return cx.get(given as TPrim, expected.data as TPrim)
   }
 
   switch (sk) {

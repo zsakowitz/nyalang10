@@ -1,21 +1,20 @@
 import * as lir from "@/lir/def"
 import type { WithSpan } from "@/parse/span"
 import type { Id as IdRaw } from "@/shared/id"
-import type { R } from "./enum"
+import { R } from "./enum"
 
 export type Id = WithSpan<IdRaw>
 
 // coercable types
-export type TPrim = WithSpan<
+export type TPrim =
   | { k: R.Void; v: null }
-  | { k: R.Never; v: null }
   | { k: R.Int; v: null }
   | { k: R.Bool; v: null }
   | { k: R.Extern; v: Id }
->
 
 type __T<K> = WithSpan<
-  | TPrim["data"]
+  | TPrim
+  | { k: R.Never; v: null }
   | { k: R.Any; v: null }
   | { k: R.ArrayFixed; v: { el: __T<K>; len: number } }
   | { k: R.ArrayDyn; v: __T<K> }
@@ -31,11 +30,11 @@ export type TTyped = __T<{ k: R.Local; v: Id }>
 export type Type = __T<never>
 
 // a type which can be exported to MIR
-export type TFinal = WithSpan<
-  | TPrim["data"]
+export type TFinal =
+  | TPrim
+  | { k: R.Never; v: null }
   | { k: R.ArrayFixed; v: { el: TFinal; len: number } }
   | { k: R.ArrayDyn; v: TFinal }
->
 
 export type Expr = WithSpan<
   | { k: R.Void; v: null }
@@ -60,6 +59,22 @@ export interface Value {
   v: lir.Expr
 }
 
+export function val(k: TFinal, v: lir.Expr): Value {
+  return { k, v }
+}
+
 export function kv<const K, V>(k: K, v: V) {
   return { k, v }
 }
+
+export const void_: TFinal = kv(R.Void, null)
+export const never: TFinal = kv(R.Never, null)
+export const int: TFinal = kv(R.Int, null)
+export const bool: TFinal = kv(R.Bool, null)
+
+export type DeclFn = WithSpan<{
+  name: Id
+  args: { name: Id; type: TTyped }[]
+  ret: TTyped
+  body: Expr
+}>

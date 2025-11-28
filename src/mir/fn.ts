@@ -11,9 +11,9 @@ export interface Fn {
   name: Id
   span: Span
   args: Type[]
-  argsNamed: Record<string, Type>
+  argsNamed: Record<number, Type>
   ret: Type
-  exec(env: Env, args: Value[], argsNamed: Record<string, Value>): Value
+  exec(env: Env, args: Value[], argsNamed: Record<number, Value>): Value
 }
 
 export function tryCall(
@@ -21,7 +21,7 @@ export function tryCall(
   span: Span,
   fn: Fn,
   args: Value[],
-  namedArgs: Record<string, Value>,
+  namedArgs: Record<number, Value>,
 ): Value | null {
   if (args.length != fn.args.length) {
     return null
@@ -71,7 +71,7 @@ export function call(
   span: Span,
   name: Id,
   args: Value[],
-  argsNamed: Record<string, Value>,
+  argsNamed: Record<number, Value>,
 ) {
   const fns = env.fn.get(name.index) ?? []
   for (const f of fns) {

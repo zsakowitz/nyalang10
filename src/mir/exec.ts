@@ -1,8 +1,24 @@
-import { at } from "@/parse/span"
-import { kv, type TTyped, type Type } from "./def"
+import * as lir from "@/lir/def"
+import { ex } from "@/lir/def"
+import { at, type Span } from "@/parse/span"
+import { T } from "@/shared/enum"
+import {
+  bool,
+  int,
+  kv,
+  val,
+  void_,
+  type DeclFn,
+  type Expr,
+  type TFinal,
+  type TTyped,
+  type Type,
+  type Value,
+} from "./def"
 import { R } from "./enum"
-import type { Env } from "./env"
+import { forkForDecl, forkLocals, type Env } from "./env"
 import { issue } from "./error"
+import { call, type Fn } from "./fn"
 
 export function resolve(env: Env, ty: TTyped): Type {
   const { k, v } = ty.data
@@ -35,4 +51,181 @@ export function resolve(env: Env, ty: TTyped): Type {
       }
       return refd
   }
+}
+
+export function type(env: Env, ty: TFinal): lir.Type {
+  switch (ty.k) {
+    case R.Void:
+      return lir.void_
+    case R.Int:
+      return lir.int
+    case R.Bool:
+      return lir.bool
+    case R.Extern:
+      return lir.ty(T.Extern, ty.v.data)
+    case R.Never:
+      return lir.never
+    case R.ArrayFixed:
+      return lir.ty(T.Array, { el: type(env, ty.v.el), len: ty.v.len })
+    case R.ArrayDyn:
+      todo("LIR cannot handle dynamic arrays yet")
+  }
+}
+
+export function asConstInt(span: Span, value: Value): number | null {
+  if (value.k.k != R.Int) {
+    issue(`Array length must be an 'int'.`, span)
+  }
+  if (value.v.k == T.Int) {
+    const v = value.v.v
+    if (BigInt.asUintN(32, v) != v) {
+      issue(`Array lengths must be between 0 and 2^32-1.`, span)
+    }
+    return Number(v)
+  }
+  return null
+}
+
+export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
+  switch (k) {
+    case R.Void:
+      return val(void_, ex(T.Block, []))
+    case R.Int:
+      return val(int, ex(T.Int, v))
+    case R.Bool:
+      return val(bool, ex(T.Bool, v))
+    case R.Len:
+      // note: calling `expr` isn't UB, since it doesn't execute any code
+      const target = expr(env, v)
+      if (target.k.k == R.ArrayFixed) {
+        return val(int, ex(T.Int, BigInt(target.k.v.len)))
+      }
+      if (target.k.k == R.ArrayDyn) {
+        todo("LIR cannot handle dyn arrays yet")
+      }
+      issue(`The argument to 'len(...)' must be an array.`, v.span)
+    case R.ArrayFill: {
+      const lenRaw = expr(env, v.len)
+      const len = asConstInt(v.len.span, lenRaw)
+      const el = expr(env, v.el)
+      if (len == null) {
+        todo("LIR cannot handle dyn arrays yet")
+      }
+      return val(
+        kv(R.ArrayFixed, { el: el.k, len }),
+        ex(T.ArrayFill, { el: el.v, len }),
+      )
+    }
+    case R.ArrayFrom: {
+      const lenRaw = expr(env, v.len)
+      const len = asConstInt(v.len.span, lenRaw)
+
+      const subenv = forkLocals(env)
+      const idx = v.bind.data.fresh()
+      subenv.vr.set(v.bind.data.index, { mut: false, ty: int, value: idx })
+      const el = expr(subenv, v.el)
+
+      if (len == null) {
+        todo("LIR cannot handle dyn arrays yet")
+      }
+      return val(
+        kv(R.ArrayFixed, { el: el.k, len }),
+        ex(T.ArrayFrom, { idx, el: el.v, len }),
+      )
+    }
+    case R.Local: {
+      const val = env.vr.get(v.data.index)
+      if (val == null) {
+        issue(`Variable '${v.data.debug}' is not defined.`, span)
+      }
+      return { k: val.ty, v: ex(T.Local, val.value) }
+    }
+    case R.Call: {
+      const args = []
+      for (let i = 0; i < v.args.length; i++) {
+        args.push(expr(env, v.args[i]!))
+      }
+
+      const argsNamed = Object.create(null)
+      for (let i = 0; i < v.argsNamed.length; i++) {
+        const { name, value } = v.argsNamed[i]!
+        if (name.data.index in argsNamed) {
+          issue(
+            `Named argument '${name.data.debug}' passed twice in function call.`,
+            name.span,
+          )
+        }
+        argsNamed[name.data.index] = expr(env, value)
+      }
+
+      return call(env, span, v.name.data, args, argsNamed)
+    }
+  }
+}
+
+export function declFn(env: Env, { data: fn, span }: DeclFn) {
+  const subenv = forkForDecl(env)
+
+  const used = new Set<number>()
+  for (let i = 0; i < fn.args.length; i++) {
+    const id = fn.args[i]!.name.data
+    if (used.has(id.index)) {
+      issue(`Cannot accept two arguments with the same name.`, span)
+    }
+    used.add(id.index)
+  }
+
+  const final: Fn = {
+    name: fn.name.data,
+    span,
+    args: fn.args.map((x) => resolve(env, x.type)),
+    argsNamed: Object.create(null),
+    exec(_, args, _argsNamed) {
+      const fname = fn.name.data.fresh()
+
+      const declArgs = fn.args.map(({ name }, i) => ({
+        name: name.data.fresh(),
+        type: type(subenv, args[i]!.k),
+      }))
+
+      const env = forkForDecl(subenv)
+      for (let i = 0; i < fn.args.length; i++) {
+        env.vr.set(fn.args[i]!.name.data.index, {
+          mut: false,
+          ty: args[i]!.k,
+          value: declArgs[i]!.name,
+        })
+      }
+
+      const body = expr(env, fn.body)
+
+      const decl: lir.Decl = {
+        name: fname,
+        args: declArgs,
+        ret: type(subenv, body.k),
+        body: body.v,
+      }
+
+      _.lirDecls.push(decl)
+
+      return val(
+        body.k,
+        lir.ex(T.Call, {
+          name: fname,
+          args: args.map((x) => x.v),
+        }),
+      )
+    },
+    ret: resolve(env, fn.ret),
+  }
+
+  const idx = fn.name.data.index
+  if (!env.fn.has(idx)) {
+    env.fn.set(idx, [])
+  }
+  env.fn.get(idx)!.push(final)
+}
+
+function todo(_: string): never {
+  throw new Error("tbd")
 }

@@ -6,17 +6,14 @@ import { assert, issue } from "./error"
 import { execTx, type Tx } from "./tx"
 
 const CKEY_VOID = nextUid()
-const CKEY_NEVER = nextUid()
 const CKEY_BOOL = nextUid()
 const CKEY_INT = nextUid()
 const CKEY_EXTERN: Record<number, number> = Object.create(null)
 
-function asCkey({ data: { k, v } }: TPrim): number {
+function asCkey({ k, v }: TPrim): number {
   switch (k) {
     case R.Void:
       return CKEY_VOID
-    case R.Never:
-      return CKEY_NEVER
     case R.Int:
       return CKEY_INT
     case R.Bool:
@@ -60,6 +57,13 @@ export class Coercions {
 
     const B = asCkey(bc.from) // call this B
     const C = asCkey(bc.into) // call this C
+
+    if (C == CKEY_BOOL || C == CKEY_INT || C == CKEY_VOID) {
+      issue(
+        `Cannot define a coercion to the primitive types 'bool', 'int', and 'void'.`,
+        span,
+      )
+    }
 
     const ABs = (this.byInto[B] ?? []).slice()
     const CDs = (this.byFrom[C] ?? []).slice()

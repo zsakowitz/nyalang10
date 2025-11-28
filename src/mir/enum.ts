@@ -1,11 +1,11 @@
 export const enum R {
   // coercable things
   Void,
-  Never,
   Int,
   Bool,
   Extern,
 
+  Never,
   Any,
 
   ArrayFixed, // array with fixed length

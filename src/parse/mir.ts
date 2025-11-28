@@ -1,5 +1,5 @@
 import { lIce } from "@/lir/error"
-import { kv, type Expr, type TTyped } from "@/mir/def"
+import { kv, type DeclFn, type Expr, type TTyped } from "@/mir/def"
 import { R } from "@/mir/enum"
 import { issue } from "@/mir/error"
 import { Id, idFor } from "@/shared/id"
@@ -119,7 +119,7 @@ const expr_ = any<Expr["data"]>([
   block.map((x) => x.data),
 ]).span()
 
-const fn = seq([
+const fn: Parser<DeclFn> = seq([
   kw("fn"),
   id,
   "(",
@@ -127,11 +127,8 @@ const fn = seq([
   ")",
   type, // todo: make type optional; defaults to 'any'
   block,
-]).map((x) => ({
-  name: x[1],
-  args: x[3],
-  ret: x[5],
-  body: x[6],
-}))
+])
+  .map((x) => ({ name: x[1], args: x[3], ret: x[5], body: x[6] }))
+  .span()
 
 export { expr, fn, type }

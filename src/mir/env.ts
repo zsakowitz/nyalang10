@@ -1,3 +1,4 @@
+import type { Decl } from "@/lir/def"
 import type { Id } from "@/shared/id"
 import { Coercions } from "./coerce"
 import type { TFinal, Type } from "./def"
@@ -14,6 +15,8 @@ export interface Env {
   fn: Map<number, Fn[]>
   ty: Map<number, Type>
   vr: Map<number, ILocal>
+
+  lirDecls: Decl[]
 }
 
 export function env(): Env {
@@ -22,6 +25,7 @@ export function env(): Env {
     fn: new Map(),
     ty: new Map(),
     vr: new Map(),
+    lirDecls: [],
   }
 }
 
@@ -31,6 +35,7 @@ export function forkLocals(env: Env): Env {
     fn: env.fn,
     ty: env.ty,
     vr: new Map(env.vr),
+    lirDecls: env.lirDecls,
   }
 }
 
@@ -40,5 +45,6 @@ export function forkForDecl(env: Env): Env {
     fn: new Map(Array.from(env.fn).map(([k, v]) => [k, v.slice()])),
     ty: new Map(env.ty),
     vr: new Map(),
+    lirDecls: env.lirDecls,
   }
 }
