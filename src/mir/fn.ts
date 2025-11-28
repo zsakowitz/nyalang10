@@ -2,7 +2,7 @@ import type { Span } from "@/parse/span"
 import { NLError } from "@/shared/error"
 import { Id } from "@/shared/id"
 import type { Type, Value } from "./def"
-import type { Env, Scope } from "./env"
+import type { Env } from "./env"
 import { issue } from "./error"
 import { matches } from "./matches"
 import { execTx, type Tx } from "./tx"
@@ -67,15 +67,15 @@ export function tryCall(
 }
 
 export function call(
-  scope: Scope,
+  env: Env,
   span: Span,
   name: Id,
   args: Value[],
   argsNamed: Record<string, Value>,
 ) {
-  const fns = scope.fn.get(name.index) ?? []
+  const fns = env.fn.get(name.index) ?? []
   for (const f of fns) {
-    const ret = tryCall(scope.env, span, f, args, argsNamed)
+    const ret = tryCall(env, span, f, args, argsNamed)
     if (ret != null) return ret
   }
 

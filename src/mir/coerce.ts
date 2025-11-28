@@ -22,7 +22,7 @@ function asCkey({ data: { k, v } }: TPrim): number {
     case R.Bool:
       return CKEY_BOOL
     case R.Extern:
-      return (CKEY_EXTERN[v.index] ??= nextUid())
+      return (CKEY_EXTERN[v.data.index] ??= nextUid())
   }
 }
 

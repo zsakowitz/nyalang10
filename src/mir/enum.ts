@@ -19,5 +19,6 @@ export const enum R {
 
   ArrayFill,
   ArrayFrom,
-  Named,
+  Local,
+  Call,
 }

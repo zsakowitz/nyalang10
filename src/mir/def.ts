@@ -1,7 +1,9 @@
 import * as lir from "@/lir/def"
 import type { WithSpan } from "@/parse/span"
-import type { Id } from "@/shared/id"
+import type { Id as IdRaw } from "@/shared/id"
 import type { R } from "./enum"
+
+export type Id = WithSpan<IdRaw>
 
 // coercable types
 export type TPrim = WithSpan<
@@ -23,7 +25,7 @@ type __T<K> = WithSpan<
 >
 
 // a type as inputted by the user
-export type TTyped = __T<{ k: R.Named; v: Id }>
+export type TTyped = __T<{ k: R.Local; v: Id }>
 
 // a type once named paths are resolved; still has implicit generics
 export type Type = __T<never>
@@ -42,7 +44,15 @@ export type Expr = WithSpan<
   | { k: R.Len; v: Expr }
   | { k: R.ArrayFill; v: { el: Expr; len: Expr } }
   | { k: R.ArrayFrom; v: { bind: Id; el: Expr; len: Expr } }
-  | { k: R.Named; v: Id }
+  | { k: R.Local; v: Id }
+  | {
+      k: R.Call
+      v: {
+        name: Id
+        args: Expr[]
+        argsNamed: { name: Id; value: Expr }[]
+      }
+    }
 >
 
 export interface Value {

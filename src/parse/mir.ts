@@ -4,6 +4,7 @@ import { R } from "@/mir/enum"
 import { issue } from "@/mir/error"
 import { Id, idFor } from "@/shared/id"
 import { any, from, lazy, Parser, seq } from "."
+import { at, type WithSpan } from "./span"
 
 const RESERVED =
   "in|fn|struct|union|enum|len|any|int|bool|void|never|num|str|let|mut|const|type|typeof|unreachable|assert|if|else|match|when|switch|case|for|in|true|false|null|none|len"
@@ -26,11 +27,24 @@ const u32 = bigint.span().map(({ data, span }) => {
 
 const id = from(
   new RegExp(`\\b(?!(?:${RESERVED})\\b)[A-Za-z][A-Za-z0-9_]*\\b`, "y"),
-).map(idFor)
+)
+  .map(idFor)
+  .span()
 
 const type: Parser<Type> = lazy(() => type_)
 const expr: Parser<Expr> = lazy(() => expr_)
 const block = seq(["{", expr, "}"]).key(1)
+
+const namedParam = any([
+  seq([kw("in"), type]).map((x) => ({
+    name: at(new Id("_"), x[1].span),
+    type: x[1],
+  })),
+  seq([id, ":", type]).map((x) => ({ name: x[0], type: x[2] })),
+  // todo: make type in `id: type` optional; defaults to 'any'
+])
+
+const namedArg = seq([id, ":", expr]).map((x) => ({ name: x[0], value: x[2] }))
 
 const typeOne_ = any<Type["data"]>([
   kw("void").as(kv(R.Void, null)),
@@ -67,7 +81,7 @@ const expr_ = any<Expr["data"]>([
     if (snd == null) {
       return kv(R.ArrayFill, { el, len })
     }
-    if (el.data.k != R.Named) {
+    if (el.data.k != R.Local) {
       issue(
         `Array defined using '[index => expr; len]' notation must have only a single variable used for the index.`,
         el.span,
@@ -75,24 +89,40 @@ const expr_ = any<Expr["data"]>([
     }
     return kv(R.ArrayFrom, { bind: el.data.v, el: snd, len })
   }),
-  id.map((x) => kv(R.Named, x)),
+  id
+    .then(seq(["(", expr.alt(namedArg).sepBy(), ")"]).opt())
+    .map(([name, argsRaw]): Expr["data"] => {
+      if (argsRaw == null) {
+        return kv(R.Local, name)
+      }
+      const args: Expr[] = []
+      const argsNamed: { name: WithSpan<Id>; value: Expr }[] = []
+      for (const el of argsRaw[1]) {
+        if (el[0] == 0) {
+          if (argsNamed.length) {
+            issue(
+              `Named arguments must be specified after positional arguments.`,
+              el[1].span,
+            )
+          }
+          args.push(el[1])
+        } else {
+          argsNamed.push(el[1])
+        }
+      }
+      return kv(R.Call, { name, args, argsNamed })
+    }),
   seq(["(", expr, ")"])
     .key(1)
     .map((x) => x.data),
   block.map((x) => x.data),
 ]).span()
 
-const namedArg = any([
-  seq([kw("in"), type]).map((x) => ({ name: new Id("_"), type: x[1] })),
-  seq([id, ":", type]).map((x) => ({ name: x[0], type: x[2] })),
-  // todo: make type in `id: type` optional; defaults to 'any'
-])
-
 const fn = seq([
   kw("fn"),
   id,
   "(",
-  namedArg.sepBy(","),
+  namedParam.sepBy(","),
   ")",
   type, // todo: make type optional; defaults to 'any'
   block,
