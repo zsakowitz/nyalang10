@@ -1,5 +1,5 @@
 import * as lir from "@/lir/def"
-import type { WithSpan } from "@/parse/span"
+import type { Span, WithSpan } from "@/parse/span"
 import type { Id as IdRaw } from "@/shared/id"
 import { R } from "./enum"
 
@@ -57,10 +57,11 @@ export type Expr = WithSpan<
 export interface Value {
   k: TFinal
   v: lir.Expr
+  s: Span
 }
 
-export function val(k: TFinal, v: lir.Expr): Value {
-  return { k, v }
+export function val(k: TFinal, v: lir.Expr, s: Span): Value {
+  return { k, v, s }
 }
 
 export function kv<const K, V>(k: K, v: V) {

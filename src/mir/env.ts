@@ -1,4 +1,5 @@
 import type { Decl } from "@/lir/def"
+import type { Span } from "@/parse/span"
 import type { Id } from "@/shared/id"
 import { Coercions } from "./coerce"
 import type { TFinal, Type } from "./def"
@@ -8,6 +9,7 @@ export interface ILocal {
   mut: boolean
   ty: TFinal
   value: Id // the ID used in LIR for this local
+  def: Span
 }
 
 export interface Env {

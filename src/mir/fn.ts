@@ -13,7 +13,12 @@ export interface Fn {
   args: Type[]
   argsNamed: Record<number, Type>
   ret: Type
-  exec(env: Env, args: Value[], argsNamed: Record<number, Value>): Value
+  exec(
+    env: Env,
+    span: Span,
+    args: Value[],
+    argsNamed: Record<number, Value>,
+  ): Value
 }
 
 export function tryCall(
@@ -56,7 +61,7 @@ export function tryCall(
   }
 
   try {
-    return fn.exec(env, argsMapped, namedArgsMapped)
+    return fn.exec(env, span, argsMapped, namedArgsMapped)
   } catch (e) {
     if (e instanceof NLError) {
       e.push(span)

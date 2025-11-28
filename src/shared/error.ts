@@ -1,5 +1,5 @@
-import type { Span } from "@/parse/span"
-import { bold, dim, red, reset } from "./ansi"
+import { highlight, type Span } from "@/parse/span"
+import { blue, red } from "./ansi"
 
 export const enum ErrorKind {
   Internal,
@@ -23,21 +23,7 @@ export class NLError extends Error {
       PREFIXES[kind]
         + header
         + span
-          .map(
-            (x) =>
-              "\n"
-              + reset
-              + dim
-              + x.text.slice(0, x.start.idx)
-              + reset
-              + red
-              + bold
-              + x.text.slice(x.start.idx, x.end.idx)
-              + reset
-              + dim
-              + x.text.slice(x.end.idx)
-              + red,
-          )
+          .map((x, i) => "\n\n" + highlight(x, [blue, red][i % 2]!))
           .join(""),
     )
   }

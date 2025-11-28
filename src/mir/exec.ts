@@ -90,16 +90,16 @@ export function asConstInt(span: Span, value: Value): number | null {
 export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
   switch (k) {
     case R.Void:
-      return val(void_, ex(T.Block, []))
+      return val(void_, ex(T.Block, []), span)
     case R.Int:
-      return val(int, ex(T.Int, v))
+      return val(int, ex(T.Int, v), span)
     case R.Bool:
-      return val(bool, ex(T.Bool, v))
+      return val(bool, ex(T.Bool, v), span)
     case R.Len:
       // note: calling `expr` isn't UB, since it doesn't execute any code
       const target = expr(env, v)
       if (target.k.k == R.ArrayFixed) {
-        return val(int, ex(T.Int, BigInt(target.k.v.len)))
+        return val(int, ex(T.Int, BigInt(target.k.v.len)), span)
       }
       if (target.k.k == R.ArrayDyn) {
         todo("LIR cannot handle dyn arrays yet")
@@ -115,6 +115,7 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
       return val(
         kv(R.ArrayFixed, { el: el.k, len }),
         ex(T.ArrayFill, { el: el.v, len }),
+        span,
       )
     }
     case R.ArrayFrom: {
@@ -123,7 +124,12 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
 
       const subenv = forkLocals(env)
       const idx = v.bind.data.fresh()
-      subenv.vr.set(v.bind.data.index, { mut: false, ty: int, value: idx })
+      subenv.vr.set(v.bind.data.index, {
+        mut: false,
+        ty: int,
+        value: idx,
+        def: v.bind.span,
+      })
       const el = expr(subenv, v.el)
 
       if (len == null) {
@@ -132,14 +138,15 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
       return val(
         kv(R.ArrayFixed, { el: el.k, len }),
         ex(T.ArrayFrom, { idx, el: el.v, len }),
+        span,
       )
     }
     case R.Local: {
-      const val = env.vr.get(v.data.index)
-      if (val == null) {
+      const vr = env.vr.get(v.data.index)
+      if (vr == null) {
         issue(`Variable '${v.data.debug}' is not defined.`, span)
       }
-      return { k: val.ty, v: ex(T.Local, val.value) }
+      return val(vr.ty, ex(T.Local, vr.value), span)
     }
     case R.Call: {
       const args = []
@@ -185,7 +192,7 @@ export function declFn(env: Env, { data: fn, span }: DeclFn) {
     args: argsResolved,
     argsNamed: Object.create(null),
     ret: retResolved,
-    exec(_, args, _argsNamed) {
+    exec(_, span, args, _argsNamed) {
       const fname = fn.name.data.fresh()
 
       const declArgs = fn.args.map(({ name }, i) => ({
@@ -199,6 +206,7 @@ export function declFn(env: Env, { data: fn, span }: DeclFn) {
           mut: false,
           ty: args[i]!.k,
           value: declArgs[i]!.name,
+          def: fn.args[i]!.name.span,
         })
       }
 
@@ -209,6 +217,7 @@ export function declFn(env: Env, { data: fn, span }: DeclFn) {
         issue(
           `Function returned a different type than it declared.`,
           fn.ret.span,
+          body.s,
         )
       }
 
@@ -227,6 +236,7 @@ export function declFn(env: Env, { data: fn, span }: DeclFn) {
           name: fname,
           args: args.map((x) => x.v),
         }),
+        span,
       )
     },
   }

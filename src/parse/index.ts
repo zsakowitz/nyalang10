@@ -9,8 +9,8 @@ const LETTER1 = /\w$/
 
 export class State {
   private index_ = 0
-  private row = 1
-  private col = 1
+  private row = 0
+  private col = 0
 
   constructor(
     readonly text: string,
@@ -25,7 +25,7 @@ export class State {
     for (let i = 0; i < amount; i++) {
       if (this.text[this.index] == "\n") {
         this.row++
-        this.col = 1
+        this.col = 0
       } else {
         this.col++
       }
