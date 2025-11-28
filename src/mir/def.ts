@@ -3,15 +3,13 @@ import type { WithSpan } from "@/parse/span"
 import type { Id } from "@/shared/id"
 import type { R } from "./enum"
 
-export type Path = WithSpan<[Id, ...Id[]]>
-
 // coercable types
 export type TPrim = WithSpan<
   | { k: R.Void; v: null }
   | { k: R.Never; v: null }
+  | { k: R.Int; v: null }
   | { k: R.Bool; v: null }
   | { k: R.Extern; v: Id }
-  | { k: R.Int; v: null }
 >
 
 type __T<K> = WithSpan<
@@ -25,7 +23,7 @@ type __T<K> = WithSpan<
 >
 
 // a type as inputted by the user
-export type TTyped = __T<{ k: R.Named; v: Path }>
+export type TTyped = __T<{ k: R.Named; v: Id }>
 
 // a type once named paths are resolved; still has implicit generics
 export type Type = __T<never>
@@ -39,16 +37,19 @@ export type TFinal = WithSpan<
 
 export type Expr = WithSpan<
   | { k: R.Void; v: null }
-  | { k: R.Unreachable; v: null }
   | { k: R.Bool; v: boolean }
   | { k: R.Int; v: bigint }
   | { k: R.Len; v: Expr }
   | { k: R.ArrayFill; v: { el: Expr; len: Expr } }
   | { k: R.ArrayFrom; v: { bind: Id; el: Expr; len: Expr } }
-  | { k: R.Named; v: Path }
+  | { k: R.Named; v: Id }
 >
 
 export interface Value {
   k: TFinal
   v: lir.Expr
+}
+
+export function kv<const K, V>(k: K, v: V) {
+  return { k, v }
 }
