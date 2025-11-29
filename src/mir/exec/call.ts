@@ -3,7 +3,7 @@ import { NLError } from "@/shared/error"
 import { Id } from "@/shared/id"
 import type { Type, Value } from "../def"
 import { issue } from "../error"
-import { matches } from "../ty-matches"
+import { matches } from "../ty/matches"
 import type { Env } from "./env"
 import { execTx, type Tx } from "./tx"
 

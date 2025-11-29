@@ -18,14 +18,14 @@ import { reset } from "@/shared/ansi"
 import { T } from "@/shared/enum"
 import { NLError } from "@/shared/error"
 import { Id, idFor } from "@/shared/id"
-import { int, kv, val, type TPrim } from "./def"
-import { R } from "./enum"
-import { assert, unreachable } from "./error"
-import { Block } from "./exec/block"
-import * as mir from "./exec/body"
-import type { Fn } from "./exec/call"
-import { env as mirEnv, pushFn } from "./exec/env"
-import complex from "./test-complex.rs" with { type: "text" }
+import { int, kv, val, type TPrim } from "../def"
+import { R } from "../enum"
+import { assert, unreachable } from "../error"
+import { Block } from "../exec/block"
+import * as mir from "../exec/body"
+import type { Fn } from "../exec/call"
+import { env as mirEnv, pushFn } from "../exec/env"
+import complex from "./complex.rs" with { type: "text" }
 
 function setup() {
   const m = mirEnv()

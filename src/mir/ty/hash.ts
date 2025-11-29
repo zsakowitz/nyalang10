@@ -1,6 +1,6 @@
 import { nextUid } from "@/shared/id"
-import { type TFinal } from "./def"
-import { R } from "./enum"
+import { type TFinal } from "../def"
+import { R } from "../enum"
 
 export type Hash = number & { readonly __hash: unique symbol }
 

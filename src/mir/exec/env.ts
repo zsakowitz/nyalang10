@@ -2,7 +2,7 @@ import type { Decl } from "@/lir/def"
 import type { Span } from "@/parse/span"
 import type { Id } from "@/shared/id"
 import type { TFinal, Type } from "../def"
-import { Coercions } from "../ty-coerce"
+import { Coercions } from "../ty/coerce"
 import type { Fn } from "./call"
 
 export interface ILocal {
