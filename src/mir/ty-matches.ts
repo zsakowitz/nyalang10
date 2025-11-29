@@ -2,7 +2,7 @@ import { ex } from "@/lir/def"
 import { T } from "@/shared/enum"
 import { kv, val, type TCoercable, type TFinal, type Type } from "./def"
 import { R } from "./enum"
-import type { Tx } from "./exec-tx"
+import type { Tx } from "./exec/tx"
 import type { Coercions } from "./ty-coerce"
 
 // arrays and other nested types explicitly cannot be coerced into one another

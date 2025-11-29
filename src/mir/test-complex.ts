@@ -12,7 +12,6 @@ import {
   env as lirTypeckEnv,
   type IFn as ITFn,
 } from "@/lir/exec-typeck"
-import * as mir from "@/mir/exec-body"
 import { expr, fn } from "@/parse/mir"
 import { vspan, VSPAN } from "@/parse/span"
 import { reset } from "@/shared/ansi"
@@ -22,9 +21,10 @@ import { Id, idFor } from "@/shared/id"
 import { int, kv, val, type TPrim } from "./def"
 import { R } from "./enum"
 import { assert, unreachable } from "./error"
-import type { Fn } from "./exec-call"
-import { env as mirEnv, pushFn } from "./exec-env"
-import { Block } from "./exec-seq"
+import { Block } from "./exec/block"
+import * as mir from "./exec/body"
+import type { Fn } from "./exec/call"
+import { env as mirEnv, pushFn } from "./exec/env"
 import complex from "./test-complex.rs" with { type: "text" }
 
 function setup() {

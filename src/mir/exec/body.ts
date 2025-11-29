@@ -16,15 +16,15 @@ import {
   type TTyped,
   type Type,
   type Value,
-} from "./def"
-import { printTFinal, printType } from "./def-debug"
-import { R } from "./enum"
-import { issue } from "./error"
-import { call, type Fn } from "./exec-call"
-import { forkForDecl, forkLocals, pushFn, type Env } from "./exec-env"
-import { Block } from "./exec-seq"
-import { hashList, type Hash } from "./ty-hash"
-import { matches } from "./ty-matches"
+} from "../def"
+import { printTFinal, printType } from "../def-debug"
+import { R } from "../enum"
+import { issue } from "../error"
+import { hashList, type Hash } from "../ty-hash"
+import { matches } from "../ty-matches"
+import { Block } from "./block"
+import { call, type Fn } from "./call"
+import { forkForDecl, forkLocals, pushFn, type Env } from "./env"
 
 export function resolve(env: Env, ty: TTyped): Type {
   const { k, v } = ty.data

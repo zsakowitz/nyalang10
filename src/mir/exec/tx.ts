@@ -1,5 +1,5 @@
-import type { TFinal, Value } from "./def"
-import type { Env } from "./exec-env"
+import type { TFinal, Value } from "../def"
+import type { Env } from "./env"
 
 // some kind of transformer; used for coercion
 export type Tx = true | { into: TFinal; exec(env: Env, value: Value): Value }

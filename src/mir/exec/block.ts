@@ -2,8 +2,8 @@ import { ex, st, type Stmt } from "@/lir/def"
 import type { Span } from "@/parse/span"
 import { T } from "@/shared/enum"
 import { Id } from "@/shared/id"
-import { kv, val, type TFinal, type Value } from "./def"
-import { R } from "./enum"
+import { kv, val, type TFinal, type Value } from "../def"
+import { R } from "../enum"
 
 export class Block {
   private v: Stmt[] = []

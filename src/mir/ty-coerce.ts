@@ -3,7 +3,7 @@ import { nextUid } from "@/shared/id"
 import type { TCoercable } from "./def"
 import { R } from "./enum"
 import { assert, issue } from "./error"
-import { execTx, type Tx } from "./exec-tx"
+import { execTx, type Tx } from "./exec/tx"
 
 const CKEY_VOID = nextUid()
 const CKEY_BOOL = nextUid()
