@@ -32,9 +32,3 @@ fn +(a: any, b: [any]) [any] {
 fn inc(x: int | complex) int | complex {
   x + 1
 }
-
-fn call(x: any) any {
-  x(x)
-}
-
-call(call)
