@@ -25,6 +25,7 @@ import { matches } from "../ty/matches"
 import { Block } from "./block"
 import { call, type Fn } from "./call"
 import { forkForDecl, forkLocals, pushFn, type Env } from "./env"
+import { execTx } from "./tx"
 
 export function resolve(env: Env, ty: TTyped): Type {
   const { k, v } = ty.data
@@ -284,11 +285,13 @@ export function declFn(env: Env, { data: fn, span }: DeclFn) {
         )
       }
 
+      const realBody = execTx(env, tx, body)
+
       const decl: lir.Decl = {
         name: fname,
         args: declArgs,
-        ret: type(subenv, body.k),
-        body: body.v,
+        ret: type(subenv, realBody.k),
+        body: realBody.v,
       }
 
       _.lirDecls.push(decl)

@@ -29,4 +29,8 @@ fn +(a: any, b: [any]) [any] {
   [i => a + b[i]; b.len]
 }
 
-complex(12,6) / complex(0,2)
+fn inc(x: int | complex) int | complex {
+  x + 1
+}
+
+inc(4)
