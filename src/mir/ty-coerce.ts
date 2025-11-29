@@ -26,7 +26,7 @@ function asCkey({ k, v }: TCoercable): number {
 export interface Coercion {
   from: TCoercable
   into: TCoercable
-  exec: Tx
+  exec: (Tx & object)["exec"]
   auto: boolean
 }
 
@@ -40,7 +40,7 @@ function compose(span: Span, ab: Coercion, bc: Coercion): Coercion {
     into: bc.into,
     auto: true,
     exec(env, value) {
-      return execTx(env, bc.exec, execTx(env, ab.exec, value))
+      return execTx(env, bc, execTx(env, ab, value))
     },
   }
 }
@@ -119,6 +119,6 @@ export class Coercions {
     const ka = asCkey(from)
     const kb = asCkey(into)
     if (ka == kb) return true
-    return this.both[ka]?.[kb]?.exec ?? false
+    return this.both[ka]?.[kb] ?? false
   }
 }

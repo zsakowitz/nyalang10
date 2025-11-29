@@ -22,6 +22,7 @@ import { R } from "./enum"
 import { issue } from "./error"
 import { call, type Fn } from "./exec-call"
 import { forkForDecl, forkLocals, pushFn, type Env } from "./exec-env"
+import { Block } from "./exec-seq"
 import { hashList, type Hash } from "./ty-hash"
 import { matches } from "./ty-matches"
 
@@ -55,6 +56,8 @@ export function resolve(env: Env, ty: TTyped): Type {
         issue(`Type '${v.data.debug}' is not defined.`, ty.span)
       }
       return refd
+    case R.UnitIn:
+      return at(kv(R.UnitIn, resolve(env, v)), ty.span)
   }
 }
 
@@ -74,6 +77,8 @@ export function type(env: Env, ty: TFinal): lir.Type {
       return lir.ty(T.Array, { el: type(env, ty.v.el), len: ty.v.len })
     case R.ArrayDyn:
       return lir.ty(T.DynArray, type(env, ty.v))
+    case R.UnitIn:
+      return lir.void_
   }
 }
 
@@ -102,16 +107,6 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
       return val(int, ex(T.Int, v), span)
     case R.Bool:
       return val(bool, ex(T.Bool, v), span)
-    case R.Len:
-      // note: calling `expr` will not actually execute any code
-      const target = expr(env, v)
-      if (target.k.k == R.ArrayFixed) {
-        return val(int, ex(T.Int, BigInt(target.k.v.len)), span)
-      }
-      if (target.k.k == R.ArrayDyn) {
-        return val(int, ex(T.DynArrayLen, target.v), span)
-      }
-      issue(`The argument to 'len(...)' must be an array.`, v.span)
     case R.ArrayFill: {
       const lenRaw = expr(env, v.len)
       const len = asConstInt(v.len.span, lenRaw)
@@ -183,25 +178,32 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
 
       return call(env, span, v.name.data, args, argsNamed)
     }
+    case R.Typeof: {
+      const block = new Block()
+      const target = block.store(expr(env, v))
+      return block.returnUnitIn(target.k, span)
+    }
+
+    // destructors
     case R.Index: {
       const target = expr(env, v.target)
       const index = expr(env, v.index)
       if (index.k.k != R.Never && index.k.k != R.Int) {
         issue(`Arrays are indexed by 'int'.`, index.s.for(Reason.ExpectedInt))
       }
-      if (target.k.k == R.ArrayFixed) {
-        return val(
-          target.k.v.el,
-          ex(T.ArrayIndex, { target: target.v, index: index.v }),
-          span,
-        )
-      }
-      if (target.k.k == R.ArrayDyn) {
-        return val(
-          target.k.v,
-          ex(T.DynArrayIndex, { target: target.v, index: index.v }),
-          span,
-        )
+      switch (target.k.k) {
+        case R.ArrayFixed:
+          return val(
+            target.k.v.el,
+            ex(T.ArrayIndex, { target: target.v, index: index.v }),
+            span,
+          )
+        case R.ArrayDyn:
+          return val(
+            target.k.v,
+            ex(T.DynArrayIndex, { target: target.v, index: index.v }),
+            span,
+          )
       }
       issue(`Only arrays can be indexed.`, target.s.for(Reason.ExpectedArray))
     }

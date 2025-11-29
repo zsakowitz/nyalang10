@@ -13,13 +13,14 @@ export const enum R {
   Array, // generic over fixed-length array and dyn-length array
 
   Either,
+  UnitIn,
 
   Unreachable, // UB to reach; one constructor for `!`
-  Len, // gets the length of an array
 
   ArrayFill,
   ArrayFrom,
   Local,
   Call,
   Index,
+  Typeof,
 }

@@ -23,6 +23,8 @@ export function printType({ data: { k, v } }: Type): string {
       return `[${printType(v)}]`
     case R.Either:
       return `${printType(v.a)} | ${printType(v.b)}`
+    case R.UnitIn:
+      return `in ${printType(v)}`
   }
 }
 
@@ -42,5 +44,7 @@ export function printTFinal({ k, v }: TFinal): string {
       return `[${printTFinal(v.el)}; ${v.len}]`
     case R.ArrayDyn:
       return `dyn [${printTFinal(v)}]`
+    case R.UnitIn:
+      return `in ${printTFinal(v)}`
   }
 }

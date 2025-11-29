@@ -18,6 +18,7 @@ const R_ARRAYFIXED: Record<
   Record<number /* len */, Hash>
 > = Object.create(null)
 const R_ARRAYDYN: Record<Hash /* el */, Hash> = Object.create(null)
+const R_UNIT_IN: Record<Hash /* el */, Hash> = Object.create(null)
 
 const R_EMPTY = nextHash()
 const R_COMBO: Record<Hash, Record<Hash, Hash>> = Object.create(null)
@@ -39,6 +40,8 @@ export function hash({ k, v }: TFinal): Hash {
         nextHash())
     case R.ArrayDyn:
       return (R_ARRAYDYN[hash(v)] ??= nextHash())
+    case R.UnitIn:
+      return (R_UNIT_IN[hash(v)] ??= nextHash())
   }
 }
 

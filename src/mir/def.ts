@@ -23,6 +23,7 @@ type __T<K> = WithSpan<
   | { k: R.ArrayDyn; v: __T<K> }
   | { k: R.Array; v: __T<K> }
   | { k: R.Either; v: { a: __T<K>; b: __T<K> } }
+  | { k: R.UnitIn; v: __T<K> }
   | K
 >
 
@@ -38,12 +39,12 @@ export type TFinal =
   | { k: R.Never; v: null }
   | { k: R.ArrayFixed; v: { el: TFinal; len: number } }
   | { k: R.ArrayDyn; v: TFinal }
+  | { k: R.UnitIn; v: TFinal }
 
 export type Expr = WithSpan<
   | { k: R.Void; v: null }
   | { k: R.Bool; v: boolean }
   | { k: R.Int; v: bigint }
-  | { k: R.Len; v: Expr }
   | { k: R.ArrayFill; v: { el: Expr; len: Expr } }
   | { k: R.ArrayFrom; v: { bind: Id; el: Expr; len: Expr } }
   | { k: R.Local; v: Id }
@@ -56,6 +57,7 @@ export type Expr = WithSpan<
       }
     }
   | { k: R.Index; v: { target: Expr; index: Expr } }
+  | { k: R.Typeof; v: Expr }
 >
 
 export interface Value {

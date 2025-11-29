@@ -7,7 +7,7 @@ import { any, from, lazy, Parser, seq } from "."
 import { at, type WithSpan } from "./span"
 
 const RESERVED =
-  "in|fn|struct|union|enum|len|any|int|bool|void|never|num|str|let|mut|const|type|typeof|unreachable|assert|if|else|match|when|switch|case|for|in|true|false|null|none|len"
+  "in|fn|struct|union|enum|any|int|bool|void|never|num|str|let|mut|const|type|typeof|unreachable|assert|if|else|match|when|switch|case|for|in|true|false|null|none"
 
 function kw(x: string) {
   if (!/^[A-Za-z]+$/.test(x)) {
@@ -84,13 +84,8 @@ const type_: Parser<TTyped> = typeOne_
   .map(([a, b]) => (b ? kv(R.Either, { a, b: b[1] }) : a.data))
   .span()
 
-const expr_ = any<Expr["data"]>([
-  kw("void").as(kv(R.Void, null)),
-  bigint.map((x) => kv(R.Int, x)),
-  kw("true").as(kv(R.Bool, true)),
-  kw("false").as(kv(R.Bool, false)),
-  seq([kw("len"), "(", expr, from(",").opt(), ")"]).map((x) => kv(R.Len, x[2])),
-  seq(["[", expr, seq(["=>", expr]).opt(), ";", expr, "]"]).map((x) => {
+const exprArray = seq(["[", expr, seq(["=>", expr]).opt(), ";", expr, "]"]).map(
+  (x) => {
     const el = x[1]
     const snd = x[2]?.[1]
     const len = x[4]
@@ -104,34 +99,52 @@ const expr_ = any<Expr["data"]>([
       )
     }
     return kv(R.ArrayFrom, { bind: el.data.v, el: snd, len })
-  }),
-  id
-    .then(seq(["(", expr.alt(namedArg).sepBy(), ")"]).opt())
-    .map(([name, argsRaw]): Expr["data"] => {
-      if (argsRaw == null) {
-        return kv(R.Local, name)
-      }
-      const args: Expr[] = []
-      const argsNamed: { name: WithSpan<Id>; value: Expr }[] = []
-      for (const el of argsRaw[1]) {
-        if (el[0] == 0) {
-          if (argsNamed.length) {
-            issue(
-              `Named arguments must be specified after positional arguments.`,
-              el[1].span,
-            )
-          }
-          args.push(el[1])
-        } else {
-          argsNamed.push(el[1])
+  },
+)
+
+const exprLocal = id
+  .then(seq(["(", expr.alt(namedArg).sepBy(), ")"]).opt())
+  .map(([name, argsRaw]): Expr["data"] => {
+    if (argsRaw == null) {
+      return kv(R.Local, name)
+    }
+    const args: Expr[] = []
+    const argsNamed: { name: WithSpan<Id>; value: Expr }[] = []
+    for (const el of argsRaw[1]) {
+      if (el[0] == 0) {
+        if (argsNamed.length) {
+          issue(
+            `Named arguments must be specified after positional arguments.`,
+            el[1].span,
+          )
         }
+        args.push(el[1])
+      } else {
+        argsNamed.push(el[1])
       }
-      return kv(R.Call, { name, args, argsNamed })
-    }),
-  seq(["(", expr, ")"])
-    .key(1)
-    .map((x) => x.data),
+    }
+    return kv(R.Call, { name, args, argsNamed })
+  })
+
+const exprParen = seq(["(", expr, ")"])
+  .key(1)
+  .map((x) => x.data)
+
+const exprUnitIn = kw("in")
+  .skipThen(kw("typeof"))
+  .skipThen(expr)
+  .map((x): Expr["data"] => kv(R.Typeof, x))
+
+const expr_ = any<Expr["data"]>([
+  kw("void").as(kv(R.Void, null)),
+  bigint.map((x) => kv(R.Int, x)),
+  kw("true").as(kv(R.Bool, true)),
+  kw("false").as(kv(R.Bool, false)),
+  exprArray,
+  exprLocal,
+  exprParen,
   block.map((x) => x.data),
+  exprUnitIn,
 ])
   .span()
   .suffixedBySpan([

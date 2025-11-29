@@ -1,4 +1,3 @@
-import complex from "./test-complex.rs" with { type: "text" }
 import { ex, type Decl } from "@/lir/def"
 import { printDecl, printExpr, printType } from "@/lir/def-debug"
 import {
@@ -22,13 +21,59 @@ import { NLError } from "@/shared/error"
 import { Id, idFor } from "@/shared/id"
 import { int, kv, val, type TPrim } from "./def"
 import { R } from "./enum"
+import { assert, unreachable } from "./error"
 import type { Fn } from "./exec-call"
 import { env as mirEnv, pushFn } from "./exec-env"
+import { Block } from "./exec-seq"
+import complex from "./test-complex.rs" with { type: "text" }
 
 function setup() {
   const m = mirEnv()
   const li = lirInterpEnv()
   const lt = lirTypeckEnv()
+
+  pushFn(m, {
+    name: idFor("len"),
+    args: [vspan(kv(R.Array, vspan(kv(R.Any, null))))],
+    argsNamed: Object.create(null),
+    ret: vspan(int),
+    span: VSPAN,
+    exec(_env, span, [arg], _argsNamed) {
+      switch (arg!.k.k) {
+        case R.ArrayFixed: {
+          const block = new Block()
+          block.push(arg!)
+          return block.return(val(int, ex(T.Int, BigInt(arg!.k.v.len)), span))
+        }
+        case R.ArrayDyn:
+          return val(int, ex(T.DynArrayLen, arg!.v), span)
+        default:
+          unreachable(span)
+      }
+    },
+  })
+
+  pushFn(m, {
+    name: idFor("el"),
+    args: [vspan(kv(R.UnitIn, vspan(kv(R.Array, vspan(kv(R.Any, null))))))],
+    argsNamed: Object.create(null),
+    ret: vspan(int),
+    span: VSPAN,
+    exec(_env, span, [arg], _argsNamed) {
+      const block = new Block()
+      block.push(arg!)
+
+      assert(arg!.k.k == R.UnitIn, span)
+      switch (arg!.k.v.k) {
+        case R.ArrayFixed:
+          return block.returnUnitIn(arg!.k.v.v.el, span)
+        case R.ArrayDyn:
+          return block.returnUnitIn(arg!.k.v.v, span)
+        default:
+          unreachable(span)
+      }
+    },
+  })
 
   dec("-", [int], int, ([a]) => -a | 0)
   dec("+", [int, int], int, ([a, b]) => (a + b) | 0)

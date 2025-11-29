@@ -91,6 +91,9 @@ export function printExpr({ k, v }: Expr): string {
     case T.Local:
       return `${yellow}$${v.debug}`
     case T.Call:
+      if (v.args.length == 1) {
+        return `${wrap(v.args[0]!)}.${red}@${v.name.debug}`
+      }
       return `${red}@${v.name.debug}(${v.args.map(printExpr).join(", ")})`
   }
 }
@@ -128,9 +131,30 @@ export function printBlockContents(v: Stmt[]): string {
   }
 }
 
+function split(x: string) {
+  const rungs = x.split(/(?<=[( ])/)
+  let ret = ""
+  let cur = ""
+  for (const el of rungs) {
+    // @ts-expect-error Bun.stringWidth exists, trust
+    if (Bun.stringWidth(cur + el) > 60) {
+      ret += "\n  " + cur
+      cur = el
+    } else {
+      cur += el
+    }
+  }
+  if (cur) {
+    ret += "\n  " + cur
+  }
+  return ret.slice(3)
+}
+
 export function printDecl({ name, args, ret, body }: Decl): string {
   const expr = body.k == T.Block ? printExpr(body) : `= ${printExpr(body)};`
-  return `fn ${red}@${name.debug}(${args
-    .map(({ name, type }) => `${yellow}$${name.debug} ${printType(type)}`)
-    .join(", ")}) ${printType(ret)} ${expr}`
+  return split(
+    `fn ${red}@${name.debug}(${args
+      .map(({ name, type }) => `${yellow}$${name.debug} ${printType(type)}`)
+      .join(", ")}) ${printType(ret)} ${expr}`,
+  )
 }
