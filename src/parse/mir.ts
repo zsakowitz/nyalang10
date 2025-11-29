@@ -102,29 +102,31 @@ const exprArray = seq(["[", expr, seq(["=>", expr]).opt(), ";", expr, "]"]).map(
   },
 )
 
-const exprLocal = id
-  .then(seq(["(", expr.alt(namedArg).sepBy(), ")"]).opt())
-  .map(([name, argsRaw]): Expr["data"] => {
-    if (argsRaw == null) {
-      return kv(R.Local, name)
-    }
-    const args: Expr[] = []
-    const argsNamed: { name: WithSpan<Id>; value: Expr }[] = []
-    for (const el of argsRaw[1]) {
-      if (el[0] == 0) {
-        if (argsNamed.length) {
-          issue(
-            `Named arguments must be specified after positional arguments.`,
-            el[1].span,
-          )
-        }
-        args.push(el[1])
-      } else {
-        argsNamed.push(el[1])
+const fnArgs = seq(["(", expr.alt(namedArg).sepBy(), ")"]).map((raw) => {
+  const args: Expr[] = []
+  const argsNamed: { name: WithSpan<Id>; value: Expr }[] = []
+  for (const el of raw[1]) {
+    if (el[0] == 0) {
+      if (argsNamed.length) {
+        issue(
+          `Named arguments must be specified after positional arguments.`,
+          el[1].span,
+        )
       }
+      args.push(el[1])
+    } else {
+      argsNamed.push(el[1])
     }
-    return kv(R.Call, { name, args, argsNamed })
-  })
+  }
+  return { args, argsNamed }
+})
+
+const exprLocal = id.then(fnArgs.opt()).map(([name, args]): Expr["data"] => {
+  if (args == null) {
+    return kv(R.Local, name)
+  }
+  return kv(R.Call, { name, args: args.args, argsNamed: args.argsNamed })
+})
 
 const exprParen = seq(["(", expr, ")"])
   .key(1)
@@ -152,6 +154,21 @@ const expr_ = any<Expr["data"]>([
       (index) =>
         (target): Expr["data"] =>
           kv(R.Index, { target, index: index[1] }),
+    ),
+    seq([".", id, fnArgs.opt()]).map(
+      ([, name, args]) =>
+        (target): Expr["data"] => {
+          if (args) {
+            args.args.unshift(target)
+            return kv(R.Call, {
+              name,
+              args: args.args,
+              argsNamed: args.argsNamed,
+            })
+          } else {
+            return kv(R.Call, { name, args: [target], argsNamed: [] })
+          }
+        },
     ),
   ])
 

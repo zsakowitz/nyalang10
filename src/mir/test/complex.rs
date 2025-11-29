@@ -1,32 +1,32 @@
 fn +(a: complex, b: complex) complex {
-  complex(re(a) + re(b), im(a) + im(b))
+  complex(a.re + b.re, a.im + b.im)
 }
 
 fn -(a: complex) complex {
-  complex(-re(a), -im(a))
+  complex(-a.re, -a.im)
 }
 
 fn *(a: complex, b: complex) complex {
   complex(
-    (re(a) * re(b)) - (im(a) * im(b)),
-    (im(a) * re(b)) + (re(a) * im(b)),
+    (a.re * b.im) - (a.im * b.im),
+    (a.im * b.im) + (a.re * b.im),
   )
 }
 
 fn /(a: complex, b: int) complex {
-  complex(re(a) / b, im(a) / b)
+  complex(a.re / b, a.im / b)
 }
 
 fn conj(a: complex) complex {
-  complex(re(a), -im(a))
+  complex(a.re, -a.im)
 }
 
 fn /(a: complex, b: complex) complex {
-  (a * conj(b)) / ((re(b) * re(b)) + (im(b) * im(b)))
+  (a * b.conj) / ((b.im * b.im) + (b.im * b.im))
 }
 
 fn +(a: any, b: [any]) [any] {
-  [i => a + b[i]; len(b)]
+  [i => a + b[i]; b.len]
 }
 
-in typeof 2
+complex(12,6) / complex(0,2)
