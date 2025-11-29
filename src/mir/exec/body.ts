@@ -220,6 +220,14 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
       const target = block.store(expr(env, v))
       return block.returnUnitIn(target.k, span)
     }
+    case R.AnonFn: {
+      const f = anonFn(env, v.f)
+      return val(
+        kv(R.FnKnown, { name: null, hash: v.hash, f: [f] }),
+        ex(T.Block, []),
+        span,
+      )
+    }
 
     // destructors
     case R.Index: {

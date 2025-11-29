@@ -148,10 +148,12 @@ function test(x: string) {
   const done = new Set<Decl>()
 
   try {
-    const items = fn.alt(expr).sepBy("").parse(x)
+    const items = fn.alt(expr).alt(";").sepBy("").parse(x)
     const e: string[] = []
 
-    for (const item of items) {
+    for (const itemRaw of items) {
+      if (itemRaw[0] == 1) continue
+      const item = itemRaw[1]
       if (item[0] == 0) {
         mir.declFn(menv, item[1])
       } else {

@@ -24,4 +24,5 @@ export const enum R {
   Call,
   Index,
   Typeof,
+  AnonFn,
 }

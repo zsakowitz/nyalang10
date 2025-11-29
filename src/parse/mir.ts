@@ -3,7 +3,7 @@ import { kv, type DeclFnNamed, type Expr, type TTyped } from "@/mir/def"
 import { R } from "@/mir/enum"
 import { issue } from "@/mir/error"
 import { Id, idFor } from "@/shared/id"
-import { any, from, lazy, Parser, seq } from "."
+import { always, any, from, lazy, Parser, seq, type ParserLike } from "."
 import { at, type WithSpan } from "./span"
 
 const RESERVED =
@@ -50,14 +50,11 @@ const expr: Parser<Expr> = lazy(() => exprWithOps_)
 
 const block = seq(["{", expr, "}"]).key(1)
 
-const namedParam = any([
-  seq([kw("in"), type]).map((x) => ({
-    name: at(new Id("_"), x[1].span),
-    type: x[1],
-  })),
-  seq([id, ":", type]).map((x) => ({ name: x[0], type: x[2] })),
-  // todo: make type in `id: type` optional; defaults to 'any'
-])
+const namedParam = seq([id, maybeType(":")]).map((x) => ({
+  name: x[0],
+  type: x[1],
+}))
+// TODO: unnamed `in T` parameters
 
 const namedArg = seq([id, ":", expr]).map((x) => ({ name: x[0], value: x[2] }))
 
@@ -216,16 +213,27 @@ const exprWithOps_ = exprWithUnary
     )
   })
 
+const fnBody = any([block, from("=").skipThen(expr)])
+
 const fn: Parser<DeclFnNamed> = seq([
   kw("fn"),
   idOrSym,
   "(",
   namedParam.sepBy(","),
-  ")",
-  type, // todo: make type optional; defaults to 'any'
-  block,
+  from(")").span(),
+  maybeType("->"),
+  fnBody,
 ])
-  .map((x) => ({ name: x[1], args: x[3], ret: x[5], body: x[6] }))
+  .map((x) => ({
+    name: x[1],
+    args: x[3],
+    ret: x[5],
+    body: x[6],
+  }))
   .span()
 
 export { expr, fn, type }
+
+function maybeType(start: ParserLike<unknown>): Parser<TTyped> {
+  return any([from(start).skipThen(type), always(kv(R.Any, null)).span()])
+}

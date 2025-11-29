@@ -292,6 +292,21 @@ export class Parser<T> {
       return { ok: true, value: [result1.value, result2.value] }
     })
   }
+
+  /** Like `seq([lookahead(whitespace), this])`, but fails if `whitespace` contains a newline. */
+  attached(): Parser<T> {
+    return new Parser((state) => {
+      if (
+        /\n/.test(
+          state.text.slice(state.index, state.indexAfterSkippedSpaces()),
+        )
+      ) {
+        return { ok: false }
+      } else {
+        return this.go(state)
+      }
+    })
+  }
 }
 
 export interface ParserLike<T> {

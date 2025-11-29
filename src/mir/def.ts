@@ -62,6 +62,10 @@ export type Expr = WithSpan<
     }
   | { k: R.Index; v: { target: Expr; index: Expr } }
   | { k: R.Typeof; v: Expr }
+  | {
+      k: R.AnonFn
+      v: { /* must be unique per AST node */ hash: Hash; f: DeclFn<null> }
+    }
 >
 
 export interface Value {
