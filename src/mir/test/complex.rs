@@ -33,6 +33,6 @@ fn inc(x: int | complex) -> int | complex {
   x + 1
 }
 
-fn map(array: [any], map) -> [any] = [i => map(array[i]); len(array)]
+fn map(array: [any], f) -> [any] = [i => f(array[i]); len(array)]
 
 [i => i; 5].map(|x| x + x)
