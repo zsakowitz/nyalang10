@@ -28,7 +28,7 @@ export function tryCall(
   span: Span,
   fn: Fn,
   args: Value[],
-  namedArgs: Record<number, Value>,
+  argsNamed: Record<number, Value>,
 ): Value | null {
   if (args.length != fn.args.length) {
     return null
@@ -42,12 +42,12 @@ export function tryCall(
   }
 
   const namedArgTx: Record<string, Tx> = Object.create(null)
-  for (const key in namedArgs) {
+  for (const key in argsNamed) {
     if (!(key in fn.argsNamed)) {
       return null
     }
 
-    const tx = matches(env.cx, namedArgs[key]!.k, fn.argsNamed[key]!)
+    const tx = matches(env.cx, argsNamed[key]!.k, fn.argsNamed[key]!)
     if (!tx) return null
     namedArgTx[key] = tx
   }
@@ -58,8 +58,8 @@ export function tryCall(
   }
 
   const namedArgsMapped = Object.create(null)
-  for (const key in namedArgs) {
-    namedArgsMapped[key] = execTx(env, namedArgTx[key]!, namedArgs[key]!)
+  for (const key in argsNamed) {
+    namedArgsMapped[key] = execTx(env, namedArgTx[key]!, argsNamed[key]!)
   }
 
   try {
