@@ -16,34 +16,6 @@ export class Span {
     readonly also?: Span[],
   ) {}
 
-  private shrink() {
-    while (
-      this.start.idx < this.end.idx
-      && /\s/.test(this.text[this.start.idx] ?? "")
-    ) {
-      this.start.idx++
-      if (this.text[this.start.idx] == "\n") {
-        this.start.row++
-        this.start.col = 0
-      } else {
-        this.start.col++
-      }
-    }
-
-    while (
-      this.start.idx < this.end.idx
-      && /\s/.test(this.text[this.end.idx + 1] ?? "")
-    ) {
-      this.end.idx--
-      if (this.text[this.end.idx + 1] == "\n") {
-        this.end.row--
-        this.end.col = (this.text.split("\n")[this.end.row] ?? "").length
-      } else {
-        this.end.col--
-      }
-    }
-  }
-
   join(other: Span) {
     return new Span(
       this.path,
