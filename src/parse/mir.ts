@@ -1,7 +1,14 @@
 import { lIce } from "@/lir/error"
-import { kv, type DeclFnNamed, type Expr, type TTyped } from "@/mir/def"
+import {
+  kv,
+  type DeclFn,
+  type DeclFnNamed,
+  type Expr,
+  type TTyped,
+} from "@/mir/def"
 import { R } from "@/mir/enum"
 import { issue } from "@/mir/error"
+import { nextHash } from "@/mir/ty/hash"
 import { Id, idFor } from "@/shared/id"
 import { always, any, from, lazy, Parser, seq, type ParserLike } from "."
 import { at, type WithSpan } from "./span"
@@ -131,6 +138,22 @@ function local(name: WithSpan<Id>): Expr {
   return at(kv(R.Local, name), name.span)
 }
 
+const exprAnonFn: Parser<Expr["data"]> = seq([
+  "|",
+  namedParam.sepBy(","),
+  "|",
+  maybeType("->"),
+  expr,
+])
+  .span()
+  .map(({ data: x, span }) => {
+    const f: DeclFn<null> = at(
+      { name: null, args: x[1], ret: x[3], body: x[4] },
+      span,
+    )
+    return kv(R.AnonFn, { hash: nextHash(), f })
+  })
+
 const expr_ = any<Expr["data"]>([
   kw("void").as(kv(R.Void, null)),
   bigint.map((x) => kv(R.Int, x)),
@@ -141,6 +164,7 @@ const expr_ = any<Expr["data"]>([
   exprParen,
   block.map((x) => x.data),
   exprUnitIn,
+  exprAnonFn,
 ])
   .span()
   .suffixedBySpan([
@@ -220,16 +244,11 @@ const fn: Parser<DeclFnNamed> = seq([
   idOrSym,
   "(",
   namedParam.sepBy(","),
-  from(")").span(),
+  ")",
   maybeType("->"),
   fnBody,
 ])
-  .map((x) => ({
-    name: x[1],
-    args: x[3],
-    ret: x[5],
-    body: x[6],
-  }))
+  .map((x) => ({ name: x[1], args: x[3], ret: x[5], body: x[6] }))
   .span()
 
 export { expr, fn, type }
