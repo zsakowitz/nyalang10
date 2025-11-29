@@ -148,6 +148,7 @@ export enum Reason {
   ExpectedInt,
   ExpectedArray,
   ExpectedConcreteType,
+  ExpectedFn,
 }
 
 export interface WithSpan<T> {
@@ -178,6 +179,7 @@ const COLORS = {
   [Reason.ExpectedInt]: red,
   [Reason.ExpectedArray]: red,
   [Reason.ExpectedConcreteType]: red,
+  [Reason.ExpectedFn]: red,
   null: "",
 }
 
@@ -189,5 +191,6 @@ const REASONS = {
   [Reason.ExpectedInt]: "not an 'int'",
   [Reason.ExpectedArray]: "not an array",
   [Reason.ExpectedConcreteType]: "not a concrete type",
+  [Reason.ExpectedFn]: "not a function",
   null: "",
 }

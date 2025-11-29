@@ -43,6 +43,7 @@ export type TFinal =
   | {
       k: R.FnKnown
       v: {
+        name: IdRaw | null
         hash: Hash // must be unique per R.FnKnown instance. if the `f` between two R.FnKnown are the same, the hash may optionally be the same, but that is only an optimization hint
         f: readonly Fn[]
       }
@@ -57,11 +58,7 @@ export type Expr = WithSpan<
   | { k: R.Local; v: Id }
   | {
       k: R.Call
-      v: {
-        name: Id
-        args: Expr[]
-        argsNamed: { name: Id; value: Expr }[]
-      }
+      v: { target: Expr; args: Expr[]; argsNamed: { name: Id; value: Expr }[] }
     }
   | { k: R.Index; v: { target: Expr; index: Expr } }
   | { k: R.Typeof; v: Expr }

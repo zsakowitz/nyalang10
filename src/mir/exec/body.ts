@@ -3,7 +3,7 @@ import { ex } from "@/lir/def"
 import { at, Reason, type Span } from "@/parse/span"
 import { blue, quote, red } from "@/shared/ansi"
 import { T } from "@/shared/enum"
-import type { Id } from "@/shared/id"
+import { Id } from "@/shared/id"
 import {
   bool,
   int,
@@ -20,7 +20,7 @@ import {
 import { printTFinal, printType } from "../def-debug"
 import { R } from "../enum"
 import { issue } from "../error"
-import { hashList, type Hash } from "../ty/hash"
+import { hashList, nextHash, type Hash } from "../ty/hash"
 import { matches } from "../ty/matches"
 import { Block } from "./block"
 import { call, type Fn } from "./call"
@@ -165,12 +165,30 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
     }
     case R.Local: {
       const vr = env.vr.get(v.data.index)
-      if (vr == null) {
-        issue(`Variable '${v.data.debug}' is not defined.`, span)
+      if (vr != null) {
+        return val(vr.ty, ex(T.Local, vr.value), span)
       }
-      return val(vr.ty, ex(T.Local, vr.value), span)
+      const fn = env.fn.get(v.data.index)
+      if (fn != null) {
+        return val(
+          kv(R.FnKnown, { name: v.data, hash: nextHash(), f: fn }),
+          lir.ex(T.Block, []),
+          span,
+        )
+      }
+      issue(`'${v.data.debug}' is not defined.`, span)
     }
     case R.Call: {
+      const target = expr(env, v.target)
+      if (target.k.k != R.FnKnown) {
+        issue(
+          `Attempted to call non-function.`,
+          v.target.span
+            .for(Reason.ExpectedFn)
+            .with(span.for(Reason.TraceStart)),
+        )
+      }
+
       const args = []
       for (let i = 0; i < v.args.length; i++) {
         args.push(expr(env, v.args[i]!))
@@ -188,7 +206,7 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
         argsNamed[name.data.index] = expr(env, value)
       }
 
-      return call(env, span, v.name.data, args, argsNamed)
+      return call(env, span, target.k.v.name, target.k.v.f, args, argsNamed)
     }
     case R.Typeof: {
       const block = new Block()

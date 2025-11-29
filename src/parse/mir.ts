@@ -121,13 +121,6 @@ const fnArgs = seq(["(", expr.alt(namedArg).sepBy(), ")"]).map((raw) => {
   return { args, argsNamed }
 })
 
-const exprLocal = id.then(fnArgs.opt()).map(([name, args]): Expr["data"] => {
-  if (args == null) {
-    return kv(R.Local, name)
-  }
-  return kv(R.Call, { name, args: args.args, argsNamed: args.argsNamed })
-})
-
 const exprParen = seq(["(", expr, ")"])
   .key(1)
   .map((x) => x.data)
@@ -137,13 +130,17 @@ const exprUnitIn = kw("in")
   .skipThen(expr)
   .map((x): Expr["data"] => kv(R.Typeof, x))
 
+function local(name: WithSpan<Id>): Expr {
+  return at(kv(R.Local, name), name.span)
+}
+
 const expr_ = any<Expr["data"]>([
   kw("void").as(kv(R.Void, null)),
   bigint.map((x) => kv(R.Int, x)),
   kw("true").as(kv(R.Bool, true)),
   kw("false").as(kv(R.Bool, false)),
   exprArray,
-  exprLocal,
+  id.map((x) => kv(R.Local, x)),
   exprParen,
   block.map((x) => x.data),
   exprUnitIn,
@@ -157,18 +154,29 @@ const expr_ = any<Expr["data"]>([
     ),
     seq([".", id, fnArgs.opt()]).map(
       ([, name, args]) =>
-        (target): Expr["data"] => {
+        (arg0): Expr["data"] => {
+          const target: Expr = local(name)
+
           if (args) {
-            args.args.unshift(target)
+            args.args.unshift(arg0)
             return kv(R.Call, {
-              name,
+              target,
               args: args.args,
               argsNamed: args.argsNamed,
             })
           } else {
-            return kv(R.Call, { name, args: [target], argsNamed: [] })
+            return kv(R.Call, {
+              target,
+              args: [arg0],
+              argsNamed: [],
+            })
           }
         },
+    ),
+    fnArgs.map(
+      (a) =>
+        (target): Expr["data"] =>
+          kv(R.Call, { target, args: a.args, argsNamed: a.argsNamed }),
     ),
   ])
 
@@ -184,7 +192,7 @@ const exprWithUnary = from(PUNC_UNARY_PREFIX)
           at(arg.data, arg.span.join(op.span))
         : at(
             kv(R.Call, {
-              name: op,
+              target: local(op),
               args: [arg],
               argsNamed: [],
             }),
@@ -200,7 +208,7 @@ const exprWithOps_ = exprWithUnary
     if (op == null) return arg
     return at(
       kv(R.Call, {
-        name: op[0],
+        target: local(op[0]),
         args: [arg, op[1]],
         argsNamed: [],
       }),

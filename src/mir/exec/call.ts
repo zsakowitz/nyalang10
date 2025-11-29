@@ -74,18 +74,20 @@ export function tryCall(
 export function call(
   env: Env,
   span: Span,
-  name: Id,
+  name: Id | null,
+  fns: readonly Fn[],
   args: Value[],
   argsNamed: Record<number, Value>,
-) {
-  const fns = env.fn.get(name.index) ?? []
+): Value {
   for (const f of fns) {
     const ret = tryCall(env, span, f, args, argsNamed)
     if (ret != null) return ret
   }
 
   issue(
-    `No matching overload of function '${name.name}' found.`,
+    name ?
+      `'${name.name}' cannot be called with these arguments.`
+    : `This function cannot be called with these arguments.`,
     span.for(Reason.TraceStart),
   )
 }

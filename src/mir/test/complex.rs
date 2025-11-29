@@ -33,4 +33,8 @@ fn inc(x: int | complex) int | complex {
   x + 1
 }
 
-inc(4)
+fn call(x: any) any {
+  x(x)
+}
+
+call(call)
