@@ -11,14 +11,9 @@ export interface Fn<N extends Id | null = Id | null> {
   name: N
   span: Span
   args: Type[]
-  argsNamed: Record<number, Type>
+  argsNamed: [number, Type][]
   ret: Type
-  exec(
-    env: Env,
-    span: Span,
-    args: Value[],
-    argsNamed: Record<number, Value>,
-  ): Value
+  exec(env: Env, span: Span, args: Value[], argsNamed: [number, Value][]): Value
 }
 
 export type FnNamed = Fn<Id>
@@ -28,7 +23,7 @@ export function tryCall(
   span: Span,
   fn: Fn,
   args: Value[],
-  argsNamed: Record<number, Value>,
+  argsNamed: [number, Value][],
 ): Value | null {
   if (args.length != fn.args.length) {
     return null
@@ -41,15 +36,18 @@ export function tryCall(
     argTx.push(tx)
   }
 
-  const namedArgTx: Record<string, Tx> = Object.create(null)
-  for (const key in argsNamed) {
-    if (!(key in fn.argsNamed)) {
+  const argNamedTx: Tx[] = []
+  for (let i = 0; i < argsNamed.length; i++) {
+    const [k, v] = argsNamed[i]!
+
+    const expected = fn.argsNamed.find((x) => x[0] == k)
+    if (!expected) {
       return null
     }
 
-    const tx = matches(env.cx, argsNamed[key]!.k, fn.argsNamed[key]!)
+    const tx = matches(env.cx, v.k, expected[1])
     if (!tx) return null
-    namedArgTx[key] = tx
+    argNamedTx.push(tx)
   }
 
   const argsMapped = []
@@ -57,9 +55,10 @@ export function tryCall(
     argsMapped.push(execTx(env, argTx[i]!, args[i]!))
   }
 
-  const namedArgsMapped = Object.create(null)
-  for (const key in argsNamed) {
-    namedArgsMapped[key] = execTx(env, namedArgTx[key]!, argsNamed[key]!)
+  const namedArgsMapped: [number, Value][] = []
+  for (let i = 0; i < argsNamed.length; i++) {
+    const [k, v] = argsNamed[i]!
+    namedArgsMapped.push([k, execTx(env, argNamedTx[i]!, v)])
   }
 
   try {
@@ -79,7 +78,7 @@ export function call(
   name: Id | null,
   fns: readonly Fn[],
   args: Value[],
-  argsNamed: Record<number, Value>,
+  argsNamed: [number, Value][],
 ): Value {
   for (const f of fns) {
     const ret = tryCall(env, span, f, args, argsNamed)

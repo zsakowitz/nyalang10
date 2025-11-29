@@ -201,7 +201,7 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
         args.push(expr(env, v.args[i]!))
       }
 
-      const argsNamed = Object.create(null)
+      const argsNamed: [number, Value][] = []
       for (let i = 0; i < v.argsNamed.length; i++) {
         const { name, value } = v.argsNamed[i]!
         if (name.data.index in argsNamed) {
@@ -210,7 +210,7 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
             name.span,
           )
         }
-        argsNamed[name.data.index] = expr(env, value)
+        argsNamed.push([name.data.index, expr(env, value)])
       }
 
       return call(env, span, target.k.v.name, target.k.v.f, args, argsNamed)
@@ -276,7 +276,7 @@ export function anonFn<N extends WithSpan<Id> | null>(
     name: (fn.name?.data ?? null) as any,
     span,
     args: argsResolved,
-    argsNamed: Object.create(null),
+    argsNamed: [],
     ret: retResolved,
     exec(_, span, args, _argsNamed) {
       const fhash = hashList(args.map((x) => x.k))

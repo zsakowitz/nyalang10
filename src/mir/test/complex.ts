@@ -35,7 +35,7 @@ function setup() {
   pushFn(m, {
     name: idFor("len"),
     args: [vspan(kv(R.Array, vspan(kv(R.Any, null))))],
-    argsNamed: Object.create(null),
+    argsNamed: [],
     ret: vspan(int),
     span: VSPAN,
     exec(_env, span, [arg], _argsNamed) {
@@ -56,7 +56,7 @@ function setup() {
   pushFn(m, {
     name: idFor("el"),
     args: [vspan(kv(R.UnitIn, vspan(kv(R.Array, vspan(kv(R.Any, null))))))],
-    argsNamed: Object.create(null),
+    argsNamed: [],
     ret: vspan(int),
     span: VSPAN,
     exec(_env, span, [arg], _argsNamed) {
@@ -120,7 +120,7 @@ function setup() {
     const mirFn: Fn<Id> = {
       name: idFor(name),
       args: args.map(vspan),
-      argsNamed: Object.create(null),
+      argsNamed: [],
       ret: vspan(ret),
       span: VSPAN,
       exec(_, span, args, _argsNamed) {
