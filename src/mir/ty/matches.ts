@@ -52,5 +52,7 @@ export function matches(
           return val(kv(R.UnitIn, r.into), ex(T.Block, []), value.s)
         },
       }
+    case R.FnKnown:
+      return false // todo: match on required overloads
   }
 }

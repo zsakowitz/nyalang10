@@ -65,6 +65,8 @@ export function resolve(env: Env, ty: TTyped): Type {
 export function type(env: Env, ty: TFinal): lir.Type {
   switch (ty.k) {
     case R.Void:
+    case R.UnitIn:
+    case R.FnKnown:
       return lir.void_
     case R.Int:
       return lir.int
@@ -78,8 +80,6 @@ export function type(env: Env, ty: TFinal): lir.Type {
       return lir.ty(T.Array, { el: type(env, ty.v.el), len: ty.v.len })
     case R.ArrayDyn:
       return lir.ty(T.DynArray, type(env, ty.v))
-    case R.UnitIn:
-      return lir.void_
   }
 }
 

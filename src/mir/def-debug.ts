@@ -46,5 +46,7 @@ export function printTFinal({ k, v }: TFinal): string {
       return `dyn [${printTFinal(v)}]`
     case R.UnitIn:
       return `in ${printTFinal(v)}`
+    case R.FnKnown:
+      return `fn`
   }
 }

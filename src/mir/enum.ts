@@ -14,6 +14,7 @@ export const enum R {
 
   Either,
   UnitIn,
+  FnKnown,
 
   Unreachable, // UB to reach; one constructor for `!`
 

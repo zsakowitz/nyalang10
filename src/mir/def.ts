@@ -2,6 +2,8 @@ import * as lir from "@/lir/def"
 import type { Span, WithSpan } from "@/parse/span"
 import type { Id as IdRaw } from "@/shared/id"
 import { R } from "./enum"
+import type { Fn } from "./exec/call"
+import type { Hash } from "./ty/hash"
 
 export type Id = WithSpan<IdRaw>
 
@@ -16,8 +18,7 @@ export type TCoercable =
 export type TPrim = TCoercable | { k: R.Never; v: null }
 
 type __T<K> = WithSpan<
-  | TCoercable
-  | { k: R.Never; v: null }
+  | TPrim
   | { k: R.Any; v: null }
   | { k: R.ArrayFixed; v: { el: __T<K>; len: number } }
   | { k: R.ArrayDyn; v: __T<K> }
@@ -35,11 +36,17 @@ export type Type = __T<never>
 
 // a type which can be exported to MIR
 export type TFinal =
-  | TCoercable
-  | { k: R.Never; v: null }
+  | TPrim
   | { k: R.ArrayFixed; v: { el: TFinal; len: number } }
   | { k: R.ArrayDyn; v: TFinal }
   | { k: R.UnitIn; v: TFinal }
+  | {
+      k: R.FnKnown
+      v: {
+        hash: Hash // must be unique per R.FnKnown instance. if the `f` between two R.FnKnown are the same, the hash may optionally be the same, but that is only an optimization hint
+        f: readonly Fn[]
+      }
+    }
 
 export type Expr = WithSpan<
   | { k: R.Void; v: null }

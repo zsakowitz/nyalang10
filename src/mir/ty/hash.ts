@@ -4,7 +4,7 @@ import { R } from "../enum"
 
 export type Hash = number & { readonly __hash: unique symbol }
 
-function nextHash() {
+export function nextHash() {
   return nextUid() as Hash
 }
 
@@ -42,6 +42,8 @@ export function hash({ k, v }: TFinal): Hash {
       return (R_ARRAYDYN[hash(v)] ??= nextHash())
     case R.UnitIn:
       return (R_UNIT_IN[hash(v)] ??= nextHash())
+    case R.FnKnown:
+      return v.hash
   }
 }
 
