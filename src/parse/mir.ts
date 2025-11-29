@@ -10,7 +10,7 @@ import { R } from "@/mir/enum"
 import { issue } from "@/mir/error"
 import { nextHash } from "@/mir/ty/hash"
 import { Id, idFor } from "@/shared/id"
-import { always, any, from, lazy, Parser, seq, type ParserLike } from "."
+import { always, any, from, lazy, NO_NL, Parser, seq, type ParserLike } from "."
 import { at, type WithSpan } from "./span"
 
 const RESERVED =
@@ -106,10 +106,10 @@ const exprArray = seq(["[", expr, seq(["=>", expr]).opt(), ";", expr, "]"]).map(
   },
 )
 
-const fnArgs = seq(["(", expr.alt(namedArg).sepBy(), ")"]).map((raw) => {
+const fnArgs = seq([NO_NL, "(", expr.alt(namedArg).sepBy(), ")"]).map((raw) => {
   const args: Expr[] = []
   const argsNamed: { name: WithSpan<Id>; value: Expr }[] = []
-  for (const el of raw[1]) {
+  for (const el of raw[2]) {
     if (el[0] == 0) {
       if (argsNamed.length) {
         issue(
@@ -168,10 +168,10 @@ const expr_ = any<Expr["data"]>([
 ])
   .span()
   .suffixedBySpan([
-    seq(["[", expr, "]"]).map(
+    seq([NO_NL, "[", expr, "]"]).map(
       (index) =>
         (target): Expr["data"] =>
-          kv(R.Index, { target, index: index[1] }),
+          kv(R.Index, { target, index: index[2] }),
     ),
     seq([".", id, fnArgs.opt()]).map(
       ([, name, args]) =>

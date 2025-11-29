@@ -49,6 +49,7 @@ export class State {
     while (this.index < this.text.length && WS.test(this.text[this.index]!)) {
       this.incIndex(1)
     }
+    return this
   }
 
   indexAfterSkippedSpaces() {
@@ -191,11 +192,10 @@ export class Parser<T> {
       let trailing = false
 
       while (true) {
-        state.skipSpaces()
-        const start1 = state.index
+        const start1 = state.indexAfterSkippedSpaces()
         const result1 = this.go(state)
         if (result1.ok) {
-          if (state.index == start1) {
+          if (state.index <= start1) {
             ice(
               `Infinite loop detected while parsing ` + state.debug(),
               state.span(),
@@ -204,18 +204,17 @@ export class Parser<T> {
           items.push(result1.value)
           trailing = false
         } else {
-          if (state.index == start1) {
+          if (state.index <= start1) {
             return { ok: true, value: { items, trailing } }
           }
           return { ok: false }
         }
 
-        state.skipSpaces()
-        const start2 = state.index
+        const start2 = state.indexAfterSkippedSpaces()
         const result2 = sep.go(state)
         if (result2.ok) {
           trailing = true
-        } else if (start2 == state.index) {
+        } else if (start2 <= state.index) {
           return { ok: true, value: { items, trailing: false } }
         } else {
           return { ok: false }
@@ -266,10 +265,13 @@ export class Parser<T> {
     )
   }
 
+  attached() {
+    return NO_NL.skipThen(this)
+  }
+
   span(): Parser<WithSpan<T>> {
     return new Parser<WithSpan<T>>((state) => {
-      state.skipSpaces()
-      const start = state.pos()
+      const start = state.clone().skipSpaces().pos()
       const result = this.go(state)
       if (!result.ok) return { ok: false }
 
@@ -290,21 +292,6 @@ export class Parser<T> {
       const result2 = p(result1.value).go(state)
       if (!result2.ok) return { ok: false }
       return { ok: true, value: [result1.value, result2.value] }
-    })
-  }
-
-  /** Like `seq([lookahead(whitespace), this])`, but fails if `whitespace` contains a newline. */
-  attached(): Parser<T> {
-    return new Parser((state) => {
-      if (
-        /\n/.test(
-          state.text.slice(state.index, state.indexAfterSkippedSpaces()),
-        )
-      ) {
-        return { ok: false }
-      } else {
-        return this.go(state)
-      }
     })
   }
 }
@@ -406,3 +393,13 @@ export function any<T>(p: readonly ParserLike<T>[]): Parser<T> {
 export function lazyAny<T>(p: () => readonly ParserLike<T>[]): Parser<T> {
   return lazy(() => any(p()))
 }
+
+export const NO_NL = new Parser<null>((state) => {
+  if (
+    /\n/.test(state.text.slice(state.index, state.indexAfterSkippedSpaces()))
+  ) {
+    return { ok: false }
+  } else {
+    return { ok: true, value: null }
+  }
+})
