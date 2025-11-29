@@ -25,7 +25,7 @@ import { Block } from "../exec/block"
 import * as mir from "../exec/body"
 import type { Fn } from "../exec/call"
 import { env as mirEnv, pushFn } from "../exec/env"
-import complex from "./complex.rs" with { type: "text" }
+import source from "./complex.rs" with { type: "text" }
 
 function setup() {
   const m = mirEnv()
@@ -199,4 +199,4 @@ function test(x: string) {
   }
 }
 
-test(complex)
+test(source)
