@@ -1,6 +1,12 @@
 import * as lir from "@/lir/def"
 import { ex } from "@/lir/def"
-import { at, Reason, type Span } from "@/parse/span"
+import {
+  at,
+  Reason,
+  type Span,
+  type WithoutSpan,
+  type WithSpan,
+} from "@/parse/span"
 import { blue, quote, red } from "@/shared/ansi"
 import { T } from "@/shared/enum"
 import { Id } from "@/shared/id"
@@ -11,6 +17,7 @@ import {
   val,
   void_,
   type DeclFn,
+  type DeclFnNamed,
   type Expr,
   type TFinal,
   type TTyped,
@@ -240,7 +247,15 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
   }
 }
 
-export function declFn(env: Env, { data: fn, span }: DeclFn) {
+export function declFn(env: Env, fn: DeclFnNamed) {
+  const f = anonFn(env, fn)
+  pushFn(env, f)
+}
+
+export function anonFn<N extends WithSpan<Id> | null>(
+  env: Env,
+  { data: fn, span }: DeclFn<N>,
+) {
   const subenv = forkForDecl(env)
 
   const used = new Set<number>()
@@ -257,8 +272,8 @@ export function declFn(env: Env, { data: fn, span }: DeclFn) {
 
   const fs: Record<Hash, { fname: Id; ty: TFinal }> = Object.create(null)
 
-  const final: Fn = {
-    name: fn.name.data,
+  const final: Fn<WithoutSpan<N>> = {
+    name: (fn.name?.data ?? null) as any,
     span,
     args: argsResolved,
     argsNamed: Object.create(null),
@@ -276,7 +291,7 @@ export function declFn(env: Env, { data: fn, span }: DeclFn) {
         )
       }
 
-      const fname = fn.name.data.fresh()
+      const fname = fn.name ? fn.name.data.fresh() : new Id("anon")
 
       const declArgs = fn.args.map(({ name }, i) => ({
         name: name.data.fresh(),
@@ -322,8 +337,6 @@ export function declFn(env: Env, { data: fn, span }: DeclFn) {
       )
     },
   }
-
-  pushFn(env, final)
 
   return final
 }

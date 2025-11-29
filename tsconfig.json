@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "isolatedModules": true,
-    "lib": ["ES2022", "DOM"],
+    "lib": ["ES2022"],
     "moduleDetection": "force",
     "moduleResolution": "bundler",
     "module": "preserve",
@@ -15,5 +15,6 @@
     "paths": {
       "@/*": ["./src/*"]
     }
-  }
+  },
+  "exclude": ["./node_modules/typescript/**"]
 }

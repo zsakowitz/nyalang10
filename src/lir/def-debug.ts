@@ -136,7 +136,6 @@ function split(x: string) {
   let ret = ""
   let cur = ""
   for (const el of rungs) {
-    // @ts-expect-error Bun.stringWidth exists, trust
     if (Bun.stringWidth(cur + el) > 60) {
       ret += "\n  " + cur
       cur = el

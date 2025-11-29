@@ -3,7 +3,7 @@ import type { Span } from "@/parse/span"
 import type { Id } from "@/shared/id"
 import type { TFinal, Type } from "../def"
 import { Coercions } from "../ty/coerce"
-import type { Fn } from "./call"
+import type { Fn, FnNamed } from "./call"
 
 export interface ILocal {
   mut: boolean
@@ -31,7 +31,7 @@ export function env(): Env {
   }
 }
 
-export function pushFn(env: Env, fn: Fn) {
+export function pushFn(env: Env, fn: FnNamed) {
   const i = fn.name.index
   let el = env.fn.get(i)
   if (!el) {

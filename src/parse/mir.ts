@@ -1,5 +1,5 @@
 import { lIce } from "@/lir/error"
-import { kv, type DeclFn, type Expr, type TTyped } from "@/mir/def"
+import { kv, type DeclFnNamed, type Expr, type TTyped } from "@/mir/def"
 import { R } from "@/mir/enum"
 import { issue } from "@/mir/error"
 import { Id, idFor } from "@/shared/id"
@@ -216,7 +216,7 @@ const exprWithOps_ = exprWithUnary
     )
   })
 
-const fn: Parser<DeclFn> = seq([
+const fn: Parser<DeclFnNamed> = seq([
   kw("fn"),
   idOrSym,
   "(",

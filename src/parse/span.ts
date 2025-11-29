@@ -156,6 +156,9 @@ export interface WithSpan<T> {
   span: Span
 }
 
+export type WithoutSpan<T extends WithSpan<unknown> | null> =
+  T extends WithSpan<infer U> ? U : null
+
 export function at<T>(data: T, span: Span): WithSpan<T> {
   return { data, span }
 }

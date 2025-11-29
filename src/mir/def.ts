@@ -83,9 +83,11 @@ export const never: TPrim = kv(R.Never, null)
 export const int: TCoercable = kv(R.Int, null)
 export const bool: TCoercable = kv(R.Bool, null)
 
-export type DeclFn = WithSpan<{
-  name: Id
+export type DeclFn<N extends Id | null = Id | null> = WithSpan<{
+  name: N
   args: { name: Id; type: TTyped }[]
   ret: TTyped
   body: Expr
 }>
+
+export type DeclFnNamed = DeclFn<Id>

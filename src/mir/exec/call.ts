@@ -7,8 +7,8 @@ import { matches } from "../ty/matches"
 import type { Env } from "./env"
 import { execTx, type Tx } from "./tx"
 
-export interface Fn {
-  name: Id
+export interface Fn<N extends Id | null = Id | null> {
+  name: N
   span: Span
   args: Type[]
   argsNamed: Record<number, Type>
@@ -20,6 +20,8 @@ export interface Fn {
     argsNamed: Record<number, Value>,
   ): Value
 }
+
+export type FnNamed = Fn<Id>
 
 export function tryCall(
   env: Env,

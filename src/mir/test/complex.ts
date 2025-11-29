@@ -117,7 +117,7 @@ function setup() {
       execi: exec,
     }
 
-    const mirFn: Fn = {
+    const mirFn: Fn<Id> = {
       name: idFor(name),
       args: args.map(vspan),
       argsNamed: Object.create(null),
