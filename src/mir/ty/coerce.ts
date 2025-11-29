@@ -121,4 +121,38 @@ export class Coercions {
     if (ka == kb) return true
     return this.both[ka]?.[kb] ?? false
   }
+
+  unify(a: TCoercable, b: TCoercable): [TCoercable, Tx, Tx] | false {
+    const ka = asCkey(a)
+    const kb = asCkey(b)
+
+    if (ka == kb) {
+      return [a, true, true]
+    }
+
+    if (this.both[ka]?.[kb]) {
+      return [b, this.both[ka][kb], true]
+    }
+
+    if (this.both[kb]?.[ka]) {
+      return [a, true, this.both[kb][ka]]
+    }
+
+    const fa = this.byFrom[ka]
+    if (!fa) return false
+
+    const fb = this.byFrom[kb]
+    if (!fb) return false
+
+    for (let i = 0; i < fa.length; i++) {
+      const cxa = fa[i]!
+      const cxb = fb.find((x) => asCkey(x.into) == asCkey(cxa.into))
+
+      if (cxb) {
+        return [cxa.into, cxa, cxb]
+      }
+    }
+
+    return false
+  }
 }

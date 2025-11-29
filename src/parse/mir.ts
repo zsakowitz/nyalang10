@@ -88,23 +88,34 @@ const type_: Parser<TTyped> = typeOne_
   .map(([a, b]) => (b ? kv(R.Either, { a, b: b[1] }) : a.data))
   .span()
 
-const exprArray = seq(["[", expr, seq(["=>", expr]).opt(), ";", expr, "]"]).map(
-  (x) => {
-    const el = x[1]
-    const snd = x[2]?.[1]
-    const len = x[4]
-    if (snd == null) {
-      return kv(R.ArrayFill, { el, len })
-    }
-    if (el.data.k != R.Local) {
-      issue(
-        `Array defined using '[index => expr; len]' notation must have only a single variable used for the index.`,
-        el.span,
-      )
-    }
-    return kv(R.ArrayFrom, { bind: el.data.v, el: snd, len })
-  },
-)
+const exprArray = seq([
+  "[",
+  expr,
+  seq([seq(["=>", expr]).opt(), ";", expr]).alt(
+    from(",").skipThen(expr).many().thenSkip(from(",").opt()),
+  ),
+  "]",
+]).map(([, el, data]): Expr["data"] => {
+  if (data[0] == 1) {
+    const rest = data[1]
+    rest.unshift(el)
+    return kv(R.ArrayElements, rest)
+  }
+
+  const snd = data[1][0]?.[1]
+  const len = data[1][2]
+
+  if (snd == null) {
+    return kv(R.ArrayFill, { el, len })
+  }
+  if (el.data.k != R.Local) {
+    issue(
+      `Array defined using '[index => expr; len]' notation must have only a single variable used for the index.`,
+      el.span,
+    )
+  }
+  return kv(R.ArrayFrom, { bind: el.data.v, el: snd, len })
+})
 
 const fnArgs = seq([NO_NL, "(", expr.alt(namedArg).sepBy(), ")"]).map((raw) => {
   const args: Expr[] = []

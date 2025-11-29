@@ -25,4 +25,5 @@ export const enum R {
   Index,
   Typeof,
   AnonFn,
+  ArrayElements,
 }

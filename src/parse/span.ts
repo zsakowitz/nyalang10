@@ -22,6 +22,7 @@ export class Span {
       this.text,
       this.start.idx < other.start.idx ? this.start : other.start,
       this.end.idx > other.end.idx ? this.end : other.end,
+      this.kind,
     )
   }
 
@@ -121,6 +122,7 @@ export enum Reason {
   ExpectedArray,
   ExpectedConcreteType,
   ExpectedFn,
+  TyIncompat,
 }
 
 export interface WithSpan<T> {
@@ -155,6 +157,7 @@ const COLORS = {
   [Reason.ExpectedArray]: red,
   [Reason.ExpectedConcreteType]: red,
   [Reason.ExpectedFn]: red,
+  [Reason.TyIncompat]: red,
   null: "",
 }
 
@@ -167,5 +170,6 @@ const REASONS = {
   [Reason.ExpectedArray]: "not an array",
   [Reason.ExpectedConcreteType]: "not a concrete type",
   [Reason.ExpectedFn]: "not a function",
+  [Reason.TyIncompat]: "these expressions do not have compatible types",
   null: "",
 }

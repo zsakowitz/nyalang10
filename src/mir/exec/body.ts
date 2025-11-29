@@ -29,6 +29,7 @@ import { R } from "../enum"
 import { issue } from "../error"
 import { hashList, nextHash, type Hash } from "../ty/hash"
 import { matches } from "../ty/matches"
+import { unifyValues } from "../ty/unify"
 import { Block } from "./block"
 import { call, type Fn } from "./call"
 import { forkForDecl, forkLocals, pushFn, type Env } from "./env"
@@ -225,6 +226,21 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
       return val(
         kv(R.FnKnown, { name: null, hash: v.hash, f: [f] }),
         ex(T.Block, []),
+        span,
+      )
+    }
+    case R.ArrayElements: {
+      const vals = unifyValues(
+        env,
+        "cannot construct array from these elements",
+        v.map((x) => expr(env, x)),
+      )
+      return val(
+        kv(R.ArrayFixed, { el: vals.k, len: vals.v.length }),
+        ex(T.ArrayElements, {
+          elTy: type(env, vals.k),
+          els: vals.v.map((x) => x.v),
+        }),
         span,
       )
     }
