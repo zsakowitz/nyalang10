@@ -147,6 +147,7 @@ export enum Reason {
   Trace,
   ExpectedInt,
   ExpectedArray,
+  ExpectedConcreteType,
 }
 
 export interface WithSpan<T> {
@@ -176,6 +177,7 @@ const COLORS = {
   [Reason.TraceStart]: red,
   [Reason.ExpectedInt]: red,
   [Reason.ExpectedArray]: red,
+  [Reason.ExpectedConcreteType]: red,
   null: "",
 }
 
@@ -186,5 +188,6 @@ const REASONS = {
   [Reason.TraceStart]: "erroneous call",
   [Reason.ExpectedInt]: "not an 'int'",
   [Reason.ExpectedArray]: "not an array",
+  [Reason.ExpectedConcreteType]: "not a concrete type",
   null: "",
 }
