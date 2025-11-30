@@ -52,7 +52,7 @@ const ID_REGEX = new RegExp(
 
 const id = from(ID_REGEX).map(idFor).span()
 
-const PUNC_BINARY = /\*>|<\*|\*\*|\+>|<\+|\+\+|[=<!>]=|[+\-/^*%&|~<>]/y
+const PUNC_BINARY = /\*\*|\+\+|[=<!>]=|[+\-/^*%&|~<>]/y
 const PUNC_UNARY_PREFIX = /[-+!]/y // we still want some dedicated 1/x symbol, akin to 0-x. `/` is a possible candidate
 
 const idOrSym = from(
