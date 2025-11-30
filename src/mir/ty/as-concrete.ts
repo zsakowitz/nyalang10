@@ -3,7 +3,10 @@ import { bool, int, kv, never, void_, type TFinal, type Type } from "../def"
 import { R } from "../enum"
 import { issue } from "../error"
 
-export function asConcrete({ data: { k, v }, span }: Type): TFinal {
+export function asConcrete(
+  { data: { k, v }, span }: Type,
+  reason: string,
+): TFinal {
   switch (k) {
     case R.Void:
       return void_
@@ -19,24 +22,24 @@ export function asConcrete({ data: { k, v }, span }: Type): TFinal {
       return never
     case R.Any:
       issue(
-        `Expected concrete type, found 'any'.\nhelp: try specifying a type like 'int' or 'bool' instead`,
+        `Expected concrete type, found 'any'.\nnote: ${reason}\nhelp: Try specifying a type like 'int' or 'bool' instead.`,
         span.for(Reason.ExpectedConcreteType),
       )
     case R.ArrayFixed:
-      return kv(R.ArrayFixed, { el: asConcrete(v.el), len: v.len })
+      return kv(R.ArrayFixed, { el: asConcrete(v.el, reason), len: v.len })
     case R.ArrayDyn:
-      return kv(R.ArrayDyn, asConcrete(v))
+      return kv(R.ArrayDyn, asConcrete(v, reason))
     case R.Array:
       issue(
-        `Expected concrete type, found '[T]'.\nhelp: maybe you meant 'dyn [T]' or '[T; N]'?`,
+        `Expected concrete type, found '[T]'.\nnote: ${reason}\nhelp: Maybe you meant 'dyn [T]' or '[T; N]'?`,
         span.for(Reason.ExpectedConcreteType),
       )
     case R.Either:
       issue(
-        `Expected concrete type, found type union.\nhelp: try picking one of the types`,
+        `Expected concrete type, found type union.\nnote: ${reason}\nhelp: try picking one of the types`,
         span.for(Reason.ExpectedConcreteType),
       )
     case R.UnitIn:
-      return kv(R.UnitIn, asConcrete(v))
+      return kv(R.UnitIn, asConcrete(v, reason))
   }
 }

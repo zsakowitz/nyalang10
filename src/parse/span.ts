@@ -37,10 +37,10 @@ export class Span {
     ])
   }
 
-  flat(): Span[] {
-    const all = this.also?.flatMap((x) => x.flat()) ?? []
-    all.unshift(this)
-    return all
+  flat(ret: Span[] = []): Span[] {
+    ret.push(this)
+    this.also?.forEach((x) => x.flat(ret))
+    return ret
   }
 
   private highlightSelf(): string {
@@ -107,6 +107,16 @@ export class Span {
   }
 
   highlight(): string {
+    const data = this.flat()
+    if (data.length > 5) {
+      return [
+        data.at(+0)!.highlightSelf(),
+        data.at(+1)!.highlightSelf(),
+        `<${data.length - 4} entries omitted>`,
+        data.at(-2)!.highlightSelf(),
+        data.at(-1)!.highlightSelf(),
+      ].join("\n\n")
+    }
     return this.flat()
       .map((x) => x.highlightSelf())
       .join("\n\n")
@@ -148,6 +158,8 @@ export enum Reason {
   ExpectedFn,
   TyIncompat,
   DuplicateField,
+  ExpectedCoercibleType,
+  TraceCoercion,
 }
 
 const COLORS = {
@@ -162,13 +174,15 @@ const COLORS = {
   [Reason.ExpectedFn]: red,
   [Reason.TyIncompat]: red,
   [Reason.DuplicateField]: red,
+  [Reason.ExpectedCoercibleType]: red,
+  [Reason.TraceCoercion]: "",
   null: "",
 }
 
 const REASONS = {
   [Reason.TyActual]: "actual expression",
   [Reason.TyExpected]: "expected type",
-  [Reason.Trace]: "call stack",
+  [Reason.Trace]: "originating from this call",
   [Reason.TraceStart]: "erroneous call",
   [Reason.ExpectedInt]: "not an 'int'",
   [Reason.ExpectedBool]: "not a 'bool'",
@@ -177,5 +191,7 @@ const REASONS = {
   [Reason.ExpectedFn]: "not a function",
   [Reason.TyIncompat]: "these expressions do not have compatible types",
   [Reason.DuplicateField]: "duplicate field name",
+  [Reason.ExpectedCoercibleType]: "not a primitive type or struct",
+  [Reason.TraceCoercion]: "while checking that this coercion is valid",
   null: "",
 }

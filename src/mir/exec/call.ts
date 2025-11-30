@@ -1,5 +1,5 @@
 import { Reason, type Span } from "@/parse/span"
-import { blue, quote, yellow } from "@/shared/ansi"
+import { blue, bold, quote, reset, yellow } from "@/shared/ansi"
 import { NLError } from "@/shared/error"
 import { Id } from "@/shared/id"
 import type { Type, Value } from "../def"
@@ -66,6 +66,13 @@ export function tryCall(
   try {
     return fn.exec(env, span, argsMapped, namedArgsMapped)
   } catch (e) {
+    if (e instanceof RangeError && e.message.includes("stack size")) {
+      issue(
+        `Function calls are nested too deeply.\nhelp: Recursive functions are not supported yet.\nhelp: Make sure no function calls itself.`,
+        span.for(Reason.Trace),
+      )
+    }
+
     if (e instanceof NLError) {
       e.with(span, Reason.Trace)
     }

@@ -29,19 +29,14 @@ fn +(a: any, b: [any]) -> [any] {
   [i => a + b[i]; b.len]
 }
 
-fn inc(x: int | complex) -> int | complex {
-  x + 1
-}
-
 fn map(array: [any], f) -> [any] = [i => f(array[i]); len(array)]
 
-fn is_zero(x: int) -> bool = x == 0
-fn is_zero(x: [any]) -> [bool] = x.map(is_zero)
+struct Point { x: int, y: int }
 
-is_zero([2, 3, 4, 0])
+fn +(a: Point, b: Point) -> Point { Point(a.x + b.x, a.y + b.y) }
 
-[2, complex(3, 4)].map(|x| x * x)
+Point(2,3) + Point(4,5)
 
-fn two_if_zero(x) = if (x == 0) 2 else 0
+coercion (x: int) -> Point { Point(x,0) }
 
-two_if_zero(true)
+[2, Point(4,5)]

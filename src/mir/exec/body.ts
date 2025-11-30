@@ -374,7 +374,7 @@ export function anonFn<N extends WithSpan<Id> | null>(
     const tx = matches(env.cx, body.k, retResolved)
     if (!tx) {
       issue(
-        `Function said it would return ${quote(printType(retResolved), blue)}, but it actually returned ${quote(printTFinal(body.k), red)}.`,
+        `Function said it would return ${quote(printType(retResolved), blue)}, but it actually returned ${quote(printTFinal(body.k), red)}.\nhelp: This is usually a problem with the called function, not the caller.\nhelp: Check that the function is implemented correctly.`,
         fn.ret.span.for(Reason.TyExpected).with(body.s.for(Reason.TyActual)),
       )
     }
@@ -391,6 +391,7 @@ export function anonFn<N extends WithSpan<Id> | null>(
     _.lirDecls.push(decl)
 
     fs[fhash] = { fname, ty: body.k }
+
     return val(
       body.k,
       lir.ex(T.Call, { name: fname, args: args.map((x) => x.v) }),

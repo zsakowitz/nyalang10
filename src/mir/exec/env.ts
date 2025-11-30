@@ -1,7 +1,8 @@
 import type { Decl } from "@/lir/def"
-import type { Span } from "@/parse/span"
+import type { Span, WithSpan } from "@/parse/span"
 import type { Id } from "@/shared/id"
 import type { TFinal, Type } from "../def"
+import { issue } from "../error"
 import { Coercions } from "../ty/coerce"
 import type { Fn, FnNamed } from "./call"
 
@@ -41,6 +42,14 @@ export function pushFn(env: Env, fn: FnNamed) {
   el.push(fn)
 }
 
+export function setTy(env: Env, span: Span, name: WithSpan<Id>, ty: Type) {
+  if (env.ty.has(name.data.index)) {
+    issue(`Cannot declare type '${name.data.name}' twice.`, span)
+  }
+
+  env.ty.set(name.data.index, ty)
+}
+
 export function forkLocals(env: Env): Env {
   return {
     cx: env.cx,
@@ -54,8 +63,8 @@ export function forkLocals(env: Env): Env {
 export function forkForDecl(env: Env): Env {
   return {
     cx: env.cx,
-    fn: new Map(Array.from(env.fn).map(([k, v]) => [k, v.slice()])),
-    ty: new Map(env.ty),
+    fn: env.fn,
+    ty: env.ty,
     vr: new Map(),
     lirDecls: env.lirDecls,
   }

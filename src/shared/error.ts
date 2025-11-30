@@ -1,4 +1,5 @@
-import { Reason, type Span } from "@/parse/span"
+import { Reason, Span } from "@/parse/span"
+import { blue, bold, reset } from "./ansi"
 
 export const enum ErrorKind {
   Internal,
@@ -12,13 +13,23 @@ const PREFIXES = {
   [ErrorKind.UB]: "[ub] ",
 }
 
+function message(kind: ErrorKind, header: string, span: Span | undefined) {
+  return (
+    PREFIXES[kind]
+    + header
+      .replaceAll("\nhelp: ", "\n  " + blue + bold + "help: " + reset)
+      .replaceAll("\nnote: ", "\n  " + blue + bold + "note: " + reset)
+    + (span ? "\n\n" + span.highlight() : "")
+  )
+}
+
 export class NLError extends Error {
   constructor(
     readonly kind: ErrorKind,
     readonly header: string,
     public span?: Span,
   ) {
-    super(PREFIXES[kind] + header + (span ? "\n\n" + span.highlight() : ""))
+    super(message(kind, header, span))
   }
 
   with(span: Span, why: Reason) {
@@ -27,5 +38,6 @@ export class NLError extends Error {
     } else {
       this.span = span.for(why)
     }
+    this.message = message(this.kind, this.header, this.span)
   }
 }

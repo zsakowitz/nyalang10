@@ -15,7 +15,7 @@ import { always, any, from, lazy, NO_NL, Parser, seq, type ParserLike } from "."
 import { at, type WithSpan } from "./span"
 
 const RESERVED =
-  "in|fn|struct|union|enum|any|int|bool|void|never|num|str|let|mut|const|type|typeof|unreachable|assert|if|else|match|when|switch|case|for|in|true|false|null|none"
+  "coercion|in|fn|struct|union|enum|any|int|bool|void|never|num|str|let|mut|const|type|typeof|unreachable|assert|if|else|match|when|switch|case|for|in|true|false|null|none"
 
 function kw(x: string) {
   if (!/^[A-Za-z]+$/.test(x)) {
@@ -276,12 +276,24 @@ const declFn: Parser<DeclFnNamed> = seq([
   .map((x) => ({ name: x[1], args: x[3], ret: x[5], body: x[6] }))
   .span()
 
-export const declStruct: Parser<DeclStruct> = seq([
-  kw("struct"),
-  id,
+export const declCoercion: Parser<DeclFn> = seq([
+  kw("coercion"),
   "(",
   namedParam.sepBy(","),
   ")",
+  "->",
+  type,
+  fnBody,
+])
+  .map((x) => ({ name: null, args: x[2], ret: x[5], body: x[6] }))
+  .span()
+
+export const declStruct: Parser<DeclStruct> = seq([
+  kw("struct"),
+  id,
+  "{",
+  namedParam.sepBy(","),
+  "}",
 ])
   .map((x): DeclStruct["data"] => ({ name: x[1], fields: x[3] }))
   .span()

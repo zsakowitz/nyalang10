@@ -1,6 +1,6 @@
-import type { Span } from "@/parse/span"
+import { Reason, type Span } from "@/parse/span"
 import { nextUid } from "@/shared/id"
-import type { TCoercable } from "../def"
+import type { TCoercable, TFinal } from "../def"
 import { R } from "../enum"
 import { assert, issue } from "../error"
 import { execTx, type Tx } from "../exec/tx"
@@ -22,6 +22,18 @@ function asCkey({ k, v }: TCoercable): number {
       return v.name.data.index
     case R.Extern:
       return (CKEY_EXTERN[v.data.index] ??= nextUid())
+  }
+}
+
+export function ensureCoercible(
+  span: Span,
+  ty: TFinal,
+): asserts ty is TCoercable {
+  if (ty.k > R.Extern) {
+    issue(
+      `Cannot define coercions for this type.\nnote: Only primitive types (like 'bool' and 'int') and structs can participate in coercion.`,
+      span.for(Reason.ExpectedCoercibleType),
+    )
   }
 }
 

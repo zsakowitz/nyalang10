@@ -13,7 +13,12 @@ import {
   type IFn as ITFn,
 } from "@/lir/exec-typeck"
 import { alt } from "@/parse"
-import { declFn, expr, declStruct as pDeclStruct } from "@/parse/mir"
+import {
+  declCoercion,
+  declFn,
+  expr,
+  declStruct as pDeclStruct,
+} from "@/parse/mir"
 import { vspan, VSPAN } from "@/parse/span"
 import { reset } from "@/shared/ansi"
 import { T } from "@/shared/enum"
@@ -25,6 +30,7 @@ import { assert, unreachable } from "../error"
 import { Block } from "../exec/block"
 import * as mir from "../exec/body"
 import type { Fn } from "../exec/call"
+import { pushCoercion } from "../exec/decl-coerce"
 import { env as mirEnv, pushFn } from "../exec/env"
 import { declStruct } from "../exec/struct"
 import source from "./complex.rs" with { type: "text" }
@@ -155,7 +161,9 @@ function test(x: string) {
   const done = new Set<Decl>()
 
   try {
-    const items = alt([";", expr, declFn, pDeclStruct]).sepBy("").parse(x)
+    const items = alt([";", expr, declFn, pDeclStruct, declCoercion])
+      .sepBy("")
+      .parse(x)
     const e: string[] = []
 
     for (const { k, v } of items) {
@@ -190,6 +198,10 @@ function test(x: string) {
           break
         case 3:
           declStruct(menv, v)
+          break
+        case 4:
+          pushCoercion(menv, v)
+          break
       }
     }
 

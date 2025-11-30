@@ -15,7 +15,7 @@ import { issue } from "../error"
 import { asConcrete } from "../ty/as-concrete"
 import { resolve, type } from "./body"
 import type { FnNamed } from "./call"
-import { pushFn, type Env } from "./env"
+import { pushFn, setTy, type Env } from "./env"
 
 export function declStruct(
   env: Env,
@@ -39,7 +39,7 @@ export function declStruct(
     }
 
     const type = resolve(env, ttyped)
-    const tfinal = asConcrete(type)
+    const tfinal = asConcrete(type, "Struct fields must be concrete types.")
     fields.push([name.data, tfinal, type])
   }
 
@@ -89,4 +89,5 @@ export function declStruct(
 
   pushFn(env, cons)
   accessors.forEach((x) => pushFn(env, x))
+  setTy(env, span, nameRaw, structTy)
 }
