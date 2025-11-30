@@ -1,5 +1,5 @@
 import { T } from "../shared/enum"
-import type { Id } from "../shared/id"
+import { Id } from "../shared/id"
 import {
   bool,
   int,
@@ -317,6 +317,35 @@ export function stmt(env: Env, { k, v }: Stmt): Type {
       const lhs = v.target.map((x) => lval(env, x))
       assertAssignable(ty(T.Tuple, lhs), expr(env, v.value))
       return void_
+  }
+}
+
+// functions declared in a group can reference each other and themselves recursively
+export function declGroup(env: Env, fs: Decl[]): void {
+  // push all fns into global scope
+  for (let i = 0; i < fs.length; i++) {
+    const { name, args, ret } = fs[i]!
+    if (env.fns.has(name)) {
+      lIssue(`Cannot redeclare function '@${name.debug}'.`)
+    }
+    const used = new Set<Id>()
+    args.forEach((x) => {
+      if (used.has(x.name)) {
+        lIssue(
+          `Declaration of '@${name.debug}' cannot have more than one argument named '$${name.debug}'.`,
+        )
+      }
+      used.add(x.name)
+    })
+    env.fns.set(name, { args: args.map((x) => x.type), ret })
+  }
+
+  // check bodies; this enables recursive functions
+  for (let i = 0; i < fs.length; i++) {
+    const { args, ret, body } = fs[i]!
+    const subenv = forkForDecl(env, ret)
+    args.forEach((x) => subenv.locals.set(x.name, { mut: false, ty: x.type }))
+    assertAssignable(expr(env, body), ret)
   }
 }
 
