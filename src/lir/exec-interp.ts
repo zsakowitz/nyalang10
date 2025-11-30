@@ -261,24 +261,24 @@ export function stmt(env: Env, { k, v }: Stmt): unknown {
   }
 }
 
-export function decl(env: Env, f: Decl): IFn {
-  const parent = forkForDecl(env)
-  const execi: IFn["execi"] = (args) => {
-    const env = forkForDecl(parent)
-    f.args.forEach(({ name }, i) => env.locals.set(name, { val: args[i]! }))
-    try {
-      return expr(env, f.body)
-    } catch (e) {
-      if (e instanceof Return) {
-        return e.v
-      } else {
-        throw e
+export function declGroup(env: Env, fs: Decl[]) {
+  fs.forEach((f) => {
+    const subenv = forkForDecl(env)
+    const execi: IFn["execi"] = (args) => {
+      const env = forkForDecl(subenv)
+      f.args.forEach(({ name }, i) => env.locals.set(name, { val: args[i]! }))
+      try {
+        return expr(env, f.body)
+      } catch (e) {
+        if (e instanceof Return) {
+          return e.v
+        } else {
+          throw e
+        }
       }
     }
-  }
-  const fn: IFn = { execi }
-  env.fns.set(f.name, fn)
-  return fn
+    env.fns.set(f.name, { execi })
+  })
 }
 
 class Break {

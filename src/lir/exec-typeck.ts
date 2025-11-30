@@ -349,23 +349,6 @@ export function declGroup(env: Env, fs: Decl[]): void {
   }
 }
 
-export function decl(env: Env, { name, args, ret, body }: Decl): void {
-  if (env.fns.has(name)) {
-    lIssue(`Cannot redeclare function '@${name.debug}'.`)
-  }
-  env = forkForDecl(env, ret)
-  args.forEach(({ name, type }) => {
-    if (env.locals.has(name)) {
-      lIssue(
-        `Declaration of '@${name.debug}' cannot have more than one argument named '$${name.debug}'.`,
-      )
-    }
-    env.locals.set(name, { mut: false, ty: type })
-  })
-  assertAssignable(expr(env, body), ret)
-  env.fns.set(name, { args: args.map((x) => x.type), ret })
-}
-
 export function env(): Env {
   return {
     fns: new Map(),

@@ -89,10 +89,8 @@ function expectTyErr(text: string, reason: string) {
 
 function decl(text: string) {
   const result = DECL.many().parse(text)
-  result.forEach((x) => {
-    tck.decl(tenv, x)
-    itp.decl(ienv, x)
-  })
+  tck.declGroup(tenv, result)
+  itp.declGroup(ienv, result)
 }
 
 declare global {

@@ -1,5 +1,4 @@
-import { ex, st } from "@/lir/def"
-import { printDecl } from "@/lir/def-debug"
+import { ex } from "@/lir/def"
 import * as itp from "@/lir/exec-interp"
 import * as tck from "@/lir/exec-typeck"
 import { alt, Parser } from "@/parse"
@@ -10,6 +9,7 @@ import { T } from "@/shared/enum"
 import { NLError } from "@/shared/error"
 import { Id, idFor } from "@/shared/id"
 import { bool, int, kv, val, type TPrim, type Value } from "../def"
+import { printTFinal } from "../def-debug"
 import { R } from "../enum"
 import { assert, unreachable } from "../error"
 import { Block } from "../exec/block"
@@ -19,7 +19,6 @@ import { pushCoercion } from "../exec/decl-coerce"
 import { env as mirEnv, pushFn } from "../exec/env"
 import { declStruct } from "../exec/struct"
 import source from "./complex.rs" with { type: "text" }
-import { printTFinal } from "../def-debug"
 
 function setup0() {
   const numId = new Id("num")
@@ -175,11 +174,8 @@ function test() {
     const items = ITEM.sepBy("").parse(source)
     items.forEach((item) => go(s, item))
 
-    for (const el of s.m.g.lir) {
-      console.log(printDecl(el))
-      tck.decl(s.lt, el)
-      itp.decl(s.li, el)
-    }
+    tck.declGroup(s.lt, s.m.g.lir)
+    itp.declGroup(s.li, s.m.g.lir)
 
     for (const el of s.tests) {
       tck.expr(s.lt, el.v)
@@ -252,7 +248,7 @@ function bench() {
   bench1("lir", () => {
     const lt = tck.env()
     lt.fns = new Map(s.lt.fns)
-    s.m.g.lir.forEach((x) => tck.decl(lt, x))
+    tck.declGroup(lt, s.m.g.lir)
     s.tests.forEach((x) => tck.expr(lt, x.v))
   })
 
@@ -260,7 +256,7 @@ function bench() {
     const p = ITEM.sepBy("").parse(source)
     const s = setup()
     p.forEach((x) => go(s, x))
-    s.m.g.lir.forEach((x) => tck.decl(s.lt, x))
+    tck.declGroup(s.lt, s.m.g.lir)
     s.tests.forEach((x) => tck.expr(s.lt, x.v))
   })
 }
