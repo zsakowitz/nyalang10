@@ -5,6 +5,7 @@ import {
   type DeclFnNamed,
   type DeclStruct,
   type Expr,
+  type NumData,
   type TTyped,
 } from "@/mir/def"
 import { R } from "@/mir/enum"
@@ -15,7 +16,7 @@ import { always, any, from, lazy, NO_NL, Parser, seq, type ParserLike } from "."
 import { at, type WithSpan } from "./span"
 
 const RESERVED =
-  "coercion|in|fn|struct|union|enum|any|int|bool|void|never|num|str|let|mut|const|type|typeof|unreachable|assert|if|else|match|when|switch|case|for|in|true|false|null|none"
+  "nan|inf|coercion|in|fn|struct|union|enum|any|int|bool|void|never|num|str|let|mut|const|type|typeof|unreachable|assert|if|else|match|when|switch|case|for|in|true|false|null|none"
 
 function kw(x: string) {
   if (!/^[A-Za-z]+$/.test(x)) {
@@ -24,7 +25,17 @@ function kw(x: string) {
   return from(new RegExp("\\b" + x + "\\b", "y"))
 }
 
-const bigint = from(/\d+(?!\w)/y).map(BigInt)
+const bigint = from(/\d+(?!\w|\.\d)/y).map(BigInt)
+
+const num = from(/\d+(?=[.e])(\.\d+)?(e[+-]?\d+)?|inf|nan/y).map(
+  (x): NumData => ({
+    raw: x,
+    f64:
+      x == "inf" ? 1 / 0
+      : x == "nan" ? 0 / 0
+      : Number(x),
+  }),
+)
 
 const u32 = bigint.span().map(({ data, span }) => {
   if (BigInt.asUintN(32, data) != data) {
@@ -190,6 +201,7 @@ const expr_ = any<Expr["data"]>([
   exprUnitIn,
   exprAnonFn,
   exprIfElse,
+  num.map((x) => kv(R.Num, x)),
 ])
   .span()
   .suffixedBySpan([

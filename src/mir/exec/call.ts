@@ -33,7 +33,7 @@ export function tryCall(
 
   const argTx: Tx[] = []
   for (let i = 0; i < args.length; i++) {
-    const tx = matches(env.cx, args[i]!.k, fn.args[i]!)
+    const tx = matches(env.g.cx, args[i]!.k, fn.args[i]!)
     if (!tx) return null
     argTx.push(tx)
   }
@@ -47,7 +47,7 @@ export function tryCall(
       return null
     }
 
-    const tx = matches(env.cx, v.k, expected[1])
+    const tx = matches(env.g.cx, v.k, expected[1])
     if (!tx) return null
     argNamedTx.push(tx)
   }

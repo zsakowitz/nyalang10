@@ -96,7 +96,7 @@ export function unifyValues(
   for (let i = 1; i < vals.length; i++) {
     const cur = vals[i]!
     span = span.join(cur.s)
-    const [tyNext, txPrev, txCur] = unify(message, env.cx, span, ty, cur.k)
+    const [tyNext, txPrev, txCur] = unify(message, env.g.cx, span, ty, cur.k)
     ty = tyNext
     ret = ret.map((x) => execTx(env, txPrev, x))
     ret.push(execTx(env, txCur, cur))

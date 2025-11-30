@@ -28,4 +28,5 @@ export const enum R {
   AnonFn,
   ArrayElements,
   IfElse,
+  Num,
 }

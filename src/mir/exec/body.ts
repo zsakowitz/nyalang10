@@ -3,6 +3,7 @@ import { ex } from "@/lir/def"
 import {
   at,
   Reason,
+  vspan,
   type Span,
   type WithoutSpan,
   type WithSpan,
@@ -47,6 +48,11 @@ export function resolve(env: Env, ty: TTyped): Type {
     case R.Struct:
     case R.Extern:
       return ty as Type
+    case R.Num:
+      if (!env.g.num) {
+        issue(`The 'num' type is not supported by this executor.`, ty.span)
+      }
+      return at(kv(R.Extern, at(env.g.num.extern, ty.span)), ty.span)
     case R.ArrayFixed:
       return at(
         kv(R.ArrayFixed, { el: resolve(env, v.el), len: v.len }),
@@ -247,6 +253,20 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
         span,
       )
     }
+    case R.Num: {
+      if (!env.g.num) {
+        issue(`'num' literals are not supported in this executor.`, span)
+      }
+
+      return val(
+        kv(R.Extern, vspan(env.g.num.extern)),
+        ex(T.Opaque, {
+          ty: kv(T.Extern, env.g.num.extern),
+          data: env.g.num.from(v),
+        }),
+        span,
+      )
+    }
 
     // destructors
     case R.Index: {
@@ -371,7 +391,7 @@ export function anonFn<N extends WithSpan<Id> | null>(
 
     const body = expr(env, fn.body)
 
-    const tx = matches(env.cx, body.k, retResolved)
+    const tx = matches(env.g.cx, body.k, retResolved)
     if (!tx) {
       issue(
         `Function said it would return ${quote(printType(retResolved), blue)}, but it actually returned ${quote(printTFinal(body.k), red)}.\nhelp: This is usually a problem with the called function, not the caller.\nhelp: Check that the function is implemented correctly.`,
@@ -388,7 +408,7 @@ export function anonFn<N extends WithSpan<Id> | null>(
       body: realBody.v,
     }
 
-    _.lirDecls.push(decl)
+    _.g.lir.push(decl)
 
     fs[fhash] = { fname, ty: body.k }
 

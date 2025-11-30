@@ -40,3 +40,5 @@ fn +(a: Point, b: Point) -> Point { Point(a.x + b.x, a.y + b.y) }
 coercion (x: int) -> Complex { Complex(x, 0) }
 
 [0, Complex(2, 3)]
+
+2.3

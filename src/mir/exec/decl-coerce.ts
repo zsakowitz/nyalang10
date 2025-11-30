@@ -38,14 +38,14 @@ export function pushCoercion(env: Env, fn: DeclFn) {
   }
 
   const fnId = new Id("coercion")
-  env.lirDecls.push({
+  env.g.lir.push({
     name: fnId,
     args: [{ name: inputId, type: type(env, from) }],
     ret: type(env, into), // technically, it returns `body.k`, but that equals `into`
     body: body.v,
   })
 
-  env.cx.push(fn.span, {
+  env.g.cx.push(fn.span, {
     from,
     into, // technically, it returns `body.k`, but that equals `into`
     auto: false,

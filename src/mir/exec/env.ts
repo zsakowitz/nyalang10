@@ -1,7 +1,7 @@
 import type { Decl } from "@/lir/def"
 import type { Span, WithSpan } from "@/parse/span"
 import type { Id } from "@/shared/id"
-import type { TFinal, Type } from "../def"
+import type { NumData, TFinal, Type } from "../def"
 import { issue } from "../error"
 import { Coercions } from "../ty/coerce"
 import type { Fn, FnNamed } from "./call"
@@ -13,22 +13,29 @@ export interface ILocal {
   def: Span
 }
 
-export interface Env {
+export interface EnvGlobals {
   cx: Coercions
+  lir: Decl[]
+
+  num: {
+    extern: Id
+    from(data: NumData): unknown // used as the data to T.Opaque when turned into LIR
+  } | null
+}
+
+export interface Env {
+  g: EnvGlobals
   fn: Map<number, Fn[]>
   ty: Map<number, Type>
   vr: Map<number, ILocal>
-
-  lirDecls: Decl[]
 }
 
 export function env(): Env {
   return {
-    cx: new Coercions(),
+    g: { cx: new Coercions(), lir: [], num: null },
     fn: new Map(),
     ty: new Map(),
     vr: new Map(),
-    lirDecls: [],
   }
 }
 
@@ -52,20 +59,18 @@ export function setTy(env: Env, span: Span, name: WithSpan<Id>, ty: Type) {
 
 export function forkLocals(env: Env): Env {
   return {
-    cx: env.cx,
+    g: env.g,
     fn: env.fn,
     ty: env.ty,
     vr: new Map(env.vr),
-    lirDecls: env.lirDecls,
   }
 }
 
 export function forkForDecl(env: Env): Env {
   return {
-    cx: env.cx,
+    g: env.g,
     fn: env.fn,
     ty: env.ty,
     vr: new Map(),
-    lirDecls: env.lirDecls,
   }
 }

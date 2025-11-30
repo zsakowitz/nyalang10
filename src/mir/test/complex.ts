@@ -35,10 +35,31 @@ import { env as mirEnv, pushFn } from "../exec/env"
 import { declStruct } from "../exec/struct"
 import source from "./complex.rs" with { type: "text" }
 
-function setup() {
+function setup0() {
+  const numId = new Id("num")
+
   const m = mirEnv()
+  m.g.num = {
+    extern: numId,
+    from(data) {
+      return data.f64
+    },
+  }
+
   const li = lirInterpEnv()
+  li.opaqueExterns.set(numId, {
+    fromi(data) {
+      return data
+    },
+  })
+
   const lt = lirTypeckEnv()
+
+  return { m, li, lt }
+}
+
+function setup() {
+  const { m, li, lt } = setup0()
 
   pushFn(m, {
     name: idFor("len"),
@@ -149,7 +170,7 @@ function test(x: string) {
         case 1: {
           const ex = mir.expr(menv, v)
 
-          menv.lirDecls.forEach((decl) => {
+          menv.g.lir.forEach((decl) => {
             if (done.has(decl)) return
             etDecl(lt, decl)
             eiDecl(li, decl)
@@ -185,7 +206,7 @@ function test(x: string) {
       return
     }
 
-    for (const el of menv.lirDecls) {
+    for (const el of menv.g.lir) {
       console.log(printDecl(el))
     }
     for (const el of e) {

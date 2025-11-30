@@ -36,7 +36,7 @@ type __T<K> = WithSpan<
 >
 
 // a type as inputted by the user
-export type TTyped = __T<{ k: R.Local; v: Id }>
+export type TTyped = __T<{ k: R.Local; v: Id } | { k: R.Num; v: null }>
 
 // a type once named paths are resolved; still has implicit generics
 export type Type = __T<never>
@@ -75,7 +75,13 @@ export type Expr = WithSpan<
     }
   | { k: R.ArrayElements; v: Expr[] }
   | { k: R.IfElse; v: { cond: Expr; if: Expr; else: Expr } }
+  | { k: R.Num; v: NumData }
 >
+
+export interface NumData {
+  raw: string // \d+(\.\d+)?(e[+-]?\d+)?|inf|nan
+  f64: number
+}
 
 export interface Value {
   k: TFinal
