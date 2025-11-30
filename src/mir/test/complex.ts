@@ -17,7 +17,7 @@ import * as mir from "../exec/body"
 import type { Fn } from "../exec/call"
 import { pushCoercion } from "../exec/decl-coerce"
 import { env as mirEnv, pushFn } from "../exec/env"
-import { declStruct } from "../exec/struct"
+import { declStruct } from "../exec/decl-struct"
 import source from "./complex.rs" with { type: "text" }
 
 function setup0() {
