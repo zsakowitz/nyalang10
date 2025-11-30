@@ -24,25 +24,31 @@ import source from "./complex.rs" with { type: "text" }
 
 function setup0() {
   const numId = new Id("num")
+  const strId = new Id("str")
 
   const m = mirEnv()
   m.g.num = { extern: numId, from: (data) => data.f64 }
+  m.g.str = { extern: strId, from: (data) => data }
   m.ty.set(idFor("num").index, vspan(kv(R.Extern, vspan(numId))))
+  m.ty.set(idFor("str").index, vspan(kv(R.Extern, vspan(strId))))
 
   const li = itp.env()
-  li.opaqueExterns.set(numId, {
-    fromi(data) {
-      return data
-    },
-  })
+  li.opaqueExterns.set(numId, { fromi: (data) => data })
+  li.opaqueExterns.set(strId, { fromi: (data) => data })
 
   const lt = tck.env()
 
-  return { m, li, lt, num: kv(R.Extern, vspan(numId)) satisfies TPrim }
+  return {
+    m,
+    li,
+    lt,
+    num: kv(R.Extern, vspan(numId)) satisfies TPrim,
+    str: kv(R.Extern, vspan(strId)) satisfies TPrim,
+  }
 }
 
 function setup() {
-  const { m, li, lt, num } = setup0()
+  const { m, li, lt, num, str } = setup0()
 
   pushFn(m, {
     name: idFor("len"),
@@ -167,6 +173,7 @@ const ITEM = alt([
   parse.declStruct,
   parse.declCoercion,
 ])
+
 type Item = typeof ITEM extends Parser<infer U> ? U : never
 
 function test() {

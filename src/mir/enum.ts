@@ -13,6 +13,10 @@ export const enum R {
   ArrayDyn, // array with dynamic length; not available in shaders
   Array, // generic over fixed-length array and dyn-length array
 
+  StrFixed, // string with known, constant value
+  StrDyn, // string with unknown value
+  Str, // generic over StrConst and StrDyn
+
   Either,
   UnitIn,
   FnKnown,

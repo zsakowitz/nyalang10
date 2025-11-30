@@ -21,6 +21,10 @@ export interface EnvGlobals {
     extern: Id
     from(data: NumData): unknown // used as the data to T.Opaque when turned into LIR
   } | null
+  str: {
+    extern: Id
+    from(data: string): unknown
+  } | null
 }
 
 export interface Env {
@@ -32,7 +36,7 @@ export interface Env {
 
 export function env(): Env {
   return {
-    g: { cx: new Coercions(), lir: [], num: null },
+    g: { cx: new Coercions(), lir: [], num: null, str: null },
     fn: new Map(),
     ty: new Map(),
     vr: new Map(),

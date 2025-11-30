@@ -76,6 +76,7 @@ export type Expr = WithSpan<
   | { k: R.ArrayElements; v: Expr[] }
   | { k: R.IfElse; v: { cond: Expr; if: Expr; else: Expr } }
   | { k: R.Num; v: NumData }
+  | { k: R.Str; v: string }
   | { k: R.Block; v: Stmt[] }
 >
 

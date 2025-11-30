@@ -96,3 +96,5 @@ fn fact(x: int) -> int {
 }
 
 fact(5)
+
+"world"

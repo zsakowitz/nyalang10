@@ -140,20 +140,6 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
         span,
       )
     }
-    case R.Num: {
-      if (!env.g.num) {
-        issue(`'num' literals are not supported in this executor.`, span)
-      }
-
-      return val(
-        kv(R.Extern, vspan(env.g.num.extern)),
-        ex(T.Opaque, {
-          ty: kv(T.Extern, env.g.num.extern),
-          data: env.g.num.from(v),
-        }),
-        span,
-      )
-    }
     case R.Index: {
       const target = expr(env, v.target)
       const index = expr(env, v.index)
@@ -207,5 +193,33 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
     }
     case R.Block:
       return block(env, span, v)
+    case R.Num: {
+      if (!env.g.num) {
+        issue(`'num' literals are not supported in this executor.`, span)
+      }
+
+      return val(
+        kv(R.Extern, vspan(env.g.num.extern)),
+        ex(T.Opaque, {
+          ty: kv(T.Extern, env.g.num.extern),
+          data: env.g.num.from(v),
+        }),
+        span,
+      )
+    }
+    case R.Str: {
+      if (!env.g.str) {
+        issue(`This executor does not support 'str' literals.`, span)
+      }
+
+      return val(
+        kv(R.Extern, vspan(env.g.str.extern)),
+        ex(T.Opaque, {
+          ty: kv(T.Extern, env.g.str.extern),
+          data: env.g.str.from(v),
+        }),
+        span,
+      )
+    }
   }
 }

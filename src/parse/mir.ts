@@ -38,6 +38,55 @@ const num = from(/\d+(?=[.e])(\.\d+)?(e[+-]?\d+)?|inf|nan/y).map(
   }),
 )
 
+const str = from(
+  /"(?:[^\\"\x00-\x1f\x7f]|\\x[0-9A-Fa-f][0-9A-Fa-f]|\\u\{[0-9A-Fa-f]+\}|\\["\\nrt])*"/y,
+).map((x) => {
+  let ret = ""
+  const end = x.length - 1
+
+  for (let i = 1; i < end; i++) {
+    if (x[i] != "\\") {
+      ret += x[i]
+      continue
+    }
+
+    switch (x[i + 1]) {
+      case "n":
+        ret += "\n"
+        i++
+        break
+      case "r":
+        ret += "\r"
+        i++
+        break
+      case "t":
+        ret += "\t"
+        i++
+        break
+      case '"':
+      case "\\":
+        ret += x[i + 1]
+        i++
+        break
+      case "x":
+        ret += String.fromCodePoint(parseInt(x.slice(i + 2, i + 4), 16))
+        i += 3
+        break
+      case "u":
+        i += 3
+        let n = 0
+        while (x[i] != "}") {
+          n = 16 * n + parseInt(x[i]!, 16)
+          i++
+        }
+        ret += String.fromCodePoint(n)
+        break
+    }
+  }
+
+  return ret
+})
+
 const u32 = bigint.span().map(({ data, span }) => {
   if (BigInt.asUintN(32, data) != data) {
     issue(`Expected integer '${data}' to be from 0 to 2^32-1, inclusive.`, span)
@@ -208,6 +257,7 @@ const expr_ = any<Expr["data"]>([
   exprAnonFn,
   exprIfElse,
   num.map((x) => kv(R.Num, x)),
+  str.map((x) => kv(R.Str, x)),
 ])
   .span()
   .suffixedBySpan([
