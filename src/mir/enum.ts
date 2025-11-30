@@ -29,4 +29,8 @@ export const enum R {
   ArrayElements,
   IfElse,
   Num,
+  Block,
+
+  Expr,
+  Let,
 }

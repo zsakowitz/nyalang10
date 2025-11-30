@@ -34,6 +34,7 @@ import { unifyValues } from "../ty/unify"
 import { Block } from "./block"
 import { call, type Fn } from "./call"
 import { forkForDecl, forkLocals, pushFn, type Env } from "./env"
+import { block } from "./stmt"
 import { execTx } from "./tx"
 
 export function resolve(env: Env, ty: TTyped): Type {
@@ -262,8 +263,6 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
         span,
       )
     }
-
-    // destructors
     case R.Index: {
       const target = expr(env, v.target)
       const index = expr(env, v.index)
@@ -315,6 +314,8 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
         span,
       )
     }
+    case R.Block:
+      return block(env, span, v)
   }
 }
 

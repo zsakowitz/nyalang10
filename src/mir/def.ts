@@ -76,6 +76,14 @@ export type Expr = WithSpan<
   | { k: R.ArrayElements; v: Expr[] }
   | { k: R.IfElse; v: { cond: Expr; if: Expr; else: Expr } }
   | { k: R.Num; v: NumData }
+  | { k: R.Block; v: Stmt[] }
+>
+
+export type Stmt = WithSpan<
+  | { k: R.Expr; v: Expr }
+  | { k: R.Let; v: { mut: boolean; name: Id; value: Expr } }
+  | never
+  | never // to make typescript do line wrapping
 >
 
 export interface NumData {
@@ -89,7 +97,17 @@ export interface Value {
   s: Span
 }
 
+export interface ValueStmt {
+  k: TFinal
+  v: lir.Stmt
+  s: Span
+}
+
 export function val(k: TFinal, v: lir.Expr, s: Span): Value {
+  return { k, v, s }
+}
+
+export function vals(k: TFinal, v: lir.Stmt, s: Span): ValueStmt {
   return { k, v, s }
 }
 

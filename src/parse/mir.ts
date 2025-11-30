@@ -6,6 +6,7 @@ import {
   type DeclStruct,
   type Expr,
   type NumData,
+  type Stmt,
   type TTyped,
 } from "@/mir/def"
 import { R } from "@/mir/enum"
@@ -45,7 +46,7 @@ const u32 = bigint.span().map(({ data, span }) => {
 })
 
 const ID_REGEX = new RegExp(
-  `\\b(?!(?:${RESERVED})\\b)[A-Za-z][A-Za-z0-9_]*\\b`,
+  `\\b(?!(?:${RESERVED})\\b)(?:[A-Za-z][A-Za-z0-9_]*|_[A-Za-z0-9_]+)\\b`,
   "y",
 )
 
@@ -67,7 +68,12 @@ const type: Parser<TTyped> = lazy(() => type_)
 
 const expr: Parser<Expr> = lazy(() => exprWithOps_)
 
-const block = seq(["{", expr, "}"]).key(1)
+const stmt: Parser<Stmt> = lazy(() => stmt_)
+
+const block: Parser<Expr> = seq(["{", stmt.many(), "}"])
+  .key(1)
+  .map((x) => kv(R.Block, x))
+  .span()
 
 const namedParam = seq([id, maybeType(":")]).map((x) => ({
   name: x[0],
@@ -273,6 +279,19 @@ const exprWithOps_ = exprWithUnary
       arg.span.join(op[1].span),
     )
   })
+
+const stmtLet = seq([kw("let"), kw("mut").opt(), id, "=", expr]).map(
+  ([, mut, name, , value]) => kv(R.Let, { mut: !!mut, name, value }),
+)
+
+const stmt_ = any<Stmt["data"]>([
+  expr.map((x) => kv(R.Expr, x)),
+  from(";")
+    .as(kv(R.Void, null))
+    .span()
+    .map((x) => kv(R.Expr, x)),
+  stmtLet,
+]).span()
 
 const fnBody = any([block, from("=").skipThen(expr)])
 

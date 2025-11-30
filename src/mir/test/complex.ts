@@ -19,6 +19,7 @@ import { pushCoercion } from "../exec/decl-coerce"
 import { env as mirEnv, pushFn } from "../exec/env"
 import { declStruct } from "../exec/struct"
 import source from "./complex.rs" with { type: "text" }
+import { printTFinal } from "../def-debug"
 
 function setup0() {
   const numId = new Id("num")
@@ -97,6 +98,7 @@ function setup() {
   dec("<=", [int, int], bool, ([a, b]) => a <= b)
   dec(">=", [int, int], bool, ([a, b]) => a >= b)
 
+  dec("int_to_num", [int], num, ([a]) => a)
   dec("-", [num], num, ([a]) => -a)
   dec("+", [num, num], num, ([a, b]) => a + b)
   dec("-", [num, num], num, ([a, b]) => a - b)
@@ -182,7 +184,7 @@ function test() {
     for (const el of s.tests) {
       tck.expr(s.lt, el.v)
       const res = itp.expr(s.li, el.v)
-      console.log(res)
+      console.log(res, "::", printTFinal(el.k))
     }
   } catch (e) {
     if (e instanceof NLError) {
@@ -190,7 +192,10 @@ function test() {
     } else {
       throw e
     }
+    return false
   }
+
+  return true
 }
 
 function go(setup: Setup, { k, v }: Item) {
@@ -260,6 +265,7 @@ function bench() {
   })
 }
 
-test()
-console.log("\n== BENCHMARKS ==")
-bench()
+if (test()) {
+  console.log("\n== BENCHMARKS ==")
+  bench()
+}
