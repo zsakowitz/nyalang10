@@ -39,7 +39,7 @@ const num = from(/\d+(?=[.e])(\.\d+)?(e[+-]?\d+)?|inf|nan/y).map(
 )
 
 const str = from(
-  /"(?:[^\\"\x00-\x1f\x7f]|\\x[0-9A-Fa-f][0-9A-Fa-f]|\\u\{[0-9A-Fa-f]+\}|\\["\\nrt])*"/y,
+  /"(?:[^\\"\x00-\x1f\x7f]|\\x[0-9A-Fa-f][0-9A-Fa-f]|\\u\{[0-9A-Fa-f]+\}|\\u[0-9A-Fa-f]{4}|\\["\\nrtbf/])*"/y,
 ).map((x) => {
   let ret = ""
   const end = x.length - 1
@@ -51,8 +51,20 @@ const str = from(
     }
 
     switch (x[i + 1]) {
+      case "/":
+        ret += "/"
+        i++
+        break
       case "n":
         ret += "\n"
+        i++
+        break
+      case "b":
+        ret += "\b"
+        i++
+        break
+      case "f":
+        ret += "\f"
         i++
         break
       case "r":
@@ -73,13 +85,18 @@ const str = from(
         i += 3
         break
       case "u":
-        i += 3
-        let n = 0
-        while (x[i] != "}") {
-          n = 16 * n + parseInt(x[i]!, 16)
-          i++
+        if (x[i + 2] == "{") {
+          i += 3
+          let n = 0
+          while (x[i] != "}") {
+            n = 16 * n + parseInt(x[i]!, 16)
+            i++
+          }
+          ret += String.fromCodePoint(n)
+        } else {
+          ret += String.fromCodePoint(parseInt(x.slice(i + 2, i + 4), 16))
+          i += 6
         }
-        ret += String.fromCodePoint(n)
         break
     }
   }
