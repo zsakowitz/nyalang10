@@ -331,65 +331,67 @@ export function anonFn<N extends WithSpan<Id> | null>(
     args: argsResolved,
     argsNamed: [],
     ret: retResolved,
-    exec(_, span, args, _argsNamed) {
-      const fhash = hashList(args.map((x) => x.k))
-      if (fhash in fs) {
-        return val(
-          fs[fhash]!.ty,
-          lir.ex(T.Call, {
-            name: fs[fhash]!.fname,
-            args: args.map((x) => x.v),
-          }),
-          span,
-        )
-      }
-
-      const fname = fn.name ? fn.name.data.fresh() : new Id("anon")
-
-      const declArgs = fn.args.map(({ name }, i) => ({
-        name: name.data.fresh(),
-        type: type(subenv, args[i]!.k),
-      }))
-
-      const env = forkForDecl(subenv)
-      for (let i = 0; i < fn.args.length; i++) {
-        env.vr.set(fn.args[i]!.name.data.index, {
-          mut: false,
-          ty: args[i]!.k,
-          value: declArgs[i]!.name,
-          def: fn.args[i]!.name.span,
-        })
-      }
-
-      const body = expr(env, fn.body)
-
-      const tx = matches(env.cx, body.k, retResolved)
-      if (!tx) {
-        issue(
-          `Function said it would return ${quote(printType(retResolved), blue)}, but it actually returned ${quote(printTFinal(body.k), red)}.`,
-          fn.ret.span.for(Reason.TyExpected).with(body.s.for(Reason.TyActual)),
-        )
-      }
-
-      const realBody = execTx(env, tx, body)
-
-      const decl: lir.Decl = {
-        name: fname,
-        args: declArgs,
-        ret: type(subenv, realBody.k),
-        body: realBody.v,
-      }
-
-      _.lirDecls.push(decl)
-
-      fs[fhash] = { fname, ty: body.k }
-      return val(
-        body.k,
-        lir.ex(T.Call, { name: fname, args: args.map((x) => x.v) }),
-        span,
-      )
-    },
+    exec,
   }
 
   return final
+
+  function exec(_: Env, span: Span, args: Value[]) {
+    const fhash = hashList(args.map((x) => x.k))
+    if (fhash in fs) {
+      return val(
+        fs[fhash]!.ty,
+        lir.ex(T.Call, {
+          name: fs[fhash]!.fname,
+          args: args.map((x) => x.v),
+        }),
+        span,
+      )
+    }
+
+    const fname = fn.name ? fn.name.data.fresh() : new Id("anon")
+
+    const declArgs = fn.args.map(({ name }, i) => ({
+      name: name.data.fresh(),
+      type: type(subenv, args[i]!.k),
+    }))
+
+    const env = forkForDecl(subenv)
+    for (let i = 0; i < fn.args.length; i++) {
+      env.vr.set(fn.args[i]!.name.data.index, {
+        mut: false,
+        ty: args[i]!.k,
+        value: declArgs[i]!.name,
+        def: fn.args[i]!.name.span,
+      })
+    }
+
+    const body = expr(env, fn.body)
+
+    const tx = matches(env.cx, body.k, retResolved)
+    if (!tx) {
+      issue(
+        `Function said it would return ${quote(printType(retResolved), blue)}, but it actually returned ${quote(printTFinal(body.k), red)}.`,
+        fn.ret.span.for(Reason.TyExpected).with(body.s.for(Reason.TyActual)),
+      )
+    }
+
+    const realBody = execTx(env, tx, body)
+
+    const decl: lir.Decl = {
+      name: fname,
+      args: declArgs,
+      ret: type(subenv, realBody.k),
+      body: realBody.v,
+    }
+
+    _.lirDecls.push(decl)
+
+    fs[fhash] = { fname, ty: body.k }
+    return val(
+      body.k,
+      lir.ex(T.Call, { name: fname, args: args.map((x) => x.v) }),
+      span,
+    )
+  }
 }

@@ -41,3 +41,7 @@ fn is_zero(x: [any]) -> [bool] = x.map(is_zero)
 is_zero([2, 3, 4, 0])
 
 [2, complex(3, 4)].map(|x| x * x)
+
+fn two_if_zero(x) = if (x == 0) 2 else 0
+
+two_if_zero(true)
