@@ -48,11 +48,6 @@ export function resolve(env: Env, ty: TTyped): Type {
     case R.Struct:
     case R.Extern:
       return ty as Type
-    case R.Num:
-      if (!env.g.num) {
-        issue(`The 'num' type is not supported by this executor.`, ty.span)
-      }
-      return at(kv(R.Extern, at(env.g.num.extern, ty.span)), ty.span)
     case R.ArrayFixed:
       return at(
         kv(R.ArrayFixed, { el: resolve(env, v.el), len: v.len }),
@@ -71,7 +66,7 @@ export function resolve(env: Env, ty: TTyped): Type {
       if (refd == null) {
         issue(`Type '${v.data.debug}' is not defined.`, ty.span)
       }
-      return refd
+      return at(refd.data, ty.span)
     case R.UnitIn:
       return at(kv(R.UnitIn, resolve(env, v)), ty.span)
   }

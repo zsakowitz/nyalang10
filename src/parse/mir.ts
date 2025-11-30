@@ -16,7 +16,7 @@ import { always, any, from, lazy, NO_NL, Parser, seq, type ParserLike } from "."
 import { at, type WithSpan } from "./span"
 
 const RESERVED =
-  "nan|inf|coercion|in|fn|struct|union|enum|any|int|bool|void|never|num|str|let|mut|const|type|typeof|unreachable|assert|if|else|match|when|switch|case|for|in|true|false|null|none"
+  "nan|inf|coercion|in|fn|struct|union|enum|any|int|bool|void|never|let|mut|const|type|typeof|unreachable|assert|if|else|match|when|switch|case|for|in|true|false|null|none"
 
 function kw(x: string) {
   if (!/^[A-Za-z]+$/.test(x)) {

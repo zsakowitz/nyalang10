@@ -160,6 +160,7 @@ export enum Reason {
   DuplicateField,
   ExpectedCoercibleType,
   TraceCoercion,
+  UnexpectedChar,
 }
 
 const COLORS = {
@@ -176,6 +177,7 @@ const COLORS = {
   [Reason.DuplicateField]: red,
   [Reason.ExpectedCoercibleType]: red,
   [Reason.TraceCoercion]: "",
+  [Reason.UnexpectedChar]: red,
   null: "",
 }
 
@@ -193,5 +195,6 @@ const REASONS = {
   [Reason.DuplicateField]: "duplicate field name",
   [Reason.ExpectedCoercibleType]: "not a primitive type or struct",
   [Reason.TraceCoercion]: "while checking that this coercion is valid",
+  [Reason.UnexpectedChar]: "unexpected character",
   null: "",
 }

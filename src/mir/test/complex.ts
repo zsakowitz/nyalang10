@@ -45,6 +45,7 @@ function setup0() {
       return data.f64
     },
   }
+  m.ty.set(idFor("num").index, vspan(kv(R.Extern, vspan(numId))))
 
   const li = lirInterpEnv()
   li.opaqueExterns.set(numId, {
@@ -55,11 +56,11 @@ function setup0() {
 
   const lt = lirTypeckEnv()
 
-  return { m, li, lt }
+  return { m, li, lt, num: kv(R.Extern, vspan(numId)) satisfies TPrim }
 }
 
 function setup() {
-  const { m, li, lt } = setup0()
+  const { m, li, lt, num } = setup0()
 
   pushFn(m, {
     name: idFor("len"),
@@ -110,6 +111,27 @@ function setup() {
   dec("*", [int, int], int, ([a, b]) => (a * b) | 0)
   dec("/", [int, int], int, ([a, b]) => (a / b) | 0)
   dec("==", [int, int], bool, ([a, b]) => a == b)
+  dec("!=", [int, int], bool, ([a, b]) => a != b)
+  dec("<", [int, int], bool, ([a, b]) => a < b)
+  dec(">", [int, int], bool, ([a, b]) => a > b)
+  dec("<=", [int, int], bool, ([a, b]) => a <= b)
+  dec(">=", [int, int], bool, ([a, b]) => a >= b)
+
+  dec("-", [num], num, ([a]) => -a)
+  dec("+", [num, num], num, ([a, b]) => a + b)
+  dec("-", [num, num], num, ([a, b]) => a - b)
+  dec("*", [num, num], num, ([a, b]) => a * b)
+  dec("/", [num, num], num, ([a, b]) => a / b)
+  dec("==", [num, num], bool, ([a, b]) => a == b)
+  dec("!=", [num, num], bool, ([a, b]) => a != b)
+  dec("<", [num, num], bool, ([a, b]) => a < b)
+  dec(">", [num, num], bool, ([a, b]) => a > b)
+  dec("<=", [num, num], bool, ([a, b]) => a <= b)
+  dec(">=", [num, num], bool, ([a, b]) => a >= b)
+
+  dec("&", [bool, bool], bool, ([a, b]) => a && b)
+  dec("|", [bool, bool], bool, ([a, b]) => a || b)
+  dec("!", [bool], bool, ([a]) => !a)
 
   return { m, li, lt }
 

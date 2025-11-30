@@ -1,7 +1,7 @@
 import { lIce as iceLir } from "@/lir/error"
 import { ice, issue } from "@/mir/error"
 import { blue, bold, red, reset } from "@/shared/ansi"
-import { at, Span, type Pos, type WithSpan } from "./span"
+import { at, Reason, Span, type Pos, type WithSpan } from "./span"
 
 const WS = /\s/
 const LETTER0 = /^\w/
@@ -132,7 +132,15 @@ export class Parser<T> {
       return result.value
     }
 
-    issue("Failed to parse: " + state.debug(), state.span())
+    state.skipSpaces()
+    const start = state.pos()
+    const end = state.pos()
+    end.col += 1
+    end.idx += 1
+    issue(
+      "Failed to parse input.",
+      state.span(start, end).for(Reason.UnexpectedChar),
+    )
   }
 
   map<U>(f: (x: T) => U): Parser<U> {

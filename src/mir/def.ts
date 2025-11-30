@@ -36,7 +36,7 @@ type __T<K> = WithSpan<
 >
 
 // a type as inputted by the user
-export type TTyped = __T<{ k: R.Local; v: Id } | { k: R.Num; v: null }>
+export type TTyped = __T<{ k: R.Local; v: Id }>
 
 // a type once named paths are resolved; still has implicit generics
 export type Type = __T<never>

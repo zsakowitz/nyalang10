@@ -1,12 +1,18 @@
-struct Complex { re: int, im: int }
+struct Complex { re: num, im: num }
+
+coercion (x: num) -> Complex { Complex(x, 0.0) }
 
 fn +(a: Complex, b: Complex) -> Complex {
   Complex(a.re + b.re, a.im + b.im)
 }
 
+Complex(2.0, 3.0) + Complex(4.0, 5.0)
+
 fn -(a: Complex) -> Complex {
   Complex(-a.re, -a.im)
 }
+
+-Complex(2.0, 3.0)
 
 fn *(a: Complex, b: Complex) -> Complex {
   Complex(
@@ -15,30 +21,28 @@ fn *(a: Complex, b: Complex) -> Complex {
   )
 }
 
-fn /(a: Complex, b: int) -> Complex {
+Complex(2.0, 3.0) * Complex(4.0, 5.0)
+
+fn /(a: Complex, b: num) -> Complex {
   Complex(a.re / b, a.im / b)
 }
+
+Complex(2.0, 3.0) / 5.0
 
 fn conj(a: Complex) -> Complex {
   Complex(a.re, -a.im)
 }
 
+Complex(3.0, 4.0).conj
+
 fn /(a: Complex, b: Complex) -> Complex {
   (a * b.conj) / ((b.im * b.im) + (b.im * b.im))
 }
 
-fn +(a: any, b: [any]) -> [any] {
-  [i => a + b[i]; b.len]
+Complex(2.0, 3.0) / Complex(4.0, 5.0)
+
+fn ==(a: Complex, b: Complex) -> bool {
+  (a.re == b.re) & (a.im == b.im)
 }
 
-fn map(array: [any], f) -> [any] = [i => f(array[i]); len(array)]
-
-struct Point { x: int, y: int }
-
-fn +(a: Point, b: Point) -> Point { Point(a.x + b.x, a.y + b.y) }
-
-coercion (x: int) -> Complex { Complex(x, 0) }
-
-[0, Complex(2, 3)]
-
-2.3
+Complex(2.0, 3.0) == Complex(4.0, 5.0)
