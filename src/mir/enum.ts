@@ -3,6 +3,7 @@ export const enum R {
   Void,
   Int,
   Bool,
+  Struct,
   Extern,
 
   Never,

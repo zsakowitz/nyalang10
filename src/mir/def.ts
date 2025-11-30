@@ -7,11 +7,18 @@ import type { Hash } from "./ty/hash"
 
 export type Id = WithSpan<IdRaw>
 
+export interface Struct {
+  name: Id /* must be unique, not constructed via `idFor` */
+  fields: TFinal[]
+  lir: lir.Type // cached version of lir.ty(T.Tuple, this.fields.map(x => type(env, x)))
+}
+
 // coercable types
 export type TCoercable =
   | { k: R.Void; v: null }
   | { k: R.Int; v: null }
   | { k: R.Bool; v: null }
+  | { k: R.Struct; v: Struct }
   | { k: R.Extern; v: Id }
 
 // primitive types

@@ -18,6 +18,8 @@ function asCkey({ k, v }: TCoercable): number {
       return CKEY_INT
     case R.Bool:
       return CKEY_BOOL
+    case R.Struct:
+      return v.name.data.index
     case R.Extern:
       return (CKEY_EXTERN[v.data.index] ??= nextUid())
   }

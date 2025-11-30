@@ -11,6 +11,8 @@ export function asConcrete({ data: { k, v }, span }: Type): TFinal {
       return int
     case R.Bool:
       return bool
+    case R.Struct:
+      return kv(R.Struct, v)
     case R.Extern:
       return kv(R.Extern, v)
     case R.Never:

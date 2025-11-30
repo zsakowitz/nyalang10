@@ -31,6 +31,8 @@ export function hash({ k, v }: TFinal): Hash {
       return R_INT
     case R.Bool:
       return R_BOOL
+    case R.Struct:
+      return v.name.data.index as Hash
     case R.Extern:
       return (R_EXTERN[v.data.index] ??= nextHash())
     case R.Never:

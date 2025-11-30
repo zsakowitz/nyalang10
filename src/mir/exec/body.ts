@@ -44,6 +44,7 @@ export function resolve(env: Env, ty: TTyped): Type {
     case R.Int:
     case R.Bool:
     case R.Any:
+    case R.Struct:
     case R.Extern:
       return ty as Type
     case R.ArrayFixed:
@@ -80,6 +81,8 @@ export function type(env: Env, ty: TFinal): lir.Type {
       return lir.int
     case R.Bool:
       return lir.bool
+    case R.Struct:
+      return ty.v.lir
     case R.Extern:
       return lir.ty(T.Extern, ty.v.data)
     case R.Never:

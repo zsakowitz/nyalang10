@@ -32,8 +32,9 @@ export function matches(
     case R.Int:
     case R.Bool:
       return dk == sk
+    case R.Struct:
     case R.Extern:
-      return dk == R.Extern && sv == dv
+      return dk == sk && sv == dv
     case R.ArrayFixed:
       return (
         dk == R.ArrayFixed ? sv.len == dv.len && matches(null, sv.el, dv.el)
