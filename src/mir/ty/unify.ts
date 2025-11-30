@@ -1,5 +1,7 @@
 import { Reason, type Span } from "@/parse/span"
+import { blue, quote } from "@/shared/ansi"
 import { kv, never, type TCoercable, type TFinal, type Value } from "../def"
+import { printTFinal } from "../def-debug"
 import { R } from "../enum"
 import { issue } from "../error"
 import type { Env } from "../exec/env"
@@ -60,10 +62,18 @@ export function unify(
     return result
   }
 
-  issue(
-    `${message}\nnote: these values cannot be coerced to have the same type`, // TODO: note about union types
-    span,
-  )
+  // TODO: add "help: maybe use a union type?"
+  if (a.k <= R.Extern && b.k <= R.Extern) {
+    issue(
+      `${message}\nnote: ${quote(printTFinal(a), blue)} and ${quote(printTFinal(b), blue)} cannot be coerced into the same type.\nhelp: Try defining a coercion from one type to the other.`,
+      span,
+    )
+  } else {
+    issue(
+      `${message}\nnote: ${quote(printTFinal(a), blue)} and ${quote(printTFinal(b), blue)} are not the same type.`,
+      span,
+    )
+  }
 }
 
 export function unifyValues(

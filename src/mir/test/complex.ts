@@ -90,30 +90,6 @@ function setup() {
   dec("/", [int, int], int, ([a, b]) => (a / b) | 0)
   dec("==", [int, int], bool, ([a, b]) => a == b)
 
-  const complexP: TPrim = kv(R.Extern, vspan(idFor("complex")))
-
-  dec("re", [complexP], int, ([a]) => a.re)
-  dec("im", [complexP], int, ([a]) => a.im)
-  const c = dec("complex", [int, int], complexP, ([re, im]) => ({
-    re,
-    im,
-    [Symbol.for("nodejs.util.inspect.custom")]: () => `${re} + ${im}i`,
-  }))
-  m.ty.set(idFor("complex").index, vspan(complexP))
-  m.cx.push(VSPAN, {
-    from: int,
-    into: complexP,
-    exec(env, value) {
-      return c.exec(
-        env,
-        VSPAN,
-        [value, val(int, ex(T.Int, 0n), VSPAN)],
-        Object.create(null),
-      )
-    },
-    auto: false,
-  })
-
   return { m, li, lt }
 
   function dec(

@@ -235,7 +235,7 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
     case R.ArrayElements: {
       const vals = unifyValues(
         env,
-        "cannot construct array from these elements",
+        "Cannot construct an array unless all elements have compatible types.",
         v.map((x) => expr(env, x)),
       )
       return val(

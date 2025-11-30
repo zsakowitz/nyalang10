@@ -1,27 +1,29 @@
-fn +(a: complex, b: complex) -> complex {
-  complex(a.re + b.re, a.im + b.im)
+struct Complex { re: int, im: int }
+
+fn +(a: Complex, b: Complex) -> Complex {
+  Complex(a.re + b.re, a.im + b.im)
 }
 
-fn -(a: complex) -> complex {
-  complex(-a.re, -a.im)
+fn -(a: Complex) -> Complex {
+  Complex(-a.re, -a.im)
 }
 
-fn *(a: complex, b: complex) -> complex {
-  complex(
+fn *(a: Complex, b: Complex) -> Complex {
+  Complex(
     (a.re * b.re) - (a.im * b.im),
     (a.im * b.im) + (a.re * b.im),
   )
 }
 
-fn /(a: complex, b: int) -> complex {
-  complex(a.re / b, a.im / b)
+fn /(a: Complex, b: int) -> Complex {
+  Complex(a.re / b, a.im / b)
 }
 
-fn conj(a: complex) -> complex {
-  complex(a.re, -a.im)
+fn conj(a: Complex) -> Complex {
+  Complex(a.re, -a.im)
 }
 
-fn /(a: complex, b: complex) -> complex {
+fn /(a: Complex, b: Complex) -> Complex {
   (a * b.conj) / ((b.im * b.im) + (b.im * b.im))
 }
 
@@ -35,8 +37,6 @@ struct Point { x: int, y: int }
 
 fn +(a: Point, b: Point) -> Point { Point(a.x + b.x, a.y + b.y) }
 
-Point(2,3) + Point(4,5)
+coercion (x: int) -> Complex { Complex(x, 0) }
 
-coercion (x: int) -> Point { Point(x,0) }
-
-[2, Point(4,5)]
+[0, Complex(2, 3)]
