@@ -8,7 +8,7 @@ fn -(a: complex) -> complex {
 
 fn *(a: complex, b: complex) -> complex {
   complex(
-    (a.re * b.im) - (a.im * b.im),
+    (a.re * b.re) - (a.im * b.im),
     (a.im * b.im) + (a.re * b.im),
   )
 }
@@ -35,4 +35,4 @@ fn inc(x: int | complex) -> int | complex {
 
 fn map(array: [any], f) -> [any] = [i => f(array[i]); len(array)]
 
-[i => i; 5].map(|x| x + x)
+[2, complex(3, 4)].map(|x| x * x)

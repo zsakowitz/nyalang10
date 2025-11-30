@@ -85,7 +85,11 @@ function setup() {
 
   dec("re", [complexP], int, ([a]) => a.re)
   dec("im", [complexP], int, ([a]) => a.im)
-  const c = dec("complex", [int, int], complexP, ([re, im]) => ({ re, im }))
+  const c = dec("complex", [int, int], complexP, ([re, im]) => ({
+    re,
+    im,
+    [Symbol.for("nodejs.util.inspect.custom")]: () => `${re} + ${im}i`,
+  }))
   m.ty.set(idFor("complex").index, vspan(complexP))
   m.cx.push(VSPAN, {
     from: int,
