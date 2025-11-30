@@ -55,11 +55,14 @@ export function evalFn<N extends WithSpan<Id> | null>(
     argsNamed: [],
     ret: retResolved,
     exec,
+    checked: false,
   }
 
   return final
 
   function exec(_: Env, span: Span, args: Value[]) {
+    final.checked = true
+
     const fhash = hashList(args.map((x) => x.k))
 
     cached: {

@@ -77,7 +77,7 @@ export class Span {
       head
       + lines
         .map((x, i) => {
-          x = x.trim()
+          x = x.trimEnd()
           const r = i + r0
           const start =
             r == this.start.row ? Math.max(0, this.start.col - c0)
@@ -87,6 +87,13 @@ export class Span {
             r == this.end.row ? Math.max(0, this.end.col - c0)
             : r < this.end.row ? x.length
             : 0
+          const caretStart = this.start.row == this.end.row ? start : 0
+          const caretEnd =
+            this.start.row == this.end.row ?
+              end
+            : Math.max(
+                ...lines.map((x, i, a) => (i == a.length - 1 ? end : x.length)),
+              )
           return (
             reset
             + dim
@@ -96,8 +103,8 @@ export class Span {
             + (reset + dim + x.slice(end))
             + (r == this.end.row ?
               "\n     | "
-              + " ".repeat(start)
-              + (color + "^".repeat(Math.max(0, end - start)))
+              + " ".repeat(caretStart)
+              + (color + "^".repeat(Math.max(0, caretEnd - caretStart)))
               + (" " + reset + color + REASONS[this.kind ?? "null"])
             : "")
           )

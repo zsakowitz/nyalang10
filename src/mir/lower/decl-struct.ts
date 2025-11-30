@@ -70,6 +70,7 @@ export function declStruct(
         span,
       )
     },
+    checked: true,
   }
 
   const accessors: FnNamed[] = fields.map(([name, tfinal, type], i) => ({
@@ -85,6 +86,7 @@ export function declStruct(
         span,
       )
     },
+    checked: true,
   }))
 
   pushFn(env, cons)

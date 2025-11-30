@@ -1,6 +1,5 @@
 tasks sorted by priority and whether or not they have concrete use cases:
 
-- string literals (for markup)
 - rewrite parser in terms of tokens (better errors, less duplicate space-eating
   work, and alternate structure for markup)
 - markup literals (for markup)

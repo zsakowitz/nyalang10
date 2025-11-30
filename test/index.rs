@@ -85,7 +85,7 @@ fn isec(l1: Line, l2: Line) -> Point {
   _isec(l1.p1, l1.p2, l2.p1, l2.p2)
 }
 
-isec(Line(Point(2,3), Point(4,5)), Line(Point(8,2),Point(0,6)))
+isec(line(Point(2,3), Point(4,5)), line(Point(8,2),Point(0,6)))
 
 fn fact(x: int) -> int {
   if (x == 0) {

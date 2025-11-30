@@ -4,7 +4,7 @@ import * as tck from "@/lir/exec-typeck"
 import { bool, int, kv, val, type TPrim, type Value } from "@/mir/def"
 import { printTFinal } from "@/mir/def-debug"
 import { R } from "@/mir/enum"
-import { assert, unreachable } from "@/mir/error"
+import { assert, issue, unreachable } from "@/mir/error"
 import { Block } from "@/mir/lower/block"
 import type { Fn } from "@/mir/lower/call"
 import { pushCoercion } from "@/mir/lower/decl-coerce"
@@ -82,6 +82,7 @@ function setup0() {
           span,
         )
       },
+      checked: true,
     }
 
     pushFn(m, mirFn)
@@ -112,6 +113,7 @@ function setup1({ m, num, dec }: Setup) {
           unreachable(span)
       }
     },
+    checked: true,
   })
 
   pushFn(m, {
@@ -134,6 +136,7 @@ function setup1({ m, num, dec }: Setup) {
           unreachable(span)
       }
     },
+    checked: true,
   })
 
   dec("-", [int], int, ([a]) => -a | 0)
@@ -237,6 +240,17 @@ function test() {
       tck.expr(s.lt, el.v)
       const res = itp.expr(s.li, el.v)
       console.log(res, "::", printTFinal(el.k))
+    }
+
+    for (const v of s.m.fn.values()) {
+      for (const el of v) {
+        if (!el.checked) {
+          issue(
+            `Function '${el.name!.name}' is unused.\nnote: Functions are not type-checked until they are used, so unused functions\nnote:   would otherwise never error. This error ensures you don't write a\nnote:   function without checking it for validity.`,
+            el.span,
+          )
+        }
+      }
     }
   } catch (e) {
     if (e instanceof NLError) {

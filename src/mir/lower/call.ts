@@ -16,6 +16,7 @@ export interface Fn<N extends Id | null = Id | null> {
   argsNamed: [number, Type][]
   ret: Type
   exec(env: Env, span: Span, args: Value[], argsNamed: [number, Value][]): Value
+  checked: boolean
 }
 
 export type FnNamed = Fn<Id>
