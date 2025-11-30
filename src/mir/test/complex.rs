@@ -35,4 +35,9 @@ fn inc(x: int | complex) -> int | complex {
 
 fn map(array: [any], f) -> [any] = [i => f(array[i]); len(array)]
 
+fn is_zero(x: int) -> bool = x == 0
+fn is_zero(x: [any]) -> [bool] = x.map(is_zero)
+
+is_zero([2, 3, 4, 0])
+
 [2, complex(3, 4)].map(|x| x * x)

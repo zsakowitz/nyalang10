@@ -165,6 +165,18 @@ const exprAnonFn: Parser<Expr["data"]> = seq([
     return kv(R.AnonFn, { hash: nextHash(), f })
   })
 
+const exprIfElse: Parser<Expr["data"]> = seq([
+  kw("if"),
+  "(",
+  expr,
+  ")",
+  expr,
+  "else",
+  expr,
+]).map(([, , cond, , if_, , else_]) =>
+  kv(R.IfElse, { cond, if: if_, else: else_ }),
+)
+
 const expr_ = any<Expr["data"]>([
   kw("void").as(kv(R.Void, null)),
   bigint.map((x) => kv(R.Int, x)),
@@ -176,6 +188,7 @@ const expr_ = any<Expr["data"]>([
   block.map((x) => x.data),
   exprUnitIn,
   exprAnonFn,
+  exprIfElse,
 ])
   .span()
   .suffixedBySpan([

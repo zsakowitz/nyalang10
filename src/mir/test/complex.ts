@@ -18,7 +18,7 @@ import { reset } from "@/shared/ansi"
 import { T } from "@/shared/enum"
 import { NLError } from "@/shared/error"
 import { Id, idFor } from "@/shared/id"
-import { int, kv, val, type TPrim } from "../def"
+import { bool, int, kv, val, type TPrim } from "../def"
 import { R } from "../enum"
 import { assert, unreachable } from "../error"
 import { Block } from "../exec/block"
@@ -80,6 +80,7 @@ function setup() {
   dec("-", [int, int], int, ([a, b]) => (a - b) | 0)
   dec("*", [int, int], int, ([a, b]) => (a * b) | 0)
   dec("/", [int, int], int, ([a, b]) => (a / b) | 0)
+  dec("==", [int, int], bool, ([a, b]) => a == b)
 
   const complexP: TPrim = kv(R.Extern, vspan(idFor("complex")))
 

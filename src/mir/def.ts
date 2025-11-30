@@ -67,6 +67,7 @@ export type Expr = WithSpan<
       v: { /* must be unique per AST node */ hash: Hash; f: DeclFn<null> }
     }
   | { k: R.ArrayElements; v: Expr[] }
+  | { k: R.IfElse; v: { cond: Expr; if: Expr; else: Expr } }
 >
 
 export interface Value {

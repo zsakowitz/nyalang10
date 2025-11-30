@@ -26,4 +26,5 @@ export const enum R {
   Typeof,
   AnonFn,
   ArrayElements,
+  IfElse,
 }

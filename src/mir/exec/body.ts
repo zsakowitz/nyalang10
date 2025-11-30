@@ -268,6 +268,35 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
       }
       issue(`Only arrays can be indexed.`, target.s.for(Reason.ExpectedArray))
     }
+    case R.IfElse: {
+      const cond = expr(env, v.cond)
+      if (cond.k.k != R.Bool) {
+        issue(
+          `The condition of an 'if' statement must be a boolean.`,
+          cond.s.for(Reason.ExpectedBool),
+        )
+      }
+
+      const {
+        k,
+        v: [b1, b0],
+      } = unifyValues(
+        env,
+        "cannot return these values from the same 'if' expression",
+        [expr(env, v.if), expr(env, v.else)],
+      )
+
+      return val(
+        k,
+        ex(T.IfElse, {
+          condition: cond.v,
+          type: type(env, k),
+          if: b1!.v,
+          else: b0!.v,
+        }),
+        span,
+      )
+    }
   }
 }
 
