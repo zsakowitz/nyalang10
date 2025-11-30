@@ -2,7 +2,7 @@ import * as lir from "@/lir/def"
 import type { Span, WithSpan } from "@/parse/span"
 import type { Id as IdRaw } from "@/shared/id"
 import { R } from "./enum"
-import type { Fn } from "./exec/call"
+import type { Fn } from "./lower/call"
 import type { Hash } from "./ty/hash"
 
 export type Id = WithSpan<IdRaw>
