@@ -345,7 +345,7 @@ export function declGroup(env: Env, fs: Decl[]): void {
     const { args, ret, body } = fs[i]!
     const subenv = forkForDecl(env, ret)
     args.forEach((x) => subenv.locals.set(x.name, { mut: false, ty: x.type }))
-    assertAssignable(expr(env, body), ret)
+    assertAssignable(expr(subenv, body), ret)
   }
 }
 
