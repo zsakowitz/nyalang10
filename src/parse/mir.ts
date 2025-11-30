@@ -333,19 +333,67 @@ const exprWithUnary = from(PUNC_UNARY_PREFIX)
     ),
   )
 
-const exprWithOps_ = exprWithUnary
-  .then(seq([from(PUNC_BINARY).map(idFor).span(), exprWithUnary]).opt())
-  .map(([arg, op]): Expr => {
-    if (op == null) return arg
-    return at(
-      kv(R.Call, {
-        target: local(op[0]),
-        args: [arg, op[1]],
-        argsNamed: [],
-      }),
-      arg.span.join(op[1].span),
-    )
+function ops(base: Parser<Expr>, rest: Parser<[WithSpan<Id>, Expr][]>) {
+  return base.then(rest).map(([arg, ops]): Expr => {
+    for (const [k, v] of ops) {
+      arg = at(
+        kv(R.Call, {
+          target: local(k),
+          args: [arg, v],
+          argsNamed: [],
+        }),
+        arg.span.join(v.span),
+      )
+    }
+    return arg
   })
+}
+
+function lAssocOp(base: Parser<Expr>, op: ParserLike<string>) {
+  return ops(base, seq([from(op).map(idFor).span(), base]).many())
+}
+
+function singleOp(base: Parser<Expr>, op: ParserLike<string>) {
+  return ops(
+    base,
+    seq([from(op).map(idFor).span(), base])
+      .opt()
+      .map((x) => (x ? [x] : [])),
+  )
+}
+
+function asId(x: ParserLike<string>) {
+  return from(x).map(idFor).span()
+}
+
+const ops0 = exprWithUnary
+
+const ops1 = ops(
+  ops0,
+  seq([asId("^"), ops0])
+    .opt()
+    .map((x) => (x ? [x] : [])),
+)
+
+const ops2 = ops(
+  ops1,
+  any([
+    seq([asId("**"), ops1]).map((x) => [x]),
+    seq([asId(/[*\/%]/y), ops1]).many(),
+  ]),
+)
+
+const ops3 = ops(
+  ops2,
+  any([
+    seq([asId("++"), ops2]).map((x) => [x]),
+    seq([asId(/[+-]/y), ops2]).many(),
+  ]),
+)
+
+const ops4 = singleOp(ops3, /[=<!>]=|[&|~<>]/y)
+
+const exprWithOps_ = ops4
 
 const stmtLet = seq([kw("let"), kw("mut").opt(), id, "=", expr]).map(
   ([, mut, name, , value]) => kv(R.Let, { mut: !!mut, name, value }),
