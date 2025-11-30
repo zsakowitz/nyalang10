@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "dev": "bun --watch src/mir/test/complex.ts"
+    "dev": "bun --watch test/index.ts"
   },
   "devDependencies": {
     "prettier": "^3.7.3",

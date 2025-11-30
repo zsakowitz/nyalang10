@@ -166,7 +166,43 @@ function setup1({ m, num, dec }: Setup) {
   dec("!", [bool], bool, ([a]) => !a)
 }
 
-function setup2({ dec, num, str, content }: Setup) {}
+// we cheat. content is actually just typst content code
+function setup2({ dec, num, str, content }: Setup) {
+  function encode(s: string): string {
+    return JSON.stringify(s).replaceAll(
+      /(\\{2})*\\(b|f|u....)/g,
+      (x) =>
+        x[1]
+        + "\\u{"
+        + (x[2] == "b" ? "8"
+        : x[2] == "f" ? "c"
+        : x[2]!.slice(1, 5))
+        + "}",
+    )
+  }
+
+  dec("to_content", [int], content, ([a]) => "" + a)
+  dec("to_content", [bool], content, ([a]) => "" + a)
+  dec("to_content", [num], content, ([a]) => {
+    if (a == 1 / 0) return "#(float.inf)"
+    if (a == -1 / 0) return "#(-float.inf)"
+    if (a == 0 / 0) return "#(float.nan)"
+    let s = "" + a
+    if (!/[.e]/.test(s)) return s + ".0"
+    return s
+  })
+  dec("to_content", [str], content, ([a]) => "#" + encode(a))
+
+  dec("+", [content, content], content, ([a, b]) => a + b)
+
+  dec("md_p", [content], content, ([a]) => `#par[${a}]`)
+  dec(
+    "md_math",
+    [content, bool],
+    content,
+    ([a, b]) => `#math.equation(block: ${b})[${a}]`,
+  )
+}
 
 function setup() {
   const s = setup0()
