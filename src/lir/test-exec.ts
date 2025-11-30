@@ -1,3 +1,4 @@
+import { isEmptyStatement } from "typescript"
 import { BLOCK_CONTENTS, DECL } from "../parse/lir"
 import { all, cyan, reset } from "../shared/ansi"
 import { T } from "../shared/enum"
@@ -88,9 +89,17 @@ function expectTyErr(text: string, reason: string) {
 }
 
 function decl(text: string) {
-  const result = DECL.many().parse(text)
-  tck.declGroup(tenv, result)
-  itp.declGroup(ienv, result)
+  try {
+    const result = DECL.many().parse(text)
+    tck.declGroup(tenv, result)
+    itp.declGroup(ienv, result)
+  } catch (e) {
+    if (e instanceof NLError) {
+      console.error(`[error] ` + reset + e.message)
+    } else {
+      throw e
+    }
+  }
 }
 
 declare global {
@@ -285,3 +294,15 @@ expect(`let $a = [fill @ibox(2); 2]; @ibox_set($a[0], 4); $a`, [
   { v: 4 },
   { v: 4 },
 ])
+
+decl(`
+  fn @fact($x int) int {
+    if @ieq(0, $x) -> int then {
+      1
+    } else {
+      @imul($x, @fact(@isub($x, 1)))
+    }
+  }
+`)
+
+expect(`@fact(5)`, 120)
