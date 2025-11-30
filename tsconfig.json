@@ -12,6 +12,7 @@
     "strict": true,
     "target": "ES2022",
     "verbatimModuleSyntax": true,
+    "keyofStringsOnly": false,
     "paths": {
       "@/*": ["./src/*"]
     }

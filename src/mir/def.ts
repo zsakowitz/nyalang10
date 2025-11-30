@@ -104,3 +104,8 @@ export type DeclFn<N extends Id | null = Id | null> = WithSpan<{
 }>
 
 export type DeclFnNamed = DeclFn<Id>
+
+export type DeclStruct = WithSpan<{
+  name: Id
+  fields: { name: Id; type: TTyped }[]
+}>

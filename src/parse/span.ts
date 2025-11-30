@@ -44,7 +44,7 @@ export class Span {
   }
 
   private highlightSelf(): string {
-    const color = COLORS[this.kind ?? "null"]
+    const color = this.kind == null ? "" : COLORS[this.kind]
 
     let r0 = Math.max(this.start.row, 0)
     let r1 = this.end.row + 1
@@ -113,19 +113,6 @@ export class Span {
   }
 }
 
-export enum Reason {
-  TyExpected,
-  TyActual,
-  TraceStart,
-  Trace,
-  ExpectedInt,
-  ExpectedBool,
-  ExpectedArray,
-  ExpectedConcreteType,
-  ExpectedFn,
-  TyIncompat,
-}
-
 export interface WithSpan<T> {
   data: T
   span: Span
@@ -149,6 +136,20 @@ export function vspan<T>(data: T): WithSpan<T> {
   return at(data, VSPAN)
 }
 
+export enum Reason {
+  TyExpected,
+  TyActual,
+  TraceStart,
+  Trace,
+  ExpectedInt,
+  ExpectedBool,
+  ExpectedArray,
+  ExpectedConcreteType,
+  ExpectedFn,
+  TyIncompat,
+  DuplicateField,
+}
+
 const COLORS = {
   [Reason.TyActual]: red,
   [Reason.TyExpected]: blue,
@@ -160,6 +161,7 @@ const COLORS = {
   [Reason.ExpectedConcreteType]: red,
   [Reason.ExpectedFn]: red,
   [Reason.TyIncompat]: red,
+  [Reason.DuplicateField]: red,
   null: "",
 }
 
@@ -174,5 +176,6 @@ const REASONS = {
   [Reason.ExpectedConcreteType]: "not a concrete type",
   [Reason.ExpectedFn]: "not a function",
   [Reason.TyIncompat]: "these expressions do not have compatible types",
+  [Reason.DuplicateField]: "duplicate field name",
   null: "",
 }

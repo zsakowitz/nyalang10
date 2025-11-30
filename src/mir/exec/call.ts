@@ -1,7 +1,9 @@
 import { Reason, type Span } from "@/parse/span"
+import { blue, quote, yellow } from "@/shared/ansi"
 import { NLError } from "@/shared/error"
 import { Id } from "@/shared/id"
 import type { Type, Value } from "../def"
+import { printTFinal } from "../def-debug"
 import { issue } from "../error"
 import { matches } from "../ty/matches"
 import type { Env } from "./env"
@@ -86,9 +88,12 @@ export function call(
   }
 
   issue(
-    name ?
-      `'${name.name}' cannot be called with these arguments.`
-    : `This function cannot be called with these arguments.`,
+    (name ? quote(name.name, yellow) : `This function`)
+      + " cannot be called with "
+      + (args.length == 0 ?
+        "no arguments"
+      : args.map((x) => quote(printTFinal(x.k), blue)).join(", "))
+      + (argsNamed.length ? " and some named arguments" : ""),
     span.for(Reason.TraceStart),
   )
 }

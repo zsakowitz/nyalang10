@@ -390,6 +390,19 @@ export function any<T>(p: readonly ParserLike<T>[]): Parser<T> {
   })
 }
 
+export function alt<const T extends ParserLike<unknown>[]>(
+  p: T,
+): Parser<
+  {
+    [K in keyof T]: {
+      k: K extends `${infer U extends number}` ? U : never
+      v: T[K] extends ParserLike<infer U> ? U : never
+    }
+  }[number]
+> {
+  return any(p.map((x, i) => from(x).map((v) => ({ k: i, v })))) as any
+}
+
 export function lazyAny<T>(p: () => readonly ParserLike<T>[]): Parser<T> {
   return lazy(() => any(p()))
 }

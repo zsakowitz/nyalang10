@@ -12,7 +12,8 @@ import {
   env as lirTypeckEnv,
   type IFn as ITFn,
 } from "@/lir/exec-typeck"
-import { expr, fn } from "@/parse/mir"
+import { alt } from "@/parse"
+import { declFn, expr, declStruct as pDeclStruct } from "@/parse/mir"
 import { vspan, VSPAN } from "@/parse/span"
 import { reset } from "@/shared/ansi"
 import { T } from "@/shared/enum"
@@ -25,6 +26,7 @@ import { Block } from "../exec/block"
 import * as mir from "../exec/body"
 import type { Fn } from "../exec/call"
 import { env as mirEnv, pushFn } from "../exec/env"
+import { declStruct } from "../exec/struct"
 import source from "./complex.rs" with { type: "text" }
 
 function setup() {
@@ -153,35 +155,41 @@ function test(x: string) {
   const done = new Set<Decl>()
 
   try {
-    const items = fn.alt(expr).alt(";").sepBy("").parse(x)
+    const items = alt([";", expr, declFn, pDeclStruct]).sepBy("").parse(x)
     const e: string[] = []
 
-    for (const itemRaw of items) {
-      if (itemRaw[0] == 1) continue
-      const item = itemRaw[1]
-      if (item[0] == 0) {
-        mir.declFn(menv, item[1])
-      } else {
-        const ex = mir.expr(menv, item[1])
+    for (const { k, v } of items) {
+      switch (k) {
+        case 0:
+          break
+        case 1: {
+          const ex = mir.expr(menv, v)
 
-        menv.lirDecls.forEach((decl) => {
-          if (done.has(decl)) return
-          etDecl(lt, decl)
-          eiDecl(li, decl)
-          done.add(decl)
-        })
+          menv.lirDecls.forEach((decl) => {
+            if (done.has(decl)) return
+            etDecl(lt, decl)
+            eiDecl(li, decl)
+            done.add(decl)
+          })
 
-        etExpr(lt, ex.v)
-        const value = eiExpr(li, ex.v)
+          etExpr(lt, ex.v)
+          const value = eiExpr(li, ex.v)
 
-        const text =
-          printExpr(ex.v)
-          + " :: "
-          + printType(mir.type(menv, ex.k))
-          + " = "
-          + (globalThis as any).Bun.inspect(value, { colors: true })
+          const text =
+            printExpr(ex.v)
+            + " :: "
+            + printType(mir.type(menv, ex.k))
+            + " = "
+            + (globalThis as any).Bun.inspect(value, { colors: true })
 
-        e.push(text)
+          e.push(text)
+          break
+        }
+        case 2:
+          mir.declFn(menv, v)
+          break
+        case 3:
+          declStruct(menv, v)
       }
     }
 

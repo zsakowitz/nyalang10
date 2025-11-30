@@ -1,0 +1,92 @@
+import { ex, ty } from "@/lir/def"
+import { at, Reason, Span } from "@/parse/span"
+import { T } from "@/shared/enum"
+import type { Id } from "@/shared/id"
+import {
+  kv,
+  val,
+  type DeclStruct,
+  type Struct,
+  type TFinal,
+  type Type,
+} from "../def"
+import { R } from "../enum"
+import { issue } from "../error"
+import { asConcrete } from "../ty/as-concrete"
+import { resolve, type } from "./body"
+import type { FnNamed } from "./call"
+import { pushFn, type Env } from "./env"
+
+export function declStruct(
+  env: Env,
+  { data: { name: nameRaw, fields: fieldsRaw }, span }: DeclStruct,
+) {
+  const name = at(nameRaw.data.fresh(), nameRaw.span)
+
+  const fieldsUsed = new Map<number, Span>()
+  const fields: [Id, TFinal, Type][] = []
+  for (let i = 0; i < fieldsRaw.length; i++) {
+    const { name, type: ttyped } = fieldsRaw[i]!
+
+    if (fieldsUsed.has(name.data.index)) {
+      issue(
+        `Cannot declare field '${name.data.name}' twice in struct '${name.data.name}'.`,
+        fieldsUsed
+          .get(name.data.index)!
+          .for(Reason.DuplicateField)
+          .with(name.span.for(Reason.DuplicateField)),
+      )
+    }
+
+    const type = resolve(env, ttyped)
+    const tfinal = asConcrete(type)
+    fields.push([name.data, tfinal, type])
+  }
+
+  const struct: Struct = {
+    name,
+    fields: fields.map((x) => x[1]),
+    lir: ty(
+      T.Tuple,
+      fields.map((x) => type(env, x[1])),
+    ),
+  }
+
+  const structTy: Type = at(kv(R.Struct, struct), nameRaw.span)
+
+  const cons: FnNamed = {
+    name: nameRaw.data,
+    span,
+    args: fields.map((x) => x[2]),
+    argsNamed: [],
+    ret: structTy,
+    exec(_, span, args) {
+      return val(
+        kv(R.Struct, struct),
+        ex(
+          T.Tuple,
+          args.map((x) => x.v),
+        ),
+        span,
+      )
+    },
+  }
+
+  const accessors: FnNamed[] = fields.map(([name, tfinal, type], i) => ({
+    name,
+    span,
+    args: [structTy],
+    argsNamed: [],
+    ret: type,
+    exec(_, span, args) {
+      return val(
+        tfinal,
+        ex(T.TupleIndex, { target: args[0]!.v, index: i }),
+        span,
+      )
+    },
+  }))
+
+  pushFn(env, cons)
+  accessors.forEach((x) => pushFn(env, x))
+}

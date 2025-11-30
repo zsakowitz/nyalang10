@@ -3,6 +3,7 @@ import {
   kv,
   type DeclFn,
   type DeclFnNamed,
+  type DeclStruct,
   type Expr,
   type TTyped,
 } from "@/mir/def"
@@ -263,7 +264,7 @@ const exprWithOps_ = exprWithUnary
 
 const fnBody = any([block, from("=").skipThen(expr)])
 
-const fn: Parser<DeclFnNamed> = seq([
+const declFn: Parser<DeclFnNamed> = seq([
   kw("fn"),
   idOrSym,
   "(",
@@ -275,7 +276,17 @@ const fn: Parser<DeclFnNamed> = seq([
   .map((x) => ({ name: x[1], args: x[3], ret: x[5], body: x[6] }))
   .span()
 
-export { expr, fn, type }
+export const declStruct: Parser<DeclStruct> = seq([
+  kw("struct"),
+  id,
+  "(",
+  namedParam.sepBy(","),
+  ")",
+])
+  .map((x): DeclStruct["data"] => ({ name: x[1], fields: x[3] }))
+  .span()
+
+export { declFn, expr, type }
 
 function maybeType(start: ParserLike<unknown>): Parser<TTyped> {
   return any([from(start).skipThen(type), always(kv(R.Any, null)).span()])
