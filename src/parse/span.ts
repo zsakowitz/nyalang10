@@ -97,7 +97,7 @@ export class Span {
             + (r == this.end.row ?
               "\n     | "
               + " ".repeat(start)
-              + (color + "^".repeat(end - start))
+              + (color + "^".repeat(Math.max(0, end - start)))
               + (" " + reset + color + REASONS[this.kind ?? "null"])
             : "")
           )
