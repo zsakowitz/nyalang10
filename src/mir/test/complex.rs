@@ -46,3 +46,17 @@ fn ==(a: Complex, b: Complex) -> bool {
 }
 
 Complex(2.0, 3.0) == Complex(4.0, 5.0)
+
+struct Point {
+  x: num,
+  y: num,
+}
+
+struct Line {
+  p1: Point,
+  p2: Point,
+}
+
+fn line(p1: Point, p2: Point) -> Line {
+  Line(p1, p2)
+}

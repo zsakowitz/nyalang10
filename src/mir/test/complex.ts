@@ -1,30 +1,15 @@
-import { ex, type Decl } from "@/lir/def"
-import { printDecl, printExpr, printType } from "@/lir/def-debug"
-import {
-  decl as eiDecl,
-  expr as eiExpr,
-  env as lirInterpEnv,
-  type IFn as IEFn,
-} from "@/lir/exec-interp"
-import {
-  decl as etDecl,
-  expr as etExpr,
-  env as lirTypeckEnv,
-  type IFn as ITFn,
-} from "@/lir/exec-typeck"
-import { alt } from "@/parse"
-import {
-  declCoercion,
-  declFn,
-  expr,
-  declStruct as pDeclStruct,
-} from "@/parse/mir"
+import { ex, st } from "@/lir/def"
+import { printDecl } from "@/lir/def-debug"
+import * as itp from "@/lir/exec-interp"
+import * as tck from "@/lir/exec-typeck"
+import { alt, Parser } from "@/parse"
+import * as parse from "@/parse/mir"
 import { vspan, VSPAN } from "@/parse/span"
 import { reset } from "@/shared/ansi"
 import { T } from "@/shared/enum"
 import { NLError } from "@/shared/error"
 import { Id, idFor } from "@/shared/id"
-import { bool, int, kv, val, type TPrim } from "../def"
+import { bool, int, kv, val, type TPrim, type Value } from "../def"
 import { R } from "../enum"
 import { assert, unreachable } from "../error"
 import { Block } from "../exec/block"
@@ -39,22 +24,17 @@ function setup0() {
   const numId = new Id("num")
 
   const m = mirEnv()
-  m.g.num = {
-    extern: numId,
-    from(data) {
-      return data.f64
-    },
-  }
+  m.g.num = { extern: numId, from: (data) => data.f64 }
   m.ty.set(idFor("num").index, vspan(kv(R.Extern, vspan(numId))))
 
-  const li = lirInterpEnv()
+  const li = itp.env()
   li.opaqueExterns.set(numId, {
     fromi(data) {
       return data
     },
   })
 
-  const lt = lirTypeckEnv()
+  const lt = tck.env()
 
   return { m, li, lt, num: kv(R.Extern, vspan(numId)) satisfies TPrim }
 }
@@ -133,7 +113,7 @@ function setup() {
   dec("|", [bool, bool], bool, ([a, b]) => a || b)
   dec("!", [bool], bool, ([a]) => !a)
 
-  return { m, li, lt }
+  return { m, li, lt, tests: [] as Value[] }
 
   function dec(
     name: string,
@@ -143,7 +123,7 @@ function setup() {
   ) {
     const lirId = new Id(name)
 
-    const lirFn: IEFn & ITFn = {
+    const lirFn: itp.IFn & tck.IFn = {
       args: args.map((x) => mir.type(m, x)),
       ret: mir.type(m, ret),
       execi: exec,
@@ -175,74 +155,111 @@ function setup() {
   }
 }
 
-function test(x: string) {
-  const { m: menv, li, lt } = setup()
-  const done = new Set<Decl>()
+type Setup = ReturnType<typeof setup>
+
+const ITEM = alt([
+  ";",
+  parse.expr,
+  parse.declFn,
+  parse.declStruct,
+  parse.declCoercion,
+])
+type Item = typeof ITEM extends Parser<infer U> ? U : never
+
+function test() {
+  const s = setup()
 
   try {
-    const items = alt([";", expr, declFn, pDeclStruct, declCoercion])
-      .sepBy("")
-      .parse(x)
-    const e: string[] = []
+    const items = ITEM.sepBy("").parse(source)
+    items.forEach((item) => go(s, item))
 
-    for (const { k, v } of items) {
-      switch (k) {
-        case 0:
-          break
-        case 1: {
-          const ex = mir.expr(menv, v)
-
-          menv.g.lir.forEach((decl) => {
-            if (done.has(decl)) return
-            etDecl(lt, decl)
-            eiDecl(li, decl)
-            done.add(decl)
-          })
-
-          etExpr(lt, ex.v)
-          const value = eiExpr(li, ex.v)
-
-          const text =
-            printExpr(ex.v)
-            + " :: "
-            + printType(mir.type(menv, ex.k))
-            + " = "
-            + (globalThis as any).Bun.inspect(value, { colors: true })
-
-          e.push(text)
-          break
-        }
-        case 2:
-          mir.declFn(menv, v)
-          break
-        case 3:
-          declStruct(menv, v)
-          break
-        case 4:
-          pushCoercion(menv, v)
-          break
-      }
-    }
-
-    if (e == null) {
-      return
-    }
-
-    for (const el of menv.g.lir) {
+    for (const el of s.m.g.lir) {
       console.log(printDecl(el))
+      tck.decl(s.lt, el)
+      itp.decl(s.li, el)
     }
-    for (const el of e) {
-      console.log(el)
+
+    for (const el of s.tests) {
+      tck.expr(s.lt, el.v)
+      const res = itp.expr(s.li, el.v)
+      console.log(res)
     }
-    console.log()
   } catch (e) {
     if (e instanceof NLError) {
       console.error("[error] " + reset + e.message)
-      console.log()
     } else {
       throw e
     }
   }
 }
 
-test(source)
+function go(setup: Setup, { k, v }: Item) {
+  switch (k) {
+    case 0:
+      break
+    case 1:
+      setup.tests.push(mir.expr(setup.m, v))
+      break
+    case 2:
+      mir.declFn(setup.m, v)
+      break
+    case 3:
+      declStruct(setup.m, v)
+      break
+    case 4:
+      pushCoercion(setup.m, v)
+      break
+    default:
+      k satisfies never
+  }
+}
+
+function bench1(name: string, f: () => void) {
+  const N = 1e4
+
+  // warm up
+  for (let i = 0; i < 1e3; i++) {
+    f()
+  }
+  const start = Date.now()
+  for (let i = 0; i < N; i++) {
+    f()
+  }
+  const end = Date.now()
+
+  const per = (1000 * (end - start)) / N
+
+  console.log(Math.round(per).toString().padStart(3, "0") + "µs", name)
+}
+
+function bench() {
+  bench1("parsing", () => ITEM.sepBy("").parse(source))
+  bench1("env setup", setup)
+
+  const p = ITEM.sepBy("").parse(source)
+  bench1("mir", () => {
+    const s = setup()
+    p.forEach((x) => go(s, x))
+  })
+
+  const s = setup()
+  p.forEach((x) => go(s, x))
+  bench1("lir", () => {
+    const lt = tck.env()
+    lt.fns = new Map(s.lt.fns)
+    s.m.g.lir.forEach((x) => tck.decl(lt, x))
+    s.tests.forEach((x) => tck.expr(lt, x.v))
+  })
+
+  bench1("end-to-end", () => {
+    const p = ITEM.sepBy("").parse(source)
+    const s = setup()
+    p.forEach((x) => go(s, x))
+    s.m.g.lir.forEach((x) => tck.decl(s.lt, x))
+    s.tests.forEach((x) => tck.expr(s.lt, x.v))
+  })
+}
+
+test()
+console.log("\n== BENCHMARKS ==")
+bench()
