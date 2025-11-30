@@ -16,8 +16,9 @@ import { Block } from "../exec/block"
 import * as mir from "../exec/body"
 import type { Fn } from "../exec/call"
 import { pushCoercion } from "../exec/decl-coerce"
-import { env as mirEnv, pushFn } from "../exec/env"
+import { declFn } from "../exec/decl-fn"
 import { declStruct } from "../exec/decl-struct"
+import { env as mirEnv, pushFn } from "../exec/env"
 import source from "./complex.rs" with { type: "text" }
 
 function setup0() {
@@ -202,7 +203,7 @@ function go(setup: Setup, { k, v }: Item) {
       setup.tests.push(mir.expr(setup.m, v))
       break
     case 2:
-      mir.declFn(setup.m, v)
+      declFn(setup.m, v)
       break
     case 3:
       declStruct(setup.m, v)

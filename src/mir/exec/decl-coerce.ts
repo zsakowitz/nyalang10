@@ -7,7 +7,8 @@ import { val, type DeclFn } from "../def"
 import { issue } from "../error"
 import { asConcrete } from "../ty/as-concrete"
 import { ensureCoercible } from "../ty/coerce"
-import { anonFn, type } from "./body"
+import { type } from "./body"
+import { evalFn } from "./decl-fn"
 import type { Env } from "./env"
 
 export function pushCoercion(env: Env, fn: DeclFn) {
@@ -15,7 +16,7 @@ export function pushCoercion(env: Env, fn: DeclFn) {
     issue(`Coercions must accept exactly one unnamed parameter.`, fn.span)
   }
 
-  const f = anonFn(env, fn)
+  const f = evalFn(env, fn)
 
   const from = asConcrete(f.args[0]!, "Coercions must accept a concrete type.")
   const into = asConcrete(f.ret, "Coercions must return a concrete type.")
