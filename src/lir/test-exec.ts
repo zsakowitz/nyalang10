@@ -297,7 +297,7 @@ expect(`let $a = [fill @ibox(2); 2]; @ibox_set($a[0], 4); $a`, [
 
 decl(`
   fn @fact($x int) int {
-    if @ieq(0, $x) -> int then {
+    if @ieq($x, 0) -> int then {
       1
     } else {
       @imul($x, @fact(@isub($x, 1)))
@@ -305,4 +305,25 @@ decl(`
   }
 `)
 
+decl(`
+  fn @even($x int) bool {
+    if @ieq($x, 0) -> bool then {
+      true
+    } else {
+      @odd(@isub($x, 1))
+    }
+  }
+
+  fn @odd($x int) bool {
+    if @ieq($x, 0) -> bool then {
+      false
+    } else {
+      @even(@isub($x, 1))
+    }
+  }
+`)
+
 expect(`@fact(5)`, 120)
+
+expect(`@even(4)`, true)
+expect(`@even(73)`, false)
