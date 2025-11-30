@@ -11,8 +11,8 @@ import {
   type ValueStmt,
 } from "../def"
 import { R } from "../enum"
-import { expr } from "./body"
 import { forkLocals, type Env } from "./env"
+import { expr } from "./exec-expr"
 
 export function stmt(env: Env, { data: { k, v }, span }: Stmt): ValueStmt {
   switch (k) {

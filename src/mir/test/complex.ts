@@ -13,12 +13,13 @@ import { printTFinal } from "../def-debug"
 import { R } from "../enum"
 import { assert, unreachable } from "../error"
 import { Block } from "../lower/block"
-import * as mir from "../lower/body"
 import type { Fn } from "../lower/call"
 import { pushCoercion } from "../lower/decl-coerce"
 import { declFn } from "../lower/decl-fn"
 import { declStruct } from "../lower/decl-struct"
 import { env as mirEnv, pushFn } from "../lower/env"
+import { expr } from "../lower/exec-expr"
+import * as mir from "../lower/exec-ty"
 import source from "./complex.rs" with { type: "text" }
 
 function setup0() {
@@ -200,7 +201,7 @@ function go(setup: Setup, { k, v }: Item) {
     case 0:
       break
     case 1:
-      setup.tests.push(mir.expr(setup.m, v))
+      setup.tests.push(expr(setup.m, v))
       break
     case 2:
       declFn(setup.m, v)

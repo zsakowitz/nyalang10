@@ -1,21 +1,8 @@
 import * as lir from "@/lir/def"
 import { ex } from "@/lir/def"
-import { at, Reason, vspan, type Span } from "@/parse/span"
-import { blue, quote } from "@/shared/ansi"
+import { Reason, vspan } from "@/parse/span"
 import { T } from "@/shared/enum"
-import {
-  bool,
-  int,
-  kv,
-  val,
-  void_,
-  type DeclFnNamed,
-  type Expr,
-  type TFinal,
-  type TTyped,
-  type Type,
-  type Value,
-} from "../def"
+import { bool, int, kv, val, void_, type Expr, type Value } from "../def"
 import { R } from "../enum"
 import { issue } from "../error"
 import { nextHash } from "../ty/hash"
@@ -23,95 +10,10 @@ import { unifyValues } from "../ty/unify"
 import { Block } from "./block"
 import { call } from "./call"
 import { evalFn } from "./decl-fn"
-import { forkLocals, pushFn, type Env } from "./env"
+import { forkLocals, type Env } from "./env"
+import { asConstInt } from "./exec-const-int"
+import { type } from "./exec-ty"
 import { block } from "./stmt"
-
-export function resolve(env: Env, ty: TTyped): Type {
-  const { k, v } = ty.data
-
-  switch (k) {
-    case R.Void:
-    case R.Never:
-    case R.Int:
-    case R.Bool:
-    case R.Any:
-    case R.Struct:
-    case R.Extern:
-      return ty as Type
-    case R.ArrayFixed:
-      return at(
-        kv(R.ArrayFixed, { el: resolve(env, v.el), len: v.len }),
-        ty.span,
-      )
-    case R.ArrayDyn:
-    case R.Array:
-      return at(kv(k, resolve(env, v)), ty.span)
-    case R.Either:
-      return at(
-        kv(R.Either, { a: resolve(env, v.a), b: resolve(env, v.b) }),
-        ty.span,
-      )
-    case R.Local:
-      const refd = env.ty.get(v.data.index)
-      if (refd == null) {
-        issue(`Type '${v.data.debug}' is not defined.`, ty.span)
-      }
-      return at(refd.data, ty.span)
-    case R.UnitIn:
-      return at(kv(R.UnitIn, resolve(env, v)), ty.span)
-  }
-}
-
-export function type(env: Env, ty: TFinal): lir.Type {
-  switch (ty.k) {
-    case R.Void:
-    case R.UnitIn:
-    case R.FnKnown:
-      return lir.void_
-    case R.Int:
-      return lir.int
-    case R.Bool:
-      return lir.bool
-    case R.Struct:
-      return ty.v.lir
-    case R.Extern:
-      return lir.ty(T.Extern, ty.v.data)
-    case R.Never:
-      return lir.never
-    case R.ArrayFixed:
-      return lir.ty(T.Array, { el: type(env, ty.v.el), len: ty.v.len })
-    case R.ArrayDyn:
-      return lir.ty(T.DynArray, type(env, ty.v))
-  }
-}
-
-export function asConstInt(span: Span, value: Value): number | null {
-  if (value.k.k != R.Int) {
-    issue(
-      `Array length must be an ${quote("int", blue)}.`,
-      span.for(Reason.ExpectedInt),
-    )
-  }
-  if (value.v.k == T.Int) {
-    const v = value.v.v
-    if (BigInt.asUintN(32, v) != v) {
-      issue(`Array lengths must be between 0 and 2^32-1.`, span)
-    }
-    return Number(v)
-  }
-  if (value.v.k == T.Block && value.v.v.length != 0) {
-    const last = value.v.v[value.v.v.length - 1]!
-    if (last.k != T.Expr || last.v.k != T.Int) {
-      return null
-    }
-    const v = last.v.v
-    if (BigInt.asUintN(32, v) != v) {
-      issue(`Array lengths must be between 0 and 2^32-1.`, span)
-    }
-    return Number(v)
-  }
-  return null
-}
 
 export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
   switch (k) {

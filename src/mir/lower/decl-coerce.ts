@@ -7,7 +7,7 @@ import { val, type DeclFn } from "../def"
 import { issue } from "../error"
 import { asConcrete } from "../ty/as-concrete"
 import { ensureCoercible } from "../ty/coerce"
-import { type } from "./body"
+import { type } from "./exec-ty"
 import { evalFn } from "./decl-fn"
 import type { Env } from "./env"
 

@@ -13,9 +13,9 @@ import {
 import { R } from "../enum"
 import { issue } from "../error"
 import { asConcrete } from "../ty/as-concrete"
-import { resolve, type } from "./body"
 import type { FnNamed } from "./call"
 import { pushFn, setTy, type Env } from "./env"
+import { resolve, type } from "./exec-ty"
 
 export function declStruct(
   env: Env,

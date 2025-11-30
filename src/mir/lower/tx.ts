@@ -2,8 +2,8 @@ import { ex } from "@/lir/def"
 import { T } from "@/shared/enum"
 import { kv, val, type TFinal, type Value } from "../def"
 import { R } from "../enum"
-import { type } from "./body"
 import type { Env } from "./env"
+import { type } from "./exec-ty"
 
 // some kind of transformer; used for coercion
 export type Tx = true | { into: TFinal; exec(env: Env, value: Value): Value }

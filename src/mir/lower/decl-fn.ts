@@ -19,9 +19,10 @@ import { printTFinal, printType } from "../def-debug"
 import { issue } from "../error"
 import { hashList, type Hash } from "../ty/hash"
 import { matches } from "../ty/matches"
-import { expr, resolve, type } from "./body"
-import { type Fn } from "./call"
+import type { Fn } from "./call"
 import { forkForDecl, pushFn, type Env } from "./env"
+import { expr } from "./exec-expr"
+import { resolve, type } from "./exec-ty"
 import { execTx } from "./tx"
 
 export function evalFn<N extends WithSpan<Id> | null>(
