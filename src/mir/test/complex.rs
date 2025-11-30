@@ -86,3 +86,13 @@ fn isec(l1: Line, l2: Line) -> Point {
 }
 
 isec(Line(Point(2,3), Point(4,5)), Line(Point(8,2),Point(0,6)))
+
+fn fact(x: int) -> int {
+  if (x == 0) {
+    1
+  } else {
+    x * fact(x - 1)
+  }
+}
+
+fact(5)

@@ -17,6 +17,7 @@ import {
 } from "../def"
 import { printTFinal, printType } from "../def-debug"
 import { issue } from "../error"
+import { asConcrete } from "../ty/as-concrete"
 import { hashList, type Hash } from "../ty/hash"
 import { matches } from "../ty/matches"
 import type { Fn } from "./call"
@@ -43,7 +44,9 @@ export function evalFn<N extends WithSpan<Id> | null>(
   const argsResolved = fn.args.map((x) => resolve(env, x.type))
   const retResolved = resolve(env, fn.ret)
 
-  const fs: Record<Hash, { fname: Id; ty: TFinal }> = Object.create(null)
+  // `ty == null` means we are still inferring the return type
+  const fs: Record<Hash, { lirName: Id; ty: TFinal | null }> =
+    Object.create(null)
 
   const final: Fn<WithoutSpan<N>> = {
     name: (fn.name?.data ?? null) as any,
@@ -58,13 +61,21 @@ export function evalFn<N extends WithSpan<Id> | null>(
 
   function exec(_: Env, span: Span, args: Value[]) {
     const fhash = hashList(args.map((x) => x.k))
-    if (fhash in fs) {
+
+    cached: {
+      const cached = fs[fhash]
+      if (!cached) break cached
+
+      if (!cached.ty) {
+        cached.ty = asConcrete(
+          retResolved,
+          "Functions can only be recursive if they have a concrete return type.",
+        )
+      }
+
       return val(
-        fs[fhash]!.ty,
-        lir.ex(T.Call, {
-          name: fs[fhash]!.fname,
-          args: args.map((x) => x.v),
-        }),
+        cached.ty,
+        lir.ex(T.Call, { name: cached.lirName, args: args.map((x) => x.v) }),
         span,
       )
     }
@@ -85,6 +96,8 @@ export function evalFn<N extends WithSpan<Id> | null>(
         def: fn.args[i]!.name.span,
       })
     }
+
+    fs[fhash] = { lirName: fname, ty: null }
 
     const body = expr(env, fn.body)
 
@@ -107,7 +120,7 @@ export function evalFn<N extends WithSpan<Id> | null>(
 
     _.g.lir.push(decl)
 
-    fs[fhash] = { fname, ty: body.k }
+    fs[fhash]!.ty = body.k
 
     return val(
       body.k,

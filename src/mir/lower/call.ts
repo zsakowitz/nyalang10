@@ -69,9 +69,7 @@ export function tryCall(
     if (e instanceof RangeError && e.message.includes("stack size")) {
       issue(
         `Function calls are nested too deeply.
-help: Recursive functions are not supported yet.
-help: Make sure no function calls itself.
-help: Coercions might be involved. For instance, if 'complex + complex' is defined in terms of 'num + num', and 'num' coerces to 'complex', but 'num + num' is not defined, there will be a cycle.`,
+help: You might be creating an infinite call chain, i.e. 'f(a)' calls 'f([a])' calls 'f([[a]])'.`,
         span.for(Reason.Trace),
       )
     }
