@@ -17,5 +17,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "exclude": ["./node_modules/typescript/**"]
+  "exclude": ["./node_modules/typescript/**"],
+  "include": ["./src/**/*.ts", "./test/**/*.ts"]
 }

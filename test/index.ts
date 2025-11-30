@@ -1,6 +1,18 @@
 import { ex } from "@/lir/def"
 import * as itp from "@/lir/exec-interp"
 import * as tck from "@/lir/exec-typeck"
+import { bool, int, kv, val, type TPrim, type Value } from "@/mir/def"
+import { printTFinal } from "@/mir/def-debug"
+import { R } from "@/mir/enum"
+import { assert, unreachable } from "@/mir/error"
+import { Block } from "@/mir/lower/block"
+import type { Fn } from "@/mir/lower/call"
+import { pushCoercion } from "@/mir/lower/decl-coerce"
+import { declFn } from "@/mir/lower/decl-fn"
+import { declStruct } from "@/mir/lower/decl-struct"
+import { env as mirEnv, pushFn } from "@/mir/lower/env"
+import { expr } from "@/mir/lower/exec-expr"
+import * as mir from "@/mir/lower/exec-ty"
 import { alt, Parser } from "@/parse"
 import * as parse from "@/parse/mir"
 import { vspan, VSPAN } from "@/parse/span"
@@ -8,33 +20,24 @@ import { reset } from "@/shared/ansi"
 import { T } from "@/shared/enum"
 import { NLError } from "@/shared/error"
 import { Id, idFor } from "@/shared/id"
-import { bool, int, kv, val, type TPrim, type Value } from "../def"
-import { printTFinal } from "../def-debug"
-import { R } from "../enum"
-import { assert, unreachable } from "../error"
-import { Block } from "../lower/block"
-import type { Fn } from "../lower/call"
-import { pushCoercion } from "../lower/decl-coerce"
-import { declFn } from "../lower/decl-fn"
-import { declStruct } from "../lower/decl-struct"
-import { env as mirEnv, pushFn } from "../lower/env"
-import { expr } from "../lower/exec-expr"
-import * as mir from "../lower/exec-ty"
-import source from "./complex.rs" with { type: "text" }
+import source from "./index.rs" with { type: "text" }
 
 function setup0() {
   const numId = new Id("num")
   const strId = new Id("str")
+  const contentId = new Id("content")
 
   const m = mirEnv()
   m.g.num = { extern: numId, from: (data) => data.f64 }
   m.g.str = { extern: strId, from: (data) => data }
   m.ty.set(idFor("num").index, vspan(kv(R.Extern, vspan(numId))))
   m.ty.set(idFor("str").index, vspan(kv(R.Extern, vspan(strId))))
+  m.ty.set(idFor("content").index, vspan(kv(R.Extern, vspan(contentId))))
 
   const li = itp.env()
-  li.opaqueExterns.set(numId, { fromi: (data) => data })
-  li.opaqueExterns.set(strId, { fromi: (data) => data })
+  li.opaqueExterns.set(numId, { fromi: (x) => x })
+  li.opaqueExterns.set(strId, { fromi: (x) => x })
+  li.opaqueExterns.set(contentId, { fromi: (x) => x })
 
   const lt = tck.env()
 
@@ -44,12 +47,52 @@ function setup0() {
     lt,
     num: kv(R.Extern, vspan(numId)) satisfies TPrim,
     str: kv(R.Extern, vspan(strId)) satisfies TPrim,
+    content: kv(R.Extern, vspan(contentId)) satisfies TPrim,
+    tests: [] as Value[],
+    dec,
+  }
+
+  function dec(
+    name: string,
+    args: TPrim[],
+    ret: TPrim,
+    exec: (v: any[]) => any,
+  ) {
+    const lirId = new Id(name)
+
+    const lirFn: itp.IFn & tck.IFn = {
+      args: args.map((x) => mir.type(m, x)),
+      ret: mir.type(m, ret),
+      execi: exec,
+    }
+
+    const mirFn: Fn<Id> = {
+      name: idFor(name),
+      args: args.map(vspan),
+      argsNamed: [],
+      ret: vspan(ret),
+      span: VSPAN,
+      exec(_, span, args, _argsNamed) {
+        return val(
+          ret,
+          ex(T.Call, {
+            name: lirId,
+            args: args.map((x) => x.v),
+          }),
+          span,
+        )
+      },
+    }
+
+    pushFn(m, mirFn)
+    li.fns.set(lirId, lirFn)
+    lt.fns.set(lirId, lirFn)
+
+    return mirFn
   }
 }
 
-function setup() {
-  const { m, li, lt, num, str } = setup0()
-
+function setup1({ m, num, dec }: Setup) {
   pushFn(m, {
     name: idFor("len"),
     args: [vspan(kv(R.Array, vspan(kv(R.Any, null))))],
@@ -121,50 +164,18 @@ function setup() {
   dec("&", [bool, bool], bool, ([a, b]) => a && b)
   dec("|", [bool, bool], bool, ([a, b]) => a || b)
   dec("!", [bool], bool, ([a]) => !a)
-
-  return { m, li, lt, tests: [] as Value[] }
-
-  function dec(
-    name: string,
-    args: TPrim[],
-    ret: TPrim,
-    exec: (v: any[]) => any,
-  ) {
-    const lirId = new Id(name)
-
-    const lirFn: itp.IFn & tck.IFn = {
-      args: args.map((x) => mir.type(m, x)),
-      ret: mir.type(m, ret),
-      execi: exec,
-    }
-
-    const mirFn: Fn<Id> = {
-      name: idFor(name),
-      args: args.map(vspan),
-      argsNamed: [],
-      ret: vspan(ret),
-      span: VSPAN,
-      exec(_, span, args, _argsNamed) {
-        return val(
-          ret,
-          ex(T.Call, {
-            name: lirId,
-            args: args.map((x) => x.v),
-          }),
-          span,
-        )
-      },
-    }
-
-    pushFn(m, mirFn)
-    li.fns.set(lirId, lirFn)
-    lt.fns.set(lirId, lirFn)
-
-    return mirFn
-  }
 }
 
-type Setup = ReturnType<typeof setup>
+function setup2({ dec, num, str, content }: Setup) {}
+
+function setup() {
+  const s = setup0()
+  setup1(s)
+  setup2(s)
+  return s
+}
+
+type Setup = ReturnType<typeof setup0>
 
 const ITEM = alt([
   ";",
