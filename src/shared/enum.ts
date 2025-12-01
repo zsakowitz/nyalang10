@@ -9,6 +9,7 @@ export const enum T {
   DynArray,
   Tuple,
   Union,
+  Named,
 
   Local,
   Call,
@@ -39,6 +40,9 @@ export const enum T {
   Return,
   Continue,
   Break,
+
+  Wrap,
+  Unwrap,
 
   Expr,
   Let,

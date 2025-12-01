@@ -11,6 +11,7 @@ export type Type =
   | { k: T.DynArray; v: Type }
   | { k: T.Tuple; v: Type[] }
   | { k: T.Union; v: Type[] }
+  | { k: T.Named; v: Id }
 
 export function ty<K extends Type["k"]>(
   k: K,
@@ -80,6 +81,10 @@ export type Expr =
   | { k: T.Local; v: Id } // gets the value of `v`, which must be accessible in the current context
   | { k: T.Call; v: { name: Id; args: Expr[] } } // evaluates `args`, then passes those arguments to the function `name`
 
+  // named type
+  | { k: T.Wrap; v: { target: Expr; with: Id } } // converts a `typeof target` into a `$with` by wrapping it
+  | { k: T.Unwrap; v: Expr } // unwraps a named type into its constitutient elements
+
 export function ex<K extends Expr["k"]>(
   k: K,
   v: Extract<Expr, { k: K }>["v"],
@@ -107,4 +112,16 @@ export interface Decl {
   args: { name: Id; type: Type }[]
   ret: Type
   body: Expr
+}
+
+// a named type declaration, like `named &MyInt = int`. used to enable recursive
+// types, such as `named &Tree = union(int, &Tree)`, which can then be handled
+// without using extern types.
+//
+// not all named types are necessarily recursive; anything which compiles to a
+// language without recursion (such as glsl) must not ban named types outright,
+// and should instead do proper checks to avoid recursion.
+export interface DeclNamed {
+  name: Id
+  body: Type
 }

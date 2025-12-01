@@ -232,6 +232,10 @@ export function expr(env: Env, { k, v }: Expr): unknown {
       const fn = env.fns.get(v.name)!
       return fn.execi(v.args.map((x) => expr(env, x)))
     }
+    case T.Wrap:
+      return expr(env, v.target)
+    case T.Unwrap:
+      return expr(env, v)
   }
 
   k satisfies never

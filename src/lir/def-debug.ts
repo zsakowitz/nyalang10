@@ -14,6 +14,8 @@ export function printType({ k, v }: Type): string {
       return cyan + "bool" + reset
     case T.Extern:
       return cyan + "~" + v.debug + reset
+    case T.Named:
+      return cyan + "&" + v.debug + reset
     case T.Array:
       return `[${printType(v.el)}; ${v.len}]`
     case T.DynArray:
@@ -95,6 +97,12 @@ export function printExpr({ k, v }: Expr): string {
         return `${wrap(v.args[0]!)}.${red}@${v.name.debug}`
       }
       return `${red}@${v.name.debug}(${v.args.map(printExpr).join(", ")})`
+    case T.Wrap:
+      // wrapped types are not references; this notation just exists for debug
+      // purposes
+      return `${printExpr(v.target)}.&${v.with.debug}`
+    case T.Unwrap:
+      return `${printExpr(v)}.*`
   }
 }
 

@@ -7,6 +7,7 @@ import {
   ty,
   void_,
   type Decl,
+  type DeclNamed,
   type Expr,
   type Lval,
   type Stmt,
@@ -32,6 +33,8 @@ export interface ILabel {
 
 export interface Env {
   fns: Map<Id, IFn>
+  named: Map<Id, Type>
+
   locals: Map<Id, ILocal>
   labels: Map<Id, ILabel>
   return: Type | null
@@ -40,6 +43,7 @@ export interface Env {
 function forkLocals(env: Env): Env {
   return {
     fns: env.fns,
+    named: env.named,
     locals: new Map(env.locals),
     labels: env.labels,
     return: env.return,
@@ -49,6 +53,7 @@ function forkLocals(env: Env): Env {
 function forkLabels(env: Env): Env {
   return {
     fns: env.fns,
+    named: env.named,
     locals: env.locals,
     labels: new Map(env.labels),
     return: env.return,
@@ -58,6 +63,7 @@ function forkLabels(env: Env): Env {
 function forkForDecl(env: Env, ret: Type): Env {
   return {
     fns: env.fns,
+    named: env.named,
     locals: new Map(),
     labels: new Map(),
     return: ret,
@@ -97,6 +103,8 @@ function eq(src: Type, dst: Type): boolean {
       const dv = dst.v as Extract<Type, { k: T.Tuple | T.Union }>["v"]
       return sv.length === dv.length && sv.every((s, i) => eq(s, dv[i]!))
     }
+    case T.Named:
+      return src.v == dst.v
   }
 }
 
@@ -153,6 +161,7 @@ export function expr(env: Env, { k, v }: Expr): Type {
       return ty(T.Array, { el: expr(env, v.el), len: v.len })
     }
     case T.ArrayElements: {
+      checkType(env, v.elTy)
       v.els.forEach((el) => assertAssignable(expr(env, el), v.elTy))
       return ty(T.Array, { el: v.elTy, len: v.els.length })
     }
@@ -166,6 +175,7 @@ export function expr(env: Env, { k, v }: Expr): Type {
       return ty(T.DynArray, expr(env, v.el))
     }
     case T.DynArrayElements: {
+      checkType(env, v.elTy)
       v.els.forEach((el) => assertAssignable(expr(env, el), v.elTy))
       return ty(T.DynArray, v.elTy)
     }
@@ -175,16 +185,19 @@ export function expr(env: Env, { k, v }: Expr): Type {
         v.map((x) => expr(env, x)),
       )
     case T.Union: {
+      checkType(env, v.unionTy)
       lAssertTypeKind(v.unionTy, "Union", T.Union)
       lAssertIndex(v.unionTy.v.length, v.variant)
       assertAssignable(expr(env, v.data), v.unionTy.v[v.variant]!)
       return v.unionTy
     }
     case T.CastNever: {
+      checkType(env, v.into)
       assertAssignable(expr(env, v.target), never)
       return v.into
     }
     case T.IfElse: {
+      checkType(env, v.type)
       assertAssignable(expr(env, v.condition), bool)
       assertAssignable(expr(env, v.if), v.type)
       assertAssignable(expr(env, v.else), v.type)
@@ -225,6 +238,7 @@ export function expr(env: Env, { k, v }: Expr): Type {
       return target.v[v.index]!
     }
     case T.UnionMatch: {
+      checkType(env, v.type)
       const target = expr(env, v.target)
       lAssertTypeKind(target, "Union", T.Union)
       if (v.arms.length != target.v.length) {
@@ -245,10 +259,13 @@ export function expr(env: Env, { k, v }: Expr): Type {
       if (v.length == 0) return void_
       let ret: Type = void_
       env = forkLocals(env)
-      v.forEach((st) => (ret = stmt(env, st)))
+      v.forEach((st) => {
+        ret = stmt(env, st)
+      })
       return ret
     }
     case T.Label: {
+      checkType(env, v.type)
       env = forkLabels(env)
       env.labels.set(v.label, { loop: v.loop, ty: v.type })
       const body = expr(env, v.body)
@@ -300,6 +317,24 @@ export function expr(env: Env, { k, v }: Expr): Type {
       }
       return fn.ret
     }
+    case T.Wrap: {
+      const named = env.named.get(v.with)
+      if (!named) lIssue(`Named type '&${v.with.debug}' is not defined.`)
+
+      const inner = expr(env, v.target)
+      assertAssignable(inner, named)
+
+      return ty(T.Named, v.with)
+    }
+    case T.Unwrap: {
+      const el = expr(env, v)
+      lAssertTypeKind(el, "Named", T.Named)
+
+      const named = env.named.get(el.v)
+      if (!named) lIssue(`Named type '&${el.v.debug}' is not defined.`)
+
+      return named
+    }
   }
 }
 
@@ -317,6 +352,7 @@ export function stmt(env: Env, { k, v }: Stmt): Type {
       const lhs = v.target.map((x) => lval(env, x))
       assertAssignable(ty(T.Tuple, lhs), expr(env, v.value))
       return void_
+    // TODO: allow assignment through named types
   }
 }
 
@@ -328,6 +364,7 @@ export function declGroup(env: Env, fs: Decl[]): void {
     if (env.fns.has(name)) {
       lIssue(`Cannot redeclare function '@${name.debug}'.`)
     }
+
     const used = new Set<Id>()
     args.forEach((x) => {
       if (used.has(x.name)) {
@@ -336,7 +373,9 @@ export function declGroup(env: Env, fs: Decl[]): void {
         )
       }
       used.add(x.name)
+      checkType(env, x.type)
     })
+    checkType(env, ret)
     env.fns.set(name, { args: args.map((x) => x.type), ret })
   }
 
@@ -349,9 +388,54 @@ export function declGroup(env: Env, fs: Decl[]): void {
   }
 }
 
+function checkType(env: Env, { k, v }: Type): void {
+  switch (k) {
+    case T.Void:
+    case T.Never:
+    case T.Int:
+    case T.Bool:
+    case T.Extern:
+      // TODO: check that extern types exist
+      return
+    case T.Array:
+      checkType(env, v.el)
+      return
+    case T.DynArray:
+      checkType(env, v)
+      return
+    case T.Tuple:
+    case T.Union:
+      v.forEach((x) => checkType(env, x))
+      return
+    case T.Named:
+      if (!env.named.has(v)) {
+        lIssue(`Named type '&${v.debug}' is not defined.`)
+      }
+      return
+    default:
+      k satisfies never
+  }
+}
+
+export function declNamed(env: Env, ds: DeclNamed[]): void {
+  for (let i = 0; i < ds.length; i++) {
+    const { name, body } = ds[i]!
+    if (env.named.has(name)) {
+      lIssue(`Cannot redeclare named type '&${name.debug}'.`)
+    }
+
+    env.named.set(name, body)
+  }
+
+  for (let i = 0; i < ds.length; i++) {
+    checkType(env, ds[i]!.body)
+  }
+}
+
 export function env(): Env {
   return {
     fns: new Map(),
+    named: new Map(),
     labels: new Map(),
     locals: new Map(),
     return: null,

@@ -1,4 +1,3 @@
-import { isEmptyStatement } from "typescript"
 import { BLOCK_CONTENTS, DECL } from "../parse/lir"
 import { all, cyan, reset } from "../shared/ansi"
 import { T } from "../shared/enum"
