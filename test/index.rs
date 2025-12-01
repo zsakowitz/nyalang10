@@ -161,4 +161,44 @@ fn every(data: [any], test) -> bool {
   true
 }
 
+fn some(data: [any], test) -> bool {
+  [i => if (test(data[i])) return true else {}; data.len];
+  false
+}
+
 [2, 4, 3].every(|x| x % 2 == 0)
+
+[2, 4, 3].some(|x| x % 2 == 0)
+
+fn <=(a: Surreal, b: Surreal) -> bool {
+  [i => if (b <= a.lhs[i]) return false else {}; a.lhs.len];
+  [i => if (b.rhs[i] <= a) return false else {}; a.lhs.len];
+  true
+}
+
+fn <(a: Surreal, b: Surreal) -> bool {
+  (a <= b) & !(b <= a)
+}
+
+fn >(a: Surreal, b: Surreal) -> bool {
+  (b <= a) & !(a <= b)
+}
+
+fn >=(a: Surreal, b: Surreal) -> bool {
+  b <= a
+}
+
+fn ==(a: Surreal, b: Surreal) -> bool {
+  (a <= b) & (b <= a)
+}
+
+fn !=(a: Surreal, b: Surreal) -> bool {
+  !(a == b)
+}
+
+S0() <= S1()
+S1() <= S0()
+S1() != S0()
+S1() < S0()
+S1() > S0()
+S1() >= S0()
