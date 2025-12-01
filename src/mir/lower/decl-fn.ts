@@ -121,7 +121,7 @@ export function evalFn<N extends WithSpan<Id> | null>(
       body: realBody.v,
     }
 
-    _.g.lir.push(decl)
+    _.g.lf.push(decl)
 
     fs[fhash]!.ty = body.k
 

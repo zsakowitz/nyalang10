@@ -15,7 +15,7 @@ export interface ILocal {
 
 export interface EnvGlobals {
   cx: Coercions
-  lir: Decl[]
+  lf: Decl[]
 
   num: {
     extern: Id
@@ -36,7 +36,7 @@ export interface Env {
 
 export function env(): Env {
   return {
-    g: { cx: new Coercions(), lir: [], num: null, str: null },
+    g: { cx: new Coercions(), lf: [], num: null, str: null },
     fn: new Map(),
     ty: new Map(),
     vr: new Map(),

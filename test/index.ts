@@ -254,8 +254,8 @@ function test() {
     const items = ITEM.sepBy("").parse(source)
     items.forEach((item) => go(s, item))
 
-    tck.declGroup(s.lt, s.m.g.lir)
-    itp.declGroup(s.li, s.m.g.lir)
+    tck.declGroup(s.lt, s.m.g.lf)
+    itp.declGroup(s.li, s.m.g.lf)
 
     for (const el of s.tests) {
       tck.expr(s.lt, el.v)
@@ -339,7 +339,7 @@ function bench() {
   bench1("lir", () => {
     const lt = tck.env()
     lt.fns = new Map(s.lt.fns)
-    tck.declGroup(lt, s.m.g.lir)
+    tck.declGroup(lt, s.m.g.lf)
     s.tests.forEach((x) => tck.expr(lt, x.v))
   })
 
@@ -347,7 +347,7 @@ function bench() {
     const p = ITEM.sepBy("").parse(source)
     const s = setup()
     p.forEach((x) => go(s, x))
-    tck.declGroup(s.lt, s.m.g.lir)
+    tck.declGroup(s.lt, s.m.g.lf)
     s.tests.forEach((x) => tck.expr(s.lt, x.v))
   })
 }

@@ -39,7 +39,7 @@ export function pushCoercion(env: Env, fn: DeclFn) {
   }
 
   const fnId = new Id("coercion")
-  env.g.lir.push({
+  env.g.lf.push({
     name: fnId,
     args: [{ name: inputId, type: type(env, from) }],
     ret: type(env, into), // technically, it returns `body.k`, but that equals `into`
