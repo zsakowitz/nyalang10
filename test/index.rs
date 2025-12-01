@@ -109,3 +109,49 @@ struct Surreal {
   lhs: dyn [Surreal],
   rhs: dyn [Surreal],
 }
+
+fn Surreal() -> Surreal {
+  Surreal([], [])
+}
+
+Surreal()
+
+fn as_array(x: Surreal) -> [Surreal] = [x]
+fn as_array(x: [Surreal]) -> [Surreal] = x
+
+as_array(Surreal())
+as_array([Surreal()])
+
+fn S(x: [Surreal] | Surreal, y: [Surreal] | Surreal) -> Surreal {
+  let x = as_array(x);
+  let y = as_array(y);
+  Surreal(
+    [i => x[i]; x.len + 0],
+    [i => y[i]; y.len + 0],
+  )
+}
+
+fn S0() = S([], [])
+
+fn S1() = S(S0(), [])
+
+S1()
+
+fn map(x: [any], f) -> [any] {
+  [i => f(x[i]); x.len]
+}
+
+fn -(x: Surreal) -> Surreal {
+  Surreal(
+    x.rhs.map(|x| -x),
+    x.lhs.map(|x| -x),
+  )
+}
+
+-S1()
+
+{
+  let 0 = S0()
+  let 1 = S1()
+  1
+}

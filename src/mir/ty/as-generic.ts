@@ -1,7 +1,6 @@
-import { VSPAN, vspan } from "@/parse/span"
+import { vspan } from "@/parse/span"
 import { kv, type TFinal, type Type } from "../def"
 import { R } from "../enum"
-import { ice } from "../error"
 
 export function asGeneric(ty: TFinal): Type {
   switch (ty.k) {
@@ -19,6 +18,6 @@ export function asGeneric(ty: TFinal): Type {
     case R.UnitIn:
       return vspan(kv(R.UnitIn, asGeneric(ty.v)))
     case R.FnKnown:
-      ice("Function types cannot be represented in text.", VSPAN)
+      return vspan(kv(R.FnKnown, ty.v))
   }
 }

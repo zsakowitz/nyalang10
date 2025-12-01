@@ -18,6 +18,8 @@ export function asConcrete(
       return kv(R.Struct, v)
     case R.Extern:
       return kv(R.Extern, v)
+    case R.FnKnown:
+      return kv(R.FnKnown, v)
     case R.Never:
       return never
     case R.Any:
@@ -64,6 +66,7 @@ export function getTrivialSubtype({ data: ty }: Type): TFinal {
     case R.Struct:
     case R.Extern:
     case R.Never:
+    case R.FnKnown:
       return ty
     case R.Any:
       return never

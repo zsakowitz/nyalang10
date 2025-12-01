@@ -1,6 +1,13 @@
 import { ex } from "@/lir/def"
 import { T } from "@/shared/enum"
-import { kv, val, type TCoercable, type TFinal, type Type } from "../def"
+import {
+  kv,
+  val,
+  type TCoercable,
+  type TFinal,
+  type TFinalV,
+  type Type,
+} from "../def"
 import { R } from "../enum"
 import { type } from "../lower/exec-ty"
 import type { Tx } from "../lower/tx"
@@ -76,6 +83,73 @@ export function matches(
         },
       }
     case R.FnKnown:
-      return false // todo: match on required overloads
+      // todo: allow requiring specific overloads
+      return dk == R.FnKnown && sv.hash == dv.hash
+  }
+}
+
+export function matchesFinal(
+  cx: Coercions | null,
+  given: TFinal,
+  expected: TFinal,
+): Tx | false {
+  const { k: sk, v: sv } = given
+  const { k: dk, v: dv } = expected
+
+  if (cx && sk <= R.Extern && dk <= R.Extern) {
+    return cx.get(given as TCoercable, expected as TCoercable)
+  }
+
+  if (
+    cx
+    && sk == R.ArrayFixed
+    && sv.el.k == R.Never
+    && sv.len == 0
+    && ((dk == R.ArrayFixed && dv.len == 0) || dk == R.ArrayDyn)
+  ) {
+    const elTy =
+      expected.k == R.ArrayFixed ? expected.v.el : (expected.v as TFinal)
+    const k = dk == R.ArrayDyn ? T.DynArrayElements : T.ArrayElements
+    return {
+      into: expected,
+      exec(env, value) {
+        return val(expected, ex(k, { elTy: type(env, elTy), els: [] }), value.s)
+      },
+    }
+  }
+
+  if (dk != sk) {
+    return false
+  }
+
+  switch (sk) {
+    case R.Void:
+    case R.Never:
+    case R.Int:
+    case R.Bool:
+      return true
+    case R.Struct:
+    case R.Extern:
+      return sv == dv
+    case R.ArrayFixed:
+      return (
+        sv.len == (dv as TFinalV<R.ArrayFixed>).len
+        && matchesFinal(null, sv.el, (dv as TFinalV<R.ArrayFixed>).el)
+      )
+    case R.ArrayDyn:
+      return matchesFinal(null, sv, dv as TFinalV<R.ArrayDyn>)
+    case R.UnitIn:
+      const r = matchesFinal(cx, sv, dv as TFinalV<R.UnitIn>)
+      if (r === false) return false
+      if (r === true) return true
+      return {
+        into: kv(R.UnitIn, r.into),
+        exec(_, value) {
+          return val(kv(R.UnitIn, r.into), ex(T.Block, []), value.s)
+        },
+      }
+    case R.FnKnown:
+      // todo: allow requiring specific overloads
+      return sv.hash == (dv as TFinalV<R.FnKnown>).hash
   }
 }

@@ -27,6 +27,8 @@ export function printType({ data: { k, v } }: Type): string {
       return `in ${printType(v)}`
     case R.Struct:
       return v.name.data.name
+    case R.FnKnown:
+      return `fn${v.name ? " " + v.name.name : "#" + v.hash}`
   }
 }
 
@@ -49,7 +51,7 @@ export function printTFinal({ k, v }: TFinal): string {
     case R.UnitIn:
       return `in ${printTFinal(v)}`
     case R.FnKnown:
-      return `fn`
+      return `fn${v.name ? " " + v.name.name : "#" + v.hash}`
     case R.Struct:
       return v.name.data.name
   }

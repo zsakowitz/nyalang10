@@ -6,6 +6,7 @@ import {
   int,
   kv,
   val,
+  void_,
   type TFinal,
   type TPrim,
   type Value,
@@ -21,11 +22,14 @@ import { declStruct } from "@/mir/lower/decl-struct"
 import { env as mirEnv, pushFn } from "@/mir/lower/env"
 import { expr } from "@/mir/lower/exec-expr"
 import * as mir from "@/mir/lower/exec-ty"
+import { execTx } from "@/mir/lower/tx"
 import { asGeneric } from "@/mir/ty/as-generic"
+import { hash, type Hash } from "@/mir/ty/hash"
+import { matchesFinal } from "@/mir/ty/matches"
 import { alt, Parser } from "@/parse"
 import * as parse from "@/parse/mir"
 import { vspan, VSPAN } from "@/parse/span"
-import { reset } from "@/shared/ansi"
+import { blue, quote, reset } from "@/shared/ansi"
 import { T } from "@/shared/enum"
 import { NLError } from "@/shared/error"
 import { Id, idFor } from "@/shared/id"
@@ -215,10 +219,70 @@ function setup2({ dec, num, str, content }: Setup) {
   )
 }
 
+function setupPush({ m, li, lt }: Setup) {
+  const cache: Record<Hash, Id> = Object.create(null)
+
+  pushFn(m, {
+    name: idFor("push"),
+    span: VSPAN,
+    args: [
+      vspan(kv(R.ArrayDyn, vspan(kv(R.Any, null)))),
+      vspan(kv(R.Any, null)),
+    ],
+    argsNamed: [],
+    ret: vspan(void_),
+    exec(env, span, [arr, el], []) {
+      const ak = arr!.k as Extract<TFinal, { k: R.ArrayDyn }>
+      const tx = matchesFinal(env.g.cx, el!.k, ak.v)
+      if (!tx) {
+        issue(
+          `Cannot push ${quote(blue, printTFinal(el!.k))} onto ${quote(blue, printTFinal(arr!.k))}.`,
+          span,
+        )
+      }
+
+      const pushed = execTx(env, tx, el!)
+      const fhash = hash(ak.v)
+
+      if (cache[fhash]) {
+        return val(
+          void_,
+          ex(T.Call, { name: cache[fhash], args: [arr!.v, pushed.v] }),
+          span,
+        )
+      }
+
+      const fname = new Id("__")
+
+      li.fns.set(fname, {
+        execi: ([a, b]) => {
+          ;(a as any).push(b)
+          return null
+        },
+      })
+
+      lt.fns.set(fname, {
+        args: [mir.type(env, arr!.k), mir.type(env, pushed.k)],
+        ret: kv(T.Void, null),
+      })
+
+      cache[fhash] = fname
+
+      return val(
+        void_,
+        ex(T.Call, { name: fname, args: [arr!.v, pushed.v] }),
+        span,
+      )
+    },
+    checked: true,
+  })
+}
+
 function setup() {
   const s = setup0()
   setup1(s)
   setup2(s)
+  setupPush(s)
   return s
 }
 

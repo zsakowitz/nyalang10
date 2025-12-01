@@ -118,6 +118,12 @@ const ID_REGEX = new RegExp(
 
 const id = from(ID_REGEX).map(idFor).span()
 
+const idOrNum = from(
+  new RegExp(ID_REGEX.source + "|" + /\d+(?!\w|\.\d)/.source, "y"),
+)
+  .map(idFor)
+  .span()
+
 const PUNC_BINARY = /\*\*|\+\+|[=<!>]=|[+\-/^*%&|~<>]/y
 const PUNC_UNARY_PREFIX = /[-+!]/y // we still want some dedicated 1/x symbol, akin to 0-x. `/` is a possible candidate
 
@@ -356,10 +362,6 @@ function ops(base: Parser<Expr>, rest: Parser<[WithSpan<Id>, Expr][]>) {
   })
 }
 
-function lAssocOp(base: Parser<Expr>, op: ParserLike<string>) {
-  return ops(base, seq([from(op).map(idFor).span(), base]).many())
-}
-
 function singleOp(base: Parser<Expr>, op: ParserLike<string>) {
   return ops(
     base,
@@ -402,7 +404,7 @@ const ops4 = singleOp(ops3, /[=<!>]=|[&|~<>]/y)
 
 const exprWithOps_ = ops4
 
-const stmtLet = seq([kw("let"), kw("mut").opt(), id, "=", expr]).map(
+const stmtLet = seq([kw("let"), kw("mut").opt(), idOrNum, "=", expr]).map(
   ([, mut, name, , value]) => kv(R.Let, { mut: !!mut, name, value }),
 )
 

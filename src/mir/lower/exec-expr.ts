@@ -2,6 +2,7 @@ import * as lir from "@/lir/def"
 import { ex } from "@/lir/def"
 import { Reason, vspan } from "@/parse/span"
 import { T } from "@/shared/enum"
+import { idFor } from "@/shared/id"
 import { bool, int, kv, val, void_, type Expr, type Value } from "../def"
 import { R } from "../enum"
 import { issue } from "../error"
@@ -19,8 +20,27 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
   switch (k) {
     case R.Void:
       return val(void_, ex(T.Block, []), span)
-    case R.Int:
+    case R.Int: {
+      const vr = env.vr.get(idFor("" + v).index)
+      if (vr) {
+        return val(vr.ty, ex(T.Local, vr.value), span)
+      }
       return val(int, ex(T.Int, v), span)
+    }
+    case R.Num: {
+      if (!env.g.num) {
+        issue(`'num' literals are not supported in this executor.`, span)
+      }
+
+      return val(
+        kv(R.Extern, vspan(env.g.num.extern)),
+        ex(T.Opaque, {
+          ty: kv(T.Extern, env.g.num.extern),
+          data: env.g.num.from(v),
+        }),
+        span,
+      )
+    }
     case R.Bool:
       return val(bool, ex(T.Bool, v), span)
     case R.ArrayFill: {
@@ -193,20 +213,6 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
     }
     case R.Block:
       return block(env, span, v)
-    case R.Num: {
-      if (!env.g.num) {
-        issue(`'num' literals are not supported in this executor.`, span)
-      }
-
-      return val(
-        kv(R.Extern, vspan(env.g.num.extern)),
-        ex(T.Opaque, {
-          ty: kv(T.Extern, env.g.num.extern),
-          data: env.g.num.from(v),
-        }),
-        span,
-      )
-    }
     case R.Str: {
       if (!env.g.str) {
         issue(`This executor does not support 'str' literals.`, span)

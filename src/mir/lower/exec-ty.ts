@@ -17,6 +17,7 @@ export function resolve(env: Env, ty: TTyped): Type {
     case R.Any:
     case R.Struct:
     case R.Extern:
+    case R.FnKnown:
       return ty as Type
     case R.ArrayFixed:
       return at(

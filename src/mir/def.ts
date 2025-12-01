@@ -22,7 +22,17 @@ export type TCoercable =
   | { k: R.Extern; v: Id }
 
 // primitive types
-export type TPrim = TCoercable | { k: R.Never; v: null }
+export type TPrim =
+  | TCoercable
+  | { k: R.Never; v: null }
+  | {
+      k: R.FnKnown
+      v: {
+        name: IdRaw | null
+        hash: Hash // must be unique per R.FnKnown instance. if the `f` between two R.FnKnown are the same, the hash may optionally be the same, but that is only an optimization hint
+        f: readonly Fn[]
+      }
+    }
 
 type __T<K> = WithSpan<
   | TPrim
@@ -47,14 +57,8 @@ export type TFinal =
   | { k: R.ArrayFixed; v: { el: TFinal; len: number } }
   | { k: R.ArrayDyn; v: TFinal }
   | { k: R.UnitIn; v: TFinal }
-  | {
-      k: R.FnKnown
-      v: {
-        name: IdRaw | null
-        hash: Hash // must be unique per R.FnKnown instance. if the `f` between two R.FnKnown are the same, the hash may optionally be the same, but that is only an optimization hint
-        f: readonly Fn[]
-      }
-    }
+
+export type TFinalV<K extends TFinal["k"]> = Extract<TFinal, { k: K }>["v"]
 
 export type Expr = WithSpan<
   | { k: R.Void; v: null }
