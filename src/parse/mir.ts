@@ -17,7 +17,7 @@ import { always, any, from, lazy, NO_NL, Parser, seq, type ParserLike } from "."
 import { at, type WithSpan } from "./span"
 
 const RESERVED =
-  "nan|inf|coercion|in|fn|struct|union|enum|any|int|bool|void|never|let|mut|const|type|typeof|unreachable|assert|if|else|match|when|switch|case|for|in|true|false|null|none"
+  "nan|inf|coercion|in|fn|struct|union|enum|any|int|bool|void|never|let|mut|const|type|typeof|unreachable|assert|if|else|match|when|switch|case|for|in|true|false|null|none|return|break|continue"
 
 function kw(x: string) {
   if (!/^[A-Za-z]+$/.test(x)) {
@@ -274,6 +274,12 @@ const exprIfElse: Parser<Expr["data"]> = seq([
   kv(R.IfElse, { cond, if: if_, else: else_ }),
 )
 
+const exprOpt = any([expr, always(kv(R.Void, null)).span()])
+
+const exprReturn: Parser<Expr["data"]> = seq([kw("return"), exprOpt]).map((x) =>
+  kv(R.Return, x[1]),
+)
+
 const expr_ = any<Expr["data"]>([
   kw("void").as(kv(R.Void, null)),
   bigint.map((x) => kv(R.Int, x)),
@@ -288,6 +294,7 @@ const expr_ = any<Expr["data"]>([
   exprIfElse,
   num.map((x) => kv(R.Num, x)),
   str.map((x) => kv(R.Str, x)),
+  exprReturn,
 ])
   .span()
   .suffixedBySpan([

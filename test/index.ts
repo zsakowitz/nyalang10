@@ -156,6 +156,7 @@ function setup1({ m, num, dec }: Setup) {
   dec("-", [int, int], int, ([a, b]) => (a - b) | 0)
   dec("*", [int, int], int, ([a, b]) => (a * b) | 0)
   dec("/", [int, int], int, ([a, b]) => (a / b) | 0)
+  dec("%", [int, int], int, ([a, b]) => (((((a % b) | 0) + b) | 0) % b) | 0)
   dec("==", [int, int], bool, ([a, b]) => a == b)
   dec("!=", [int, int], bool, ([a, b]) => a != b)
   dec("<", [int, int], bool, ([a, b]) => a < b)

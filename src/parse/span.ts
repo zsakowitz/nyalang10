@@ -168,6 +168,7 @@ export enum Reason {
   ExpectedCoercibleType,
   TraceCoercion,
   UnexpectedChar,
+  NotInAFunction,
 }
 
 const COLORS = {
@@ -185,6 +186,7 @@ const COLORS = {
   [Reason.ExpectedCoercibleType]: red,
   [Reason.TraceCoercion]: "",
   [Reason.UnexpectedChar]: red,
+  [Reason.NotInAFunction]: red,
   null: "",
 }
 
@@ -203,5 +205,6 @@ const REASONS = {
   [Reason.ExpectedCoercibleType]: "not a primitive type or struct",
   [Reason.TraceCoercion]: "while checking that this coercion is valid",
   [Reason.UnexpectedChar]: "unexpected character",
+  [Reason.NotInAFunction]: "not in a function",
   null: "",
 }

@@ -82,6 +82,7 @@ export type Expr = WithSpan<
   | { k: R.Num; v: NumData }
   | { k: R.Str; v: string }
   | { k: R.Block; v: Stmt[] }
+  | { k: R.Return; v: Expr }
 >
 
 export type Stmt = WithSpan<

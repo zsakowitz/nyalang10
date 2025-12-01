@@ -34,6 +34,7 @@ export const enum R {
   IfElse,
   Num,
   Block,
+  Return,
 
   Expr,
   Let,

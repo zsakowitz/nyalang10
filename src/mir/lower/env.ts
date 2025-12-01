@@ -33,6 +33,7 @@ export interface Env {
   fn: Map<number, Fn[]>
   ty: Map<number, Type>
   vr: Map<number, ILocal>
+  ret: Type | null
 }
 
 export function env(): Env {
@@ -41,6 +42,7 @@ export function env(): Env {
     fn: new Map(),
     ty: new Map(),
     vr: new Map(),
+    ret: null,
   }
 }
 
@@ -68,14 +70,16 @@ export function forkLocals(env: Env): Env {
     fn: env.fn,
     ty: env.ty,
     vr: new Map(env.vr),
+    ret: env.ret,
   }
 }
 
-export function forkForDecl(env: Env): Env {
+export function forkForDecl(env: Env, ret: Type | null): Env {
   return {
     g: env.g,
     fn: env.fn,
     ty: env.ty,
     vr: new Map(),
+    ret,
   }
 }

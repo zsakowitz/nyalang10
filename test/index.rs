@@ -155,3 +155,10 @@ fn -(x: Surreal) -> Surreal {
   let 1 = S1()
   1
 }
+
+fn every(data: [any], test) -> bool {
+  [i => if (test(data[i])) {} else return false; data.len];
+  true
+}
+
+[2, 4, 3].every(|x| x % 2 == 0)

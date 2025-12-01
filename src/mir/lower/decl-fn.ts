@@ -30,7 +30,8 @@ export function evalFn<N extends WithSpan<Id> | null>(
   env: Env,
   { data: fn, span }: DeclFn<N>,
 ) {
-  const subenv = forkForDecl(env)
+  const retResolved = resolve(env, fn.ret)
+  const subenv = forkForDecl(env, retResolved)
 
   const used = new Set<number>()
   for (let i = 0; i < fn.args.length; i++) {
@@ -42,7 +43,6 @@ export function evalFn<N extends WithSpan<Id> | null>(
   }
 
   const argsResolved = fn.args.map((x) => resolve(env, x.type))
-  const retResolved = resolve(env, fn.ret)
 
   // `ty == null` means we are still inferring the return type
   const fs: Record<Hash, { lirName: Id; ty: TFinal | null }> =
@@ -90,7 +90,7 @@ export function evalFn<N extends WithSpan<Id> | null>(
       type: type(subenv, args[i]!.k),
     }))
 
-    const env = forkForDecl(subenv)
+    const env = forkForDecl(subenv, subenv.ret)
     for (let i = 0; i < fn.args.length; i++) {
       env.vr.set(fn.args[i]!.name.data.index, {
         mut: false,

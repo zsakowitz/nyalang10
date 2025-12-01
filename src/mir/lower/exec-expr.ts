@@ -1,12 +1,16 @@
 import * as lir from "@/lir/def"
 import { ex } from "@/lir/def"
 import { Reason, vspan } from "@/parse/span"
+import { blue, quote, red } from "@/shared/ansi"
 import { T } from "@/shared/enum"
 import { idFor } from "@/shared/id"
-import { bool, int, kv, val, void_, type Expr, type Value } from "../def"
+import { bool, int, kv, never, val, void_, type Expr, type Value } from "../def"
+import { printTFinal } from "../def-debug"
 import { R } from "../enum"
 import { issue } from "../error"
+import { asConcrete } from "../ty/as-concrete"
 import { nextHash } from "../ty/hash"
+import { matchesFinal } from "../ty/matches"
 import { unifyValues } from "../ty/unify"
 import { Block } from "./block"
 import { call } from "./call"
@@ -15,6 +19,7 @@ import { forkLocals, type Env } from "./env"
 import { asConstInt } from "./exec-const-int"
 import { type } from "./exec-ty"
 import { block } from "./stmt"
+import { execTx } from "./tx"
 
 export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
   switch (k) {
@@ -226,6 +231,36 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
         }),
         span,
       )
+    }
+    case R.Return: {
+      if (!env.ret) {
+        issue(
+          `'return' statements are only allowed in functions.`,
+          span.for(Reason.NotInAFunction),
+        )
+      }
+
+      const ret = asConcrete(
+        env.ret,
+        "For now, 'return' can only exist functions which return a concrete type.\nnote: This is a known limitation, and will be removed in the future.",
+      )
+
+      const retval = expr(env, v)
+
+      const tx = matchesFinal(env.g.cx, retval.k, ret)
+
+      if (!tx) {
+        issue(
+          `Cannot return ${quote(red, printTFinal(retval.k))} from a function which expects to return ${quote(blue, printTFinal(ret))}`,
+          retval.s
+            .for(Reason.TyActual)
+            .with(env.ret.span.for(Reason.TyExpected)),
+        )
+      }
+
+      const actualRetval = execTx(env, tx, retval)
+
+      return val(never, ex(T.Return, actualRetval.v), span)
     }
   }
 }
