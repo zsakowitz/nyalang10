@@ -174,12 +174,19 @@ const type_: Parser<TTyped> = typeOne_
 
 const exprArray = seq([
   "[",
-  expr,
-  seq([seq(["=>", expr]).opt(), ";", expr]).alt(
-    from(",").skipThen(expr).many().thenSkip(from(",").opt()),
-  ),
+  seq([
+    expr,
+    seq([seq(["=>", expr]).opt(), ";", expr]).alt(
+      from(",").skipThen(expr).many().thenSkip(from(",").opt()),
+    ),
+  ]).opt(),
   "]",
-]).map(([, el, data]): Expr["data"] => {
+]).map(([, raw]): Expr["data"] => {
+  if (!raw) {
+    return kv(R.ArrayElements, [])
+  }
+
+  const [el, data] = raw
   if (data[0] == 1) {
     const rest = data[1]
     rest.unshift(el)

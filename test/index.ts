@@ -1,7 +1,15 @@
 import { ex } from "@/lir/def"
 import * as itp from "@/lir/exec-interp"
 import * as tck from "@/lir/exec-typeck"
-import { bool, int, kv, val, type TPrim, type Value } from "@/mir/def"
+import {
+  bool,
+  int,
+  kv,
+  val,
+  type TFinal,
+  type TPrim,
+  type Value,
+} from "@/mir/def"
 import { printTFinal } from "@/mir/def-debug"
 import { R } from "@/mir/enum"
 import { assert, issue, unreachable } from "@/mir/error"
@@ -13,6 +21,7 @@ import { declStruct } from "@/mir/lower/decl-struct"
 import { env as mirEnv, pushFn } from "@/mir/lower/env"
 import { expr } from "@/mir/lower/exec-expr"
 import * as mir from "@/mir/lower/exec-ty"
+import { asGeneric } from "@/mir/ty/as-generic"
 import { alt, Parser } from "@/parse"
 import * as parse from "@/parse/mir"
 import { vspan, VSPAN } from "@/parse/span"
@@ -26,6 +35,7 @@ function setup0() {
   const numId = new Id("num")
   const strId = new Id("str")
   const contentId = new Id("content")
+  const surrealId = new Id("Surreal")
 
   const m = mirEnv()
   m.g.num = { extern: numId, from: (data) => data.f64 }
@@ -33,11 +43,11 @@ function setup0() {
   m.ty.set(idFor("num").index, vspan(kv(R.Extern, vspan(numId))))
   m.ty.set(idFor("str").index, vspan(kv(R.Extern, vspan(strId))))
   m.ty.set(idFor("content").index, vspan(kv(R.Extern, vspan(contentId))))
+  m.ty.set(idFor("Surreal").index, vspan(kv(R.Extern, vspan(surrealId))))
 
   const li = itp.env()
   li.opaqueExterns.set(numId, { fromi: (x) => x })
   li.opaqueExterns.set(strId, { fromi: (x) => x })
-  li.opaqueExterns.set(contentId, { fromi: (x) => x })
 
   const lt = tck.env()
 
@@ -50,12 +60,16 @@ function setup0() {
     content: kv(R.Extern, vspan(contentId)) satisfies TPrim,
     tests: [] as Value[],
     dec,
+    ty: {
+      surreal: kv(R.Extern, vspan(surrealId)) satisfies TPrim,
+      surreals: kv(R.ArrayDyn, kv(R.Extern, vspan(surrealId))) satisfies TFinal,
+    },
   }
 
   function dec(
     name: string,
-    args: TPrim[],
-    ret: TPrim,
+    args: TFinal[],
+    ret: TFinal,
     exec: (v: any[]) => any,
   ) {
     const lirId = new Id(name)
@@ -68,9 +82,9 @@ function setup0() {
 
     const mirFn: Fn<Id> = {
       name: idFor(name),
-      args: args.map(vspan),
+      args: args.map(asGeneric),
       argsNamed: [],
-      ret: vspan(ret),
+      ret: asGeneric(ret),
       span: VSPAN,
       exec(_, span, args, _argsNamed) {
         return val(
@@ -207,10 +221,17 @@ function setup2({ dec, num, str, content }: Setup) {
   )
 }
 
+function setup3({ dec, ty: { surreal, surreals } }: Setup) {
+  dec("lhs", [surreal], surreals, ([v]) => v.l)
+  dec("rhs", [surreal], surreals, ([v]) => v.r)
+  dec("Surreal", [surreals, surreals], surreals, ([l, r]) => ({ l, r }))
+}
+
 function setup() {
   const s = setup0()
   setup1(s)
   setup2(s)
+  setup3(s)
   return s
 }
 

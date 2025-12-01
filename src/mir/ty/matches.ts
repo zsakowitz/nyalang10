@@ -2,7 +2,9 @@ import { ex } from "@/lir/def"
 import { T } from "@/shared/enum"
 import { kv, val, type TCoercable, type TFinal, type Type } from "../def"
 import { R } from "../enum"
+import { type } from "../lower/exec-ty"
 import type { Tx } from "../lower/tx"
+import { getTrivialSubtype } from "./as-concrete"
 import type { Coercions } from "./coerce"
 
 // arrays and other nested types explicitly cannot be coerced into one another
@@ -24,6 +26,26 @@ export function matches(
 
   if (cx && sk <= R.Extern && dk <= R.Extern) {
     return cx.get(given as TCoercable, expected.data as TCoercable)
+  }
+
+  if (
+    cx
+    && sk == R.ArrayFixed
+    && sv.el.k == R.Never
+    && sv.len == 0
+    && (dk == R.Array
+      || (dk == R.ArrayFixed && dv.len == 0)
+      || dk == R.ArrayDyn)
+  ) {
+    const into = getTrivialSubtype(expected)
+    const elTy = into.k == R.ArrayFixed ? into.v.el : (into.v as TFinal)
+    const k = dk == R.ArrayDyn ? T.DynArrayElements : T.ArrayElements
+    return {
+      into,
+      exec(env, value) {
+        return val(into, ex(k, { elTy: type(env, elTy), els: [] }), value.s)
+      },
+    }
   }
 
   switch (sk) {

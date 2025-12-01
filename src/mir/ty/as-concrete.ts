@@ -43,3 +43,42 @@ export function asConcrete(
       return kv(R.UnitIn, asConcrete(v, reason))
   }
 }
+
+/**
+ * Returns some `TFinal` assignable to the input `Type`. As of 2025-11-30, this
+ * is only used for the implicit coercion from `[!; 0]` to other possibly-empty
+ * array types.
+ *
+ * Special cases:
+ *
+ * - If the input type is `[T; 0]` or `[T]`, the return type will be `[some type;
+ *   0]`, which is constructible via `T.ArrayElements`.
+ * - If the input type is `dyn [T]`, the return type will be `dyn [some type]`,
+ *   which is constructible via `T.DynArrayElements`.
+ */
+export function getTrivialSubtype({ data: ty }: Type): TFinal {
+  switch (ty.k) {
+    case R.Void:
+    case R.Int:
+    case R.Bool:
+    case R.Struct:
+    case R.Extern:
+    case R.Never:
+      return ty
+    case R.Any:
+      return never
+    case R.ArrayFixed:
+      return kv(R.ArrayFixed, {
+        el: getTrivialSubtype(ty.v.el),
+        len: ty.v.len,
+      })
+    case R.ArrayDyn:
+      return kv(R.ArrayDyn, getTrivialSubtype(ty.v))
+    case R.Array:
+      return kv(R.ArrayFixed, { el: getTrivialSubtype(ty.v), len: 0 })
+    case R.Either:
+      return getTrivialSubtype(ty.v.a)
+    case R.UnitIn:
+      return kv(R.UnitIn, getTrivialSubtype(ty.v))
+  }
+}

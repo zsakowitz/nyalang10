@@ -98,3 +98,9 @@ fn fact(x: int) -> int {
 fact(5)
 
 "world"
+
+fn hi(a: dyn [int]) {
+  a
+}
+
+hi([])
