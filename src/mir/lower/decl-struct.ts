@@ -1,7 +1,7 @@
 import { ex, ty } from "@/lir/def"
 import { at, Reason, Span } from "@/parse/span"
 import { T } from "@/shared/enum"
-import type { Id } from "@/shared/id"
+import { Id } from "@/shared/id"
 import {
   kv,
   val,
@@ -22,6 +22,17 @@ export function declStruct(
   { data: { name: nameRaw, fields: fieldsRaw }, span }: DeclStruct,
 ) {
   const name = at(nameRaw.data.fresh(), nameRaw.span)
+  const namedId = nameRaw.data.fresh()
+
+  const struct: Struct = {
+    name,
+    fields: null!,
+    lir: ty(T.Named, namedId),
+  }
+
+  const structTy: Type = at(kv(R.Struct, struct), nameRaw.span)
+
+  setTy(env, span, nameRaw, structTy)
 
   const fieldsUsed = new Map<number, Span>()
   const fields: [Id, TFinal, Type][] = []
@@ -43,16 +54,15 @@ export function declStruct(
     fields.push([name.data, tfinal, type])
   }
 
-  const struct: Struct = {
-    name,
-    fields: fields.map((x) => x[1]),
-    lir: ty(
+  env.g.lt.push({
+    name: namedId,
+    body: ty(
       T.Tuple,
       fields.map((x) => type(env, x[1])),
     ),
-  }
+  })
 
-  const structTy: Type = at(kv(R.Struct, struct), nameRaw.span)
+  struct.fields = fields.map((x) => x[1])
 
   const cons: FnNamed = {
     name: nameRaw.data,
@@ -63,10 +73,13 @@ export function declStruct(
     exec(_, span, args) {
       return val(
         kv(R.Struct, struct),
-        ex(
-          T.Tuple,
-          args.map((x) => x.v),
-        ),
+        ex(T.Wrap, {
+          target: ex(
+            T.Tuple,
+            args.map((x) => x.v),
+          ),
+          with: namedId,
+        }),
         span,
       )
     },
@@ -82,7 +95,7 @@ export function declStruct(
     exec(_, span, args) {
       return val(
         tfinal,
-        ex(T.TupleIndex, { target: args[0]!.v, index: i }),
+        ex(T.TupleIndex, { target: ex(T.Unwrap, args[0]!.v), index: i }),
         span,
       )
     },
@@ -91,5 +104,4 @@ export function declStruct(
 
   pushFn(env, cons)
   accessors.forEach((x) => pushFn(env, x))
-  setTy(env, span, nameRaw, structTy)
 }

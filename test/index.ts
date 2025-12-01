@@ -35,7 +35,6 @@ function setup0() {
   const numId = new Id("num")
   const strId = new Id("str")
   const contentId = new Id("content")
-  const surrealId = new Id("Surreal")
 
   const m = mirEnv()
   m.g.num = { extern: numId, from: (data) => data.f64 }
@@ -43,7 +42,6 @@ function setup0() {
   m.ty.set(idFor("num").index, vspan(kv(R.Extern, vspan(numId))))
   m.ty.set(idFor("str").index, vspan(kv(R.Extern, vspan(strId))))
   m.ty.set(idFor("content").index, vspan(kv(R.Extern, vspan(contentId))))
-  m.ty.set(idFor("Surreal").index, vspan(kv(R.Extern, vspan(surrealId))))
 
   const li = itp.env()
   li.opaqueExterns.set(numId, { fromi: (x) => x })
@@ -60,10 +58,6 @@ function setup0() {
     content: kv(R.Extern, vspan(contentId)) satisfies TPrim,
     tests: [] as Value[],
     dec,
-    ty: {
-      surreal: kv(R.Extern, vspan(surrealId)) satisfies TPrim,
-      surreals: kv(R.ArrayDyn, kv(R.Extern, vspan(surrealId))) satisfies TFinal,
-    },
   }
 
   function dec(
@@ -221,17 +215,10 @@ function setup2({ dec, num, str, content }: Setup) {
   )
 }
 
-function setup3({ dec, ty: { surreal, surreals } }: Setup) {
-  dec("lhs", [surreal], surreals, ([v]) => v.l)
-  dec("rhs", [surreal], surreals, ([v]) => v.r)
-  dec("Surreal", [surreals, surreals], surreals, ([l, r]) => ({ l, r }))
-}
-
 function setup() {
   const s = setup0()
   setup1(s)
   setup2(s)
-  setup3(s)
   return s
 }
 
@@ -254,6 +241,7 @@ function test() {
     const items = ITEM.sepBy("").parse(source)
     items.forEach((item) => go(s, item))
 
+    tck.declNamed(s.lt, s.m.g.lt)
     tck.declGroup(s.lt, s.m.g.lf)
     itp.declGroup(s.li, s.m.g.lf)
 
@@ -339,6 +327,7 @@ function bench() {
   bench1("lir", () => {
     const lt = tck.env()
     lt.fns = new Map(s.lt.fns)
+    tck.declNamed(lt, s.m.g.lt)
     tck.declGroup(lt, s.m.g.lf)
     s.tests.forEach((x) => tck.expr(lt, x.v))
   })
@@ -347,6 +336,7 @@ function bench() {
     const p = ITEM.sepBy("").parse(source)
     const s = setup()
     p.forEach((x) => go(s, x))
+    tck.declNamed(s.lt, s.m.g.lt)
     tck.declGroup(s.lt, s.m.g.lf)
     s.tests.forEach((x) => tck.expr(s.lt, x.v))
   })

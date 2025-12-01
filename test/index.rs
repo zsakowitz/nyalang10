@@ -104,3 +104,8 @@ fn hi(a: dyn [int]) {
 }
 
 hi([])
+
+struct Surreal {
+  lhs: dyn [Surreal],
+  rhs: dyn [Surreal],
+}

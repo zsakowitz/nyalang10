@@ -1,4 +1,4 @@
-import type { Decl } from "@/lir/def"
+import type { Decl, DeclNamed } from "@/lir/def"
 import type { Span, WithSpan } from "@/parse/span"
 import type { Id } from "@/shared/id"
 import type { NumData, TFinal, Type } from "../def"
@@ -16,6 +16,7 @@ export interface ILocal {
 export interface EnvGlobals {
   cx: Coercions
   lf: Decl[]
+  lt: DeclNamed[]
 
   num: {
     extern: Id
@@ -36,7 +37,7 @@ export interface Env {
 
 export function env(): Env {
   return {
-    g: { cx: new Coercions(), lf: [], num: null, str: null },
+    g: { cx: new Coercions(), lf: [], lt: [], num: null, str: null },
     fn: new Map(),
     ty: new Map(),
     vr: new Map(),

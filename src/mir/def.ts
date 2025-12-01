@@ -10,7 +10,7 @@ export type Id = WithSpan<IdRaw>
 export interface Struct {
   name: Id /* must be unique, not constructed via `idFor` */
   fields: TFinal[]
-  lir: lir.Type // cached version of lir.ty(T.Tuple, this.fields.map(x => type(env, x)))
+  lir: lir.Type // the named type for this struct
 }
 
 // coercable types
