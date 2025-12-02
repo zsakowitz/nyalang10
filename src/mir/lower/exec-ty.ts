@@ -56,12 +56,12 @@ export function type(env: Env, ty: TFinal): lir.Type {
     case R.Struct:
       return ty.v.lir
     case R.Extern:
-      return lir.ty(T.Extern, ty.v.data)
+      return lir.ty(T.Extern, ty.v.data, ty.s)
     case R.Never:
       return lir.never
     case R.ArrayFixed:
-      return lir.ty(T.Array, { el: type(env, ty.v.el), len: ty.v.len })
+      return lir.ty(T.Array, { el: type(env, ty.v.el), len: ty.v.len }, ty.s)
     case R.ArrayDyn:
-      return lir.ty(T.DynArray, type(env, ty.v))
+      return lir.ty(T.DynArray, type(env, ty.v), ty.s)
   }
 }

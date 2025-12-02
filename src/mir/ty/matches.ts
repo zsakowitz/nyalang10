@@ -2,6 +2,7 @@ import { ex } from "@/lir/def"
 import { T } from "@/shared/enum"
 import {
   kv,
+  kvs,
   val,
   type TCoercable,
   type TFinal,
@@ -62,10 +63,10 @@ export function matches(
   if (cx && sk == R.ArrayFixed && dk == R.ArrayDyn) {
     return (
       matches(null, sv.el, dv) && {
-        into: kv(R.ArrayDyn, sv.el),
+        into: kvs(R.ArrayDyn, sv.el, expected.span),
         exec(_, value) {
           return val(
-            kv(R.ArrayDyn, sv.el),
+            kvs(R.ArrayDyn, sv.el, expected.span),
             ex(T.DynArrayOf, value.v, value.s),
             value.s,
           )
@@ -98,9 +99,13 @@ export function matches(
       if (r === false) return false
       if (r === true) return true
       return {
-        into: kv(R.UnitIn, r.into),
+        into: kvs(R.UnitIn, r.into, expected.span),
         exec(_, value) {
-          return val(kv(R.UnitIn, r.into), ex(T.Block, [], value.s), value.s)
+          return val(
+            kvs(R.UnitIn, r.into, expected.span),
+            ex(T.Block, [], value.s),
+            value.s,
+          )
         },
       }
     case R.FnKnown:
@@ -168,9 +173,13 @@ export function matchesFinal(
       if (r === false) return false
       if (r === true) return true
       return {
-        into: kv(R.UnitIn, r.into),
+        into: kvs(R.UnitIn, r.into, expected.s),
         exec(_, value) {
-          return val(kv(R.UnitIn, r.into), ex(T.Block, [], value.s), value.s)
+          return val(
+            kvs(R.UnitIn, r.into, expected.s),
+            ex(T.Block, [], value.s),
+            value.s,
+          )
         },
       }
     case R.FnKnown:

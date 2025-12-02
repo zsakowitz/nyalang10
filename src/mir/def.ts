@@ -1,5 +1,5 @@
 import * as lir from "@/lir/def"
-import type { Span, WithSpan } from "@/parse/span"
+import { type Span, type WithSpan } from "@/parse/span"
 import type { Id as IdRaw } from "@/shared/id"
 import { R } from "./enum"
 import type { Fn } from "./lower/call"
@@ -15,16 +15,16 @@ export interface Struct {
 
 // coercable types
 export type TCoercable =
-  | { k: R.Void; v: null }
-  | { k: R.Int; v: null }
-  | { k: R.Bool; v: null }
-  | { k: R.Struct; v: Struct }
-  | { k: R.Extern; v: Id }
+  | { k: R.Void; v: null; s: Span }
+  | { k: R.Int; v: null; s: Span }
+  | { k: R.Bool; v: null; s: Span }
+  | { k: R.Struct; v: Struct; s: Span }
+  | { k: R.Extern; v: Id; s: Span }
 
 // primitive types
 export type TPrim =
   | TCoercable
-  | { k: R.Never; v: null }
+  | { k: R.Never; v: null; s: Span }
   | {
       k: R.FnKnown
       v: {
@@ -32,6 +32,7 @@ export type TPrim =
         hash: Hash // must be unique per R.FnKnown instance. if the `f` between two R.FnKnown are the same, the hash may optionally be the same, but that is only an optimization hint
         f: readonly Fn[]
       }
+      s: Span
     }
 
 type __T<K> = WithSpan<
@@ -54,9 +55,9 @@ export type Type = __T<never>
 // a type which can be exported to MIR
 export type TFinal =
   | TPrim
-  | { k: R.ArrayFixed; v: { el: TFinal; len: number } }
-  | { k: R.ArrayDyn; v: TFinal }
-  | { k: R.UnitIn; v: TFinal }
+  | { k: R.ArrayFixed; v: { el: TFinal; len: number }; s: Span }
+  | { k: R.ArrayDyn; v: TFinal; s: Span }
+  | { k: R.UnitIn; v: TFinal; s: Span }
 
 export type TFinalV<K extends TFinal["k"]> = Extract<TFinal, { k: K }>["v"]
 
@@ -121,10 +122,9 @@ export function kv<const K, V>(k: K, v: V) {
   return { k, v }
 }
 
-export const void_: TCoercable = kv(R.Void, null)
-export const never: TPrim = kv(R.Never, null)
-export const int: TCoercable = kv(R.Int, null)
-export const bool: TCoercable = kv(R.Bool, null)
+export function kvs<const K, V>(k: K, v: V, s: Span) {
+  return { k, v, s }
+}
 
 export type DeclFn<N extends Id | null = Id | null> = WithSpan<{
   name: N

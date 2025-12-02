@@ -1,6 +1,7 @@
 import { lIce } from "@/lir/error"
 import {
   kv,
+  kvs,
   type DeclFn,
   type DeclFnNamed,
   type DeclStruct,
@@ -173,10 +174,18 @@ const namedParam = seq([id, maybeType(":")]).map((x) => ({
 // TODO: unnamed `in T` parameters
 
 const typeOne_ = any<TTyped["data"]>([
-  kw("void").as(kv(R.Void, null)),
-  from("!").as(kv(R.Never, null)),
-  kw("int").as(kv(R.Int, null)),
-  kw("bool").as(kv(R.Bool, null)),
+  kw("void")
+    .span()
+    .map((x) => kvs(R.Void, null, x.span)),
+  from("!")
+    .span()
+    .map((x) => kvs(R.Never, null, x.span)),
+  kw("int")
+    .span()
+    .map((x) => kvs(R.Int, null, x.span)),
+  kw("bool")
+    .span()
+    .map((x) => kvs(R.Bool, null, x.span)),
   kw("any").as(kv(R.Any, null)),
   seq(["[", type, seq([";", u32]).opt(), "]"]).map((x) => {
     const el = x[1]

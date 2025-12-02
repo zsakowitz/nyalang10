@@ -2,9 +2,9 @@ import { ex, st, type Stmt as LirStmt } from "@/lir/def"
 import type { Span } from "@/parse/span"
 import { T } from "@/shared/enum"
 import {
+  kvs,
   val,
   vals,
-  void_,
   type Stmt,
   type TFinal,
   type Value,
@@ -31,7 +31,7 @@ export function stmt(env: Env, { data: { k, v }, span }: Stmt): ValueStmt {
       })
 
       return vals(
-        void_,
+        kvs(R.Void, null, span),
         st(T.Let, { mut: v.mut, name: localId, val: value.v }, span),
         span,
       )
@@ -42,7 +42,7 @@ export function stmt(env: Env, { data: { k, v }, span }: Stmt): ValueStmt {
 export function block(env: Env, span: Span, els: Stmt[]): Value {
   const subenv = forkLocals(env)
   const block: LirStmt[] = []
-  let rk: TFinal = void_
+  let rk: TFinal = kvs(R.Void, null, span)
   let rs = span
   els.forEach((el) => {
     const { k, v, s } = stmt(subenv, el)

@@ -1,5 +1,5 @@
 import { vspan } from "@/parse/span"
-import { kv, type TFinal, type Type } from "../def"
+import { kv, kvs, type TFinal, type Type } from "../def"
 import { R } from "../enum"
 
 export function asGeneric(ty: TFinal): Type {
@@ -18,6 +18,6 @@ export function asGeneric(ty: TFinal): Type {
     case R.UnitIn:
       return vspan(kv(R.UnitIn, asGeneric(ty.v)))
     case R.FnKnown:
-      return vspan(kv(R.FnKnown, ty.v))
+      return vspan(kvs(R.FnKnown, ty.v, ty.s))
   }
 }

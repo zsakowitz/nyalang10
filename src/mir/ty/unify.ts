@@ -1,6 +1,6 @@
 import { Reason, type Span } from "@/parse/span"
 import { blue, quote } from "@/shared/ansi"
-import { kv, never, type TCoercable, type TFinal, type Value } from "../def"
+import { kvs, type TCoercable, type TFinal, type Value } from "../def"
 import { printTFinal } from "../def-debug"
 import { R } from "../enum"
 import { issue } from "../error"
@@ -37,7 +37,7 @@ function tryUnify(
     if (!result) return false
 
     return [
-      kv(R.UnitIn, result[0]),
+      kvs(R.UnitIn, result[0], span),
       txForUnitIn(result[1]),
       txForUnitIn(result[2]),
     ]
@@ -80,9 +80,10 @@ export function unifyValues(
   env: Env,
   message: string,
   vals: Value[],
+  wrappingSpan: Span,
 ): { k: TFinal; v: Value[] } {
   if (vals.length == 0) {
-    return { k: never, v: [] }
+    return { k: kvs(R.Never, null, wrappingSpan), v: [] }
   }
 
   if (vals.length == 1) {

@@ -1,6 +1,6 @@
 import { ex } from "@/lir/def"
 import { T } from "@/shared/enum"
-import { kv, val, type TFinal, type Value } from "../def"
+import { kvs, val, type TFinal, type Value } from "../def"
 import { R } from "../enum"
 import type { Env } from "./env"
 import { type } from "./exec-ty"
@@ -40,9 +40,13 @@ export function txForUnitIn(tx: Tx): Tx {
   if (tx === true) return true
 
   return {
-    into: kv(R.UnitIn, tx.into),
+    into: kvs(R.UnitIn, tx.into, tx.into.s),
     exec(_, value) {
-      return val(kv(R.UnitIn, tx.into), ex(T.Block, [], value.s), value.s)
+      return val(
+        kvs(R.UnitIn, tx.into, tx.into.s),
+        ex(T.Block, [], value.s),
+        value.s,
+      )
     },
   }
 }

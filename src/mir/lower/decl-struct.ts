@@ -3,7 +3,7 @@ import { at, Reason, Span } from "@/parse/span"
 import { T } from "@/shared/enum"
 import { Id } from "@/shared/id"
 import {
-  kv,
+  kvs,
   val,
   type DeclStruct,
   type Struct,
@@ -30,7 +30,7 @@ export function declStruct(
     lir: ty(T.Named, namedId, nameRaw.span),
   }
 
-  const structTy: Type = at(kv(R.Struct, struct), nameRaw.span)
+  const structTy: Type = at(kvs(R.Struct, struct, nameRaw.span), nameRaw.span)
 
   setTy(env, span, nameRaw, structTy)
 
@@ -74,7 +74,7 @@ export function declStruct(
     ret: structTy,
     exec(_, span, args) {
       return val(
-        kv(R.Struct, struct),
+        kvs(R.Struct, struct, nameRaw.span),
         ex(
           T.Wrap,
           {

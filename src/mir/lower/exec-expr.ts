@@ -4,7 +4,7 @@ import { Reason, vspan } from "@/parse/span"
 import { blue, quote, red } from "@/shared/ansi"
 import { T } from "@/shared/enum"
 import { idFor } from "@/shared/id"
-import { bool, int, kv, never, val, void_, type Expr, type Value } from "../def"
+import { bool, int, kv, kvs, never, val, type Expr, type Value } from "../def"
 import { printTFinal } from "../def-debug"
 import { R } from "../enum"
 import { issue } from "../error"
@@ -24,7 +24,7 @@ import { execTx } from "./tx"
 export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
   switch (k) {
     case R.Void:
-      return val(void_, ex(T.Block, [], span), span)
+      return val(kvs(R.Void, null, span), ex(T.Block, [], span), span)
     case R.Int: {
       const vr = env.vr.get(idFor("" + v).index)
       if (vr) {
