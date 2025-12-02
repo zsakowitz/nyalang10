@@ -4,7 +4,7 @@ import { Reason, vspan } from "@/parse/span"
 import { blue, quote, red } from "@/shared/ansi"
 import { T } from "@/shared/enum"
 import { idFor } from "@/shared/id"
-import { bool, int, kv, kvs, never, val, type Expr, type Value } from "../def"
+import { kvs, val, type Expr, type Value } from "../def"
 import { printTFinal } from "../def-debug"
 import { R } from "../enum"
 import { issue } from "../error"
@@ -30,7 +30,7 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
       if (vr) {
         return val(vr.ty, ex(T.Local, vr.value, span), span)
       }
-      return val(int, ex(T.Int, v, span), span)
+      return val(kvs(R.Int, null, span), ex(T.Int, v, span), span)
     }
     case R.Num: {
       const vr = env.vr.get(idFor("" + v.raw).index)
@@ -43,7 +43,7 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
       }
 
       return val(
-        kv(R.Extern, vspan(env.g.num.extern)),
+        kvs(R.Extern, vspan(env.g.num.extern), span),
         ex(
           T.Opaque,
           {
@@ -56,20 +56,20 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
       )
     }
     case R.Bool:
-      return val(bool, ex(T.Bool, v, span), span)
+      return val(kvs(R.Bool, null, span), ex(T.Bool, v, span), span)
     case R.ArrayFill: {
       const lenRaw = expr(env, v.len)
       const len = asConstInt(v.len.span, lenRaw)
       const el = expr(env, v.el)
       if (len == null) {
         return val(
-          kv(R.ArrayDyn, el.k),
+          kvs(R.ArrayDyn, el.k, span),
           ex(T.DynArrayFill, { el: el.v, len: lenRaw.v }, span),
           span,
         )
       }
       return val(
-        kv(R.ArrayFixed, { el: el.k, len }),
+        kvs(R.ArrayFixed, { el: el.k, len }, span),
         ex(T.ArrayFill, { el: el.v, len }, span),
         span,
       )
@@ -82,7 +82,7 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
       const idx = v.bind.data.fresh()
       subenv.vr.set(v.bind.data.index, {
         mut: false,
-        ty: int,
+        ty: kvs(R.Int, null, v.bind.span),
         value: idx,
         def: v.bind.span,
       })
@@ -90,13 +90,13 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
 
       if (len == null) {
         return val(
-          kv(R.ArrayDyn, el.k),
+          kvs(R.ArrayDyn, el.k, span),
           ex(T.DynArrayFrom, { idx, el: el.v, len: lenRaw.v }, span),
           span,
         )
       }
       return val(
-        kv(R.ArrayFixed, { el: el.k, len }),
+        kvs(R.ArrayFixed, { el: el.k, len }, span),
         ex(T.ArrayFrom, { idx, el: el.v, len }, span),
         span,
       )
@@ -109,7 +109,7 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
       const fn = env.fn.get(v.data.index)
       if (fn != null) {
         return val(
-          kv(R.FnKnown, { name: v.data, hash: nextHash(), f: fn }),
+          kvs(R.FnKnown, { name: v.data, hash: nextHash(), f: fn }, span),
           ex(T.Block, [], span),
           span,
         )
@@ -154,7 +154,7 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
     case R.AnonFn: {
       const f = evalFn(env, v.f)
       return val(
-        kv(R.FnKnown, { name: null, hash: v.hash, f: [f] }),
+        kvs(R.FnKnown, { name: null, hash: v.hash, f: [f] }, span),
         ex(T.Block, [], span),
         span,
       )
@@ -164,9 +164,10 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
         env,
         "Cannot construct an array unless all elements have compatible types.",
         v.map((x) => expr(env, x)),
+        span,
       )
       return val(
-        kv(R.ArrayFixed, { el: vals.k, len: vals.v.length }),
+        kvs(R.ArrayFixed, { el: vals.k, len: vals.v.length }, vals.k.s),
         ex(
           T.ArrayElements,
           {
@@ -216,6 +217,7 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
         env,
         "cannot return these values from the same 'if' expression",
         [expr(env, v.if), expr(env, v.else)],
+        span,
       )
 
       return val(
@@ -241,7 +243,7 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
       }
 
       return val(
-        kv(R.Extern, vspan(env.g.str.extern)),
+        kvs(R.Extern, vspan(env.g.str.extern), span),
         ex(
           T.Opaque,
           {
@@ -281,7 +283,11 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
 
       const actualRetval = execTx(env, tx, retval)
 
-      return val(never, ex(T.Return, actualRetval.v, span), span)
+      return val(
+        kvs(R.Never, null, span),
+        ex(T.Return, actualRetval.v, span),
+        span,
+      )
     }
   }
 }

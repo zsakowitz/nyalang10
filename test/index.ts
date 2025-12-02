@@ -1,16 +1,7 @@
 import { ex, ty } from "@/lir/def"
 import * as itp from "@/lir/exec-interp"
 import * as tck from "@/lir/exec-typeck"
-import {
-  bool,
-  int,
-  kv,
-  val,
-  void_,
-  type TFinal,
-  type TPrim,
-  type Value,
-} from "@/mir/def"
+import { kv, kvs, val, type TFinal, type TPrim, type Value } from "@/mir/def"
 import { printTFinal } from "@/mir/def-debug"
 import { R } from "@/mir/enum"
 import { assert, issue, unreachable } from "@/mir/error"
@@ -35,6 +26,10 @@ import { NLError } from "@/shared/error"
 import { Id, idFor } from "@/shared/id"
 import source from "./index.rs" with { type: "text" }
 
+const void_ = kvs(R.Void, null, VSPAN)
+const int = kvs(R.Int, null, VSPAN)
+const bool = kvs(R.Bool, null, VSPAN)
+
 function setup0() {
   const numId = new Id("num")
   const strId = new Id("str")
@@ -43,9 +38,12 @@ function setup0() {
   const m = mirEnv()
   m.g.num = { extern: numId, from: (data) => data.f64 }
   m.g.str = { extern: strId, from: (data) => data }
-  m.ty.set(idFor("num").index, vspan(kv(R.Extern, vspan(numId))))
-  m.ty.set(idFor("str").index, vspan(kv(R.Extern, vspan(strId))))
-  m.ty.set(idFor("content").index, vspan(kv(R.Extern, vspan(contentId))))
+  m.ty.set(idFor("num").index, vspan(kvs(R.Extern, vspan(numId), VSPAN)))
+  m.ty.set(idFor("str").index, vspan(kvs(R.Extern, vspan(strId), VSPAN)))
+  m.ty.set(
+    idFor("content").index,
+    vspan(kvs(R.Extern, vspan(contentId), VSPAN)),
+  )
 
   const li = itp.env()
   li.opaqueExterns.set(numId, { fromi: (x) => x })
@@ -57,9 +55,9 @@ function setup0() {
     m,
     li,
     lt,
-    num: kv(R.Extern, vspan(numId)) satisfies TPrim,
-    str: kv(R.Extern, vspan(strId)) satisfies TPrim,
-    content: kv(R.Extern, vspan(contentId)) satisfies TPrim,
+    num: kvs(R.Extern, vspan(numId), VSPAN) satisfies TPrim,
+    str: kvs(R.Extern, vspan(strId), VSPAN) satisfies TPrim,
+    content: kvs(R.Extern, vspan(contentId), VSPAN) satisfies TPrim,
     tests: [] as Value[],
     dec,
   }

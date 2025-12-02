@@ -1,5 +1,5 @@
-import { Reason } from "@/parse/span"
-import { bool, int, kv, never, void_, type TFinal, type Type } from "../def"
+import { Reason, VSPAN } from "@/parse/span"
+import { kvs, type TFinal, type Type } from "../def"
 import { R } from "../enum"
 import { issue } from "../error"
 
@@ -9,28 +9,32 @@ export function asConcrete(
 ): TFinal {
   switch (k) {
     case R.Void:
-      return void_
+      return kvs(R.Void, null, span)
     case R.Int:
-      return int
+      return kvs(R.Int, null, span)
     case R.Bool:
-      return bool
+      return kvs(R.Bool, null, span)
     case R.Struct:
-      return kv(R.Struct, v)
+      return kvs(R.Struct, v, span)
     case R.Extern:
-      return kv(R.Extern, v)
+      return kvs(R.Extern, v, span)
     case R.FnKnown:
-      return kv(R.FnKnown, v)
+      return kvs(R.FnKnown, v, span)
     case R.Never:
-      return never
+      return kvs(R.Never, null, span)
     case R.Any:
       issue(
         `Expected concrete type, found 'any'.\nnote: ${reason}\nhelp: Try specifying a type like 'int' or 'bool' instead.`,
         span.for(Reason.ExpectedConcreteType),
       )
     case R.ArrayFixed:
-      return kv(R.ArrayFixed, { el: asConcrete(v.el, reason), len: v.len })
+      return kvs(
+        R.ArrayFixed,
+        { el: asConcrete(v.el, reason), len: v.len },
+        span,
+      )
     case R.ArrayDyn:
-      return kv(R.ArrayDyn, asConcrete(v, reason))
+      return kvs(R.ArrayDyn, asConcrete(v, reason), span)
     case R.Array:
       issue(
         `Expected concrete type, found '[T]'.\nnote: ${reason}\nhelp: Maybe you meant 'dyn [T]' or '[T; N]'?`,
@@ -42,7 +46,7 @@ export function asConcrete(
         span.for(Reason.ExpectedConcreteType),
       )
     case R.UnitIn:
-      return kv(R.UnitIn, asConcrete(v, reason))
+      return kvs(R.UnitIn, asConcrete(v, reason), span)
   }
 }
 
@@ -69,19 +73,23 @@ export function getTrivialSubtype({ data: ty }: Type): TFinal {
     case R.FnKnown:
       return ty
     case R.Any:
-      return never
+      return kvs(R.Never, null, VSPAN)
     case R.ArrayFixed:
-      return kv(R.ArrayFixed, {
-        el: getTrivialSubtype(ty.v.el),
-        len: ty.v.len,
-      })
+      return kvs(
+        R.ArrayFixed,
+        {
+          el: getTrivialSubtype(ty.v.el),
+          len: ty.v.len,
+        },
+        VSPAN,
+      )
     case R.ArrayDyn:
-      return kv(R.ArrayDyn, getTrivialSubtype(ty.v))
+      return kvs(R.ArrayDyn, getTrivialSubtype(ty.v), VSPAN)
     case R.Array:
-      return kv(R.ArrayFixed, { el: getTrivialSubtype(ty.v), len: 0 })
+      return kvs(R.ArrayFixed, { el: getTrivialSubtype(ty.v), len: 0 }, VSPAN)
     case R.Either:
       return getTrivialSubtype(ty.v.a)
     case R.UnitIn:
-      return kv(R.UnitIn, getTrivialSubtype(ty.v))
+      return kvs(R.UnitIn, getTrivialSubtype(ty.v), VSPAN)
   }
 }
