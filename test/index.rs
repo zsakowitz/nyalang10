@@ -251,3 +251,11 @@ S1() + S0() == S1()
 // 0150µs mir
 // 0032µs lir
 // 2520µs end-to-end
+
+// with full spans
+// 2502µs parsing
+// 0008µs env setup
+// 0179µs mir
+// 0029µs lir
+
+// so it seems within normal variation
