@@ -3,7 +3,7 @@ import { ice, issue } from "@/mir/error"
 import { blue, bold, red, reset } from "@/shared/ansi"
 import { at, Reason, Span, type Pos, type WithSpan } from "./span"
 
-const WS = /\s/
+const WS = /(?:\s|\/\/[^\n]*(?:\n|$))*/y
 const LETTER0 = /^\w/
 const LETTER1 = /\w$/
 
@@ -45,19 +45,21 @@ export class State {
     state.index_ = this.index_
   }
 
+  indexAfterSkippedSpaces() {
+    WS.lastIndex = this.index_
+    const match = WS.exec(this.text)
+    const len = match![0].length
+    return this.index + len
+  }
+
   skipSpaces() {
-    while (this.index < this.text.length && WS.test(this.text[this.index]!)) {
+    WS.lastIndex = this.index_
+    const match = WS.exec(this.text)
+    const len = match![0].length
+    for (let i = 0; i < len; i++) {
       this.incIndex(1)
     }
     return this
-  }
-
-  indexAfterSkippedSpaces() {
-    let i = this.index
-    while (i < this.text.length && WS.test(this.text[i]!)) {
-      i++
-    }
-    return i
   }
 
   // matches a string literal, but not in-between word boundaries

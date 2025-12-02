@@ -27,7 +27,7 @@ import {
 import { at, type WithSpan } from "./span"
 
 const RESERVED =
-  "nan|inf|coercion|in|fn|struct|union|enum|any|int|bool|void|never|let|mut|const|type|typeof|unreachable|assert|if|else|match|when|switch|case|for|in|true|false|null|none|return|break|continue"
+  "test|example|dyn|nan|inf|coercion|in|fn|struct|union|enum|any|int|bool|void|never|let|mut|const|type|typeof|unreachable|assert|if|else|match|when|switch|case|for|in|true|false|null|none|return|break|continue"
 
 function kw(x: string) {
   if (!/^[A-Za-z]+$/.test(x)) {
@@ -248,8 +248,17 @@ const fnArgs = seq([
 
   for (const el of raw[2]) {
     if (el.k == 0) {
-      // no need to worry about `if (terminated)`, since we can't possible have a `;` without something before it
-      args.push(at(kv(R.ArrayElements, []), el.v.span))
+      arrays ??= []
+
+      arrays.push(
+        at(
+          kv(R.ArrayElements, args),
+          (args[0] ?? el.v).span.join((args[args.length - 1] ?? el.v).span),
+        ),
+      )
+
+      args = []
+
       continue
     }
 
@@ -354,15 +363,19 @@ const exprAnonFn: Parser<Expr["data"]> = seq([
     return kv(R.AnonFn, { hash: nextHash(), f })
   })
 
+const exprElseOpt = any([
+  seq([kw("else"), expr]).key(1),
+  always(kv(R.Void, null)).span(),
+])
+
 const exprIfElse: Parser<Expr["data"]> = seq([
   kw("if"),
   "(",
   expr,
   ")",
   expr,
-  "else",
-  expr,
-]).map(([, , cond, , if_, , else_]) =>
+  exprElseOpt,
+]).map(([, , cond, , if_, else_]) =>
   kv(R.IfElse, { cond, if: if_, else: else_ }),
 )
 

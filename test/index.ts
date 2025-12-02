@@ -26,14 +26,14 @@ import { execTx } from "@/mir/lower/tx"
 import { asGeneric } from "@/mir/ty/as-generic"
 import { hash, type Hash } from "@/mir/ty/hash"
 import { matchesFinal } from "@/mir/ty/matches"
-import { alt, Parser } from "@/parse"
+import { alt, from, Parser } from "@/parse"
 import * as parse from "@/parse/mir"
 import { vspan, VSPAN } from "@/parse/span"
 import { blue, quote, reset } from "@/shared/ansi"
 import { T } from "@/shared/enum"
 import { NLError } from "@/shared/error"
 import { Id, idFor } from "@/shared/id"
-import source from "./index.rs" with { type: "text" }
+import source from "./surreal.rs" with { type: "text" }
 
 function setup0() {
   const numId = new Id("num")
@@ -291,7 +291,9 @@ type Setup = ReturnType<typeof setup0>
 
 const ITEM = alt([
   ";",
-  parse.expr,
+  from(/\btest\b/y)
+    .opt()
+    .skipThen(parse.expr),
   parse.declFn,
   parse.declStruct,
   parse.declCoercion,
@@ -313,6 +315,9 @@ function test() {
     for (const el of s.tests) {
       tck.expr(s.lt, el.v)
       const res = itp.expr(s.li, el.v)
+      if (res === false) {
+        issue(`Test expression returned 'false'`, el.s)
+      }
       console.log(res, "::", printTFinal(el.k))
     }
 
