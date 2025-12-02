@@ -27,7 +27,7 @@ import {
 import { at, type WithSpan } from "./span"
 
 const RESERVED =
-  "test|example|dyn|nan|inf|coercion|in|fn|struct|union|enum|any|int|bool|void|never|let|mut|const|type|typeof|unreachable|assert|if|else|match|when|switch|case|for|in|true|false|null|none|return|break|continue"
+  "test|example|dyn|nan|inf|coercion|in|fn|struct|union|enum|any|int|bool|void|never|let|mut|const|type|typeof|unreachable|assert|if|else|match|when|switch|case|for|in|true|false|null|none|return|break|continue|with|as|sym|rule"
 
 function kw(x: string) {
   if (!/^[A-Za-z]+$/.test(x)) {
