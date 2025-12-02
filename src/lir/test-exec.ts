@@ -1,3 +1,4 @@
+import { VSPAN } from "@/parse/span"
 import { BLOCK_CONTENTS, DECL } from "../parse/lir"
 import { all, cyan, reset } from "../shared/ansi"
 import { T } from "../shared/enum"
@@ -23,7 +24,7 @@ function fn(
 
 function expect(text: string, expecting: unknown) {
   try {
-    const parsed = ex(T.Block, BLOCK_CONTENTS.parse(text))
+    const parsed = ex(T.Block, BLOCK_CONTENTS.parse(text), VSPAN)
     tck.expr(tenv, parsed)
     const result = itp.expr(ienv, parsed)
     if (JSON.stringify(result) != JSON.stringify(expecting)) {
@@ -41,7 +42,7 @@ function expect(text: string, expecting: unknown) {
 
 function expectUB(text: string, reason: string) {
   try {
-    const parsed = ex(T.Block, BLOCK_CONTENTS.parse(text))
+    const parsed = ex(T.Block, BLOCK_CONTENTS.parse(text), VSPAN)
     tck.expr(tenv, parsed)
     const result = itp.expr(ienv, parsed)
     console.log(
@@ -68,7 +69,7 @@ function expectTyErr(text: string, reason: string) {
   )
 
   try {
-    const parsed = ex(T.Block, BLOCK_CONTENTS.parse(text))
+    const parsed = ex(T.Block, BLOCK_CONTENTS.parse(text), VSPAN)
     tck.expr(tenv, parsed)
     console.log(`❌ Test failed: expected type error '${reason}'.`)
   } catch (e) {
@@ -127,12 +128,12 @@ fn("imul", { x: int, y: int }, int, ([a, b]) => Math.imul(a, b))
 fn("fmul", { x: num, y: num }, num, ([a, b]) => a * b)
 fn("idiv", { x: int, y: int }, int, ([a, b]) => (a / b) | 0)
 fn("fdiv", { x: num, y: num }, num, ([a, b]) => a / b)
-fn("irem", { x: int, y: int }, int, ([a, b]) => a % b | 0)
+fn("irem", { x: int, y: int }, int, ([a, b]) => (a % b) | 0)
 fn("frem", { x: num, y: num }, num, ([a, b]) => a % b)
 fn("imod", { x: int, y: int }, int, ([a, b]) => {
   a = a | 0
   b = b | 0
-  return (((a % b | 0) + b) | 0) % b | 0
+  return (((((a % b) | 0) + b) | 0) % b) | 0
 })
 fn("fmod", { x: num, y: num }, num, ([a, b]) => ((a % b) + b) % b)
 fn("ineg", { x: int }, int, ([x]) => -x | 0)
@@ -276,7 +277,7 @@ expect(`@xsimp((@ineg(2), 0))`, [1, 0])
 expect(`@xsimp((0, 0))`, [0, 0])
 expect(`@xeq((0, 0), (2, 3))`, true)
 
-const ibox = ty(T.Extern, idFor("ibox"))
+const ibox = ty(T.Extern, idFor("ibox"), VSPAN)
 
 fn("ibox", { x: int }, ibox, ([x]) => ({ v: x }))
 

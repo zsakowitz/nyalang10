@@ -143,7 +143,7 @@ function lval(env: Env, { k, v }: Lval): Type {
   }
 }
 
-export function expr(env: Env, { k, v }: Expr): Type {
+export function expr(env: Env, { k, v, s }: Expr): Type {
   switch (k) {
     case T.Unreachable:
       return never
@@ -154,40 +154,41 @@ export function expr(env: Env, { k, v }: Expr): Type {
     case T.Opaque:
       return v.ty
     case T.ArrayFill:
-      return ty(T.Array, { el: expr(env, v.el), len: v.len })
+      return ty(T.Array, { el: expr(env, v.el), len: v.len }, s)
     case T.ArrayFrom: {
       env = forkLocals(env)
       env.locals.set(v.idx, { mut: false, ty: int })
-      return ty(T.Array, { el: expr(env, v.el), len: v.len })
+      return ty(T.Array, { el: expr(env, v.el), len: v.len }, s)
     }
     case T.ArrayElements: {
       checkType(env, v.elTy)
       v.els.forEach((el) => assertAssignable(expr(env, el), v.elTy))
-      return ty(T.Array, { el: v.elTy, len: v.els.length })
+      return ty(T.Array, { el: v.elTy, len: v.els.length }, s)
     }
     case T.DynArrayOf: {
       const target = expr(env, v)
       lAssertTypeKind(target, "Array", T.Array)
-      return ty(T.DynArray, target.v.el)
+      return ty(T.DynArray, target.v.el, s)
     }
     case T.DynArrayFill:
       assertAssignable(expr(env, v.len), int)
-      return ty(T.DynArray, expr(env, v.el))
+      return ty(T.DynArray, expr(env, v.el), s)
     case T.DynArrayFrom: {
       assertAssignable(expr(env, v.len), int)
       env = forkLocals(env)
       env.locals.set(v.idx, { mut: false, ty: int })
-      return ty(T.DynArray, expr(env, v.el))
+      return ty(T.DynArray, expr(env, v.el), s)
     }
     case T.DynArrayElements: {
       checkType(env, v.elTy)
       v.els.forEach((el) => assertAssignable(expr(env, el), v.elTy))
-      return ty(T.DynArray, v.elTy)
+      return ty(T.DynArray, v.elTy, s)
     }
     case T.Tuple:
       return ty(
         T.Tuple,
         v.map((x) => expr(env, x)),
+        s,
       )
     case T.Union: {
       checkType(env, v.unionTy)
@@ -329,7 +330,7 @@ export function expr(env: Env, { k, v }: Expr): Type {
       const inner = expr(env, v.target)
       assertAssignable(inner, named)
 
-      return ty(T.Named, v.with)
+      return ty(T.Named, v.with, s)
     }
     case T.Unwrap: {
       const el = expr(env, v)
@@ -343,7 +344,7 @@ export function expr(env: Env, { k, v }: Expr): Type {
   }
 }
 
-export function stmt(env: Env, { k, v }: Stmt): Type {
+export function stmt(env: Env, { k, v, s }: Stmt): Type {
   switch (k) {
     case T.Expr:
       return expr(env, v)
@@ -355,7 +356,7 @@ export function stmt(env: Env, { k, v }: Stmt): Type {
       return void_
     case T.AssignMany:
       const lhs = v.target.map((x) => lval(env, x))
-      assertAssignable(ty(T.Tuple, lhs), expr(env, v.value))
+      assertAssignable(ty(T.Tuple, lhs, s), expr(env, v.value))
       return void_
     // TODO: allow assignment through named types
   }

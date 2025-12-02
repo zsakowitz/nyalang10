@@ -108,7 +108,7 @@ export function printExpr({ k, v }: Expr): string {
   }
 }
 
-function printStmtRaw({ k, v }: Stmt): string {
+function printStmtRaw({ k, v, s }: Stmt): string {
   switch (k) {
     case T.Expr:
       return printExpr(v) + ";"
@@ -117,7 +117,7 @@ function printStmtRaw({ k, v }: Stmt): string {
     case T.AssignOne:
       return `assign ${printExpr(v.target)} = ${printExpr(v.value)};`
     case T.AssignMany:
-      return `assign ${printExpr(ex(T.Tuple, v.target))} = ${printExpr(v.value)};`
+      return `assign ${printExpr(ex(T.Tuple, v.target, s))} = ${printExpr(v.value)};`
   }
 }
 

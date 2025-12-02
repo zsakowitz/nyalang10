@@ -275,8 +275,25 @@ export class Parser<T> {
     )
   }
 
+  suffixedByS<T extends { s: Span }>(
+    this: Parser<T>,
+    f: Parser<(x: T) => Omit<T, "s">>[],
+  ): Parser<T> {
+    return seq([this, any(f).span().many()]).map(([init, rest]) =>
+      rest.reduce(
+        (lhs, map) =>
+          Object.assign(map.data(lhs), { s: lhs.s.join(map.span) }) as any,
+        init,
+      ),
+    )
+  }
+
   attached() {
     return NO_NL.skipThen(this)
+  }
+
+  s<U extends { s: Span }>(this: Parser<Omit<U, "s">>): Parser<U> {
+    return this.span().map((x) => Object.assign(x.data, { s: x.span })) as any
   }
 
   span(): Parser<WithSpan<T>> {
