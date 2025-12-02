@@ -238,7 +238,16 @@ S1() + S0() == S1()
   [s + s == 0, 1.5 + 1.5 == 1 + 2]
 }
 
+// original
 // 2404µs parsing
 // 0010µs env setup
 // 0170µs mir
 // 0027µs lir
+// ????µs end-to-end
+
+// with partial spans
+// 2527µs parsing
+// 0009µs env setup
+// 0150µs mir
+// 0032µs lir
+// 2520µs end-to-end
