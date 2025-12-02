@@ -33,7 +33,7 @@ import { blue, quote, reset } from "@/shared/ansi"
 import { T } from "@/shared/enum"
 import { NLError } from "@/shared/error"
 import { Id, idFor } from "@/shared/id"
-import source from "./surreal.rs" with { type: "text" }
+import source from "./index.rs" with { type: "text" }
 
 function setup0() {
   const numId = new Id("num")

@@ -47,7 +47,13 @@ fn ==(a: Complex, b: Complex) -> bool {
   (a.re == b.re) & (a.im == b.im)
 }
 
-Complex(2.0, 3.0) == Complex(4.0, 5.0)
+Complex(2, 3) + Complex(2, 2) == Complex(4, 5)
+
+fn !=(a: Complex, b: Complex) -> bool {
+  (a.re != b.re) | (a.im != b.im)
+}
+
+Complex(2.0, 3.0) != Complex(4.0, 5.0)
 
 struct Point {
   x: num,
@@ -141,17 +147,17 @@ fn -(x: Sur) -> Sur {
   1
 }
 
-fn every(data: [any], test) -> bool {
-  [i => if (test(data[i])) {} else return false; data.len];
+fn every(data: [any], check) -> bool {
+  [i => if (check(data[i])) {} else return false; data.len];
   true
 }
 
-fn some(data: [any], test) -> bool {
-  [i => if (test(data[i])) return true else {}; data.len];
+fn some(data: [any], check) -> bool {
+  [i => if (check(data[i])) return true else {}; data.len];
   false
 }
 
-[2, 4, 3].every(|x| x % 2 == 0)
+![2, 4, 3].every(|x| x % 2 == 0)
 
 [2, 4, 3].some(|x| x % 2 == 0)
 
@@ -182,9 +188,9 @@ fn !=(a: Sur, b: Sur) -> bool {
 }
 
 S0() <= S1()
-S1() <= S0()
+!(S1() <= S0())
 S1() != S0()
-S1() < S0()
+!(S1() < S0())
 S1() > S0()
 S1() >= S0()
 
