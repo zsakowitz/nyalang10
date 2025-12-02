@@ -128,17 +128,23 @@ const ID_REGEX = new RegExp(
 
 const id = from(ID_REGEX).map(idFor).span()
 
+const PUNC_BINARY = /\*\*|\+\+|[=<!>]=|[+\-/^*%&|~<>]/y
+const PUNC_UNARY_PREFIX = /[-+!]/y // we still want some dedicated 1/x symbol, akin to 0-x. `/` is a possible candidate
+
 const idOrNum = from(
   new RegExp(
-    ID_REGEX.source + "|" + /\d+(\.\d+)?(e[+-]?\d+)?|inf|nan/.source,
+    ID_REGEX.source
+      + "|"
+      + /\d+(\.\d+)?(e[+-]?\d+)?|inf|nan/.source
+      + "|"
+      + PUNC_BINARY.source
+      + "|"
+      + PUNC_UNARY_PREFIX.source,
     "y",
   ),
 )
   .map(idFor)
   .span()
-
-const PUNC_BINARY = /\*\*|\+\+|[=<!>]=|[+\-/^*%&|~<>]/y
-const PUNC_UNARY_PREFIX = /[-+!]/y // we still want some dedicated 1/x symbol, akin to 0-x. `/` is a possible candidate
 
 const idOrSym = from(
   new RegExp(
