@@ -18,7 +18,7 @@ export function stmt(env: Env, { data: { k, v }, span }: Stmt): ValueStmt {
   switch (k) {
     case R.Expr:
       const { k, v: vr, s } = expr(env, v)
-      return vals(k, st(T.Expr, vr), s)
+      return vals(k, st(T.Expr, vr, s), s)
     case R.Let: {
       const value = expr(env, v.value)
 
@@ -32,7 +32,7 @@ export function stmt(env: Env, { data: { k, v }, span }: Stmt): ValueStmt {
 
       return vals(
         void_,
-        st(T.Let, { mut: v.mut, name: localId, val: value.v }),
+        st(T.Let, { mut: v.mut, name: localId, val: value.v }, span),
         span,
       )
     }
@@ -50,5 +50,5 @@ export function block(env: Env, span: Span, els: Stmt[]): Value {
     rs = s
     block.push(v)
   })
-  return val(rk, ex(T.Block, block), rs)
+  return val(rk, ex(T.Block, block, rs), rs)
 }

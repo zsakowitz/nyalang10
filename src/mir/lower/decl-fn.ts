@@ -78,7 +78,11 @@ export function evalFn<N extends WithSpan<Id> | null>(
 
       return val(
         cached.ty,
-        lir.ex(T.Call, { name: cached.lirName, args: args.map((x) => x.v) }),
+        lir.ex(
+          T.Call,
+          { name: cached.lirName, args: args.map((x) => x.v) },
+          span,
+        ),
         span,
       )
     }
@@ -119,6 +123,7 @@ export function evalFn<N extends WithSpan<Id> | null>(
       args: declArgs,
       ret: type(subenv, realBody.k),
       body: realBody.v,
+      s: final.span,
     }
 
     _.g.lf.push(decl)
@@ -127,7 +132,7 @@ export function evalFn<N extends WithSpan<Id> | null>(
 
     return val(
       body.k,
-      lir.ex(T.Call, { name: fname, args: args.map((x) => x.v) }),
+      lir.ex(T.Call, { name: fname, args: args.map((x) => x.v) }, span),
       span,
     )
   }

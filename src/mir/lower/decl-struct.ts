@@ -27,7 +27,7 @@ export function declStruct(
   const struct: Struct = {
     name,
     fields: null!,
-    lir: ty(T.Named, namedId),
+    lir: ty(T.Named, namedId, nameRaw.span),
   }
 
   const structTy: Type = at(kv(R.Struct, struct), nameRaw.span)
@@ -59,7 +59,9 @@ export function declStruct(
     body: ty(
       T.Tuple,
       fields.map((x) => type(env, x[1])),
+      span,
     ),
+    s: nameRaw.span,
   })
 
   struct.fields = fields.map((x) => x[1])
@@ -73,13 +75,18 @@ export function declStruct(
     exec(_, span, args) {
       return val(
         kv(R.Struct, struct),
-        ex(T.Wrap, {
-          target: ex(
-            T.Tuple,
-            args.map((x) => x.v),
-          ),
-          with: namedId,
-        }),
+        ex(
+          T.Wrap,
+          {
+            target: ex(
+              T.Tuple,
+              args.map((x) => x.v),
+              span,
+            ),
+            with: namedId,
+          },
+          span,
+        ),
         span,
       )
     },
@@ -95,7 +102,11 @@ export function declStruct(
     exec(_, span, args) {
       return val(
         tfinal,
-        ex(T.TupleIndex, { target: ex(T.Unwrap, args[0]!.v), index: i }),
+        ex(
+          T.TupleIndex,
+          { target: ex(T.Unwrap, args[0]!.v, args[0]!.s), index: i },
+          span,
+        ),
         span,
       )
     },

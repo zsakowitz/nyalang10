@@ -7,9 +7,9 @@ import { val, type DeclFn } from "../def"
 import { issue } from "../error"
 import { asConcrete } from "../ty/as-concrete"
 import { ensureCoercible } from "../ty/coerce"
-import { type } from "./exec-ty"
 import { evalFn } from "./decl-fn"
 import type { Env } from "./env"
+import { type } from "./exec-ty"
 
 export function pushCoercion(env: Env, fn: DeclFn) {
   if (fn.data.args.length != 1) {
@@ -25,7 +25,11 @@ export function pushCoercion(env: Env, fn: DeclFn) {
   ensureCoercible(f.ret.span, into)
 
   const inputId = fn.data.args[0]!.name.data.fresh()
-  const inputVal = val(from, ex(T.Local, inputId), fn.data.args[0]!.name.span)
+  const inputVal = val(
+    from,
+    ex(T.Local, inputId, fn.data.args[0]!.name.span),
+    fn.data.args[0]!.name.span,
+  )
 
   let body
   try {
@@ -44,6 +48,7 @@ export function pushCoercion(env: Env, fn: DeclFn) {
     args: [{ name: inputId, type: type(env, from) }],
     ret: type(env, into), // technically, it returns `body.k`, but that equals `into`
     body: body.v,
+    s: fn.span,
   })
 
   env.g.cx.push(fn.span, {
@@ -51,7 +56,11 @@ export function pushCoercion(env: Env, fn: DeclFn) {
     into, // technically, it returns `body.k`, but that equals `into`
     auto: false,
     exec(_, value) {
-      return val(into, ex(T.Call, { name: fnId, args: [value.v] }), value.s)
+      return val(
+        into,
+        ex(T.Call, { name: fnId, args: [value.v] }, value.s),
+        value.s,
+      )
     },
   })
 }

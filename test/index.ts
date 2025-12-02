@@ -1,4 +1,4 @@
-import { ex } from "@/lir/def"
+import { ex, ty } from "@/lir/def"
 import * as itp from "@/lir/exec-interp"
 import * as tck from "@/lir/exec-typeck"
 import {
@@ -87,10 +87,7 @@ function setup0() {
       exec(_, span, args, _argsNamed) {
         return val(
           ret,
-          ex(T.Call, {
-            name: lirId,
-            args: args.map((x) => x.v),
-          }),
+          ex(T.Call, { name: lirId, args: args.map((x) => x.v) }, span),
           span,
         )
       },
@@ -117,10 +114,12 @@ function setup1({ m, num, dec }: Setup) {
         case R.ArrayFixed: {
           const block = new Block()
           block.push(arg!)
-          return block.return(val(int, ex(T.Int, BigInt(arg!.k.v.len)), span))
+          return block.return(
+            val(int, ex(T.Int, BigInt(arg!.k.v.len), span), span),
+          )
         }
         case R.ArrayDyn:
-          return val(int, ex(T.DynArrayLen, arg!.v), span)
+          return val(int, ex(T.DynArrayLen, arg!.v, span), span)
         default:
           unreachable(span)
       }
@@ -248,7 +247,7 @@ function setupPush({ m, li, lt }: Setup) {
       if (cache[fhash]) {
         return val(
           void_,
-          ex(T.Call, { name: cache[fhash], args: [arr!.v, pushed.v] }),
+          ex(T.Call, { name: cache[fhash], args: [arr!.v, pushed.v] }, span),
           span,
         )
       }
@@ -264,14 +263,14 @@ function setupPush({ m, li, lt }: Setup) {
 
       lt.fns.set(fname, {
         args: [mir.type(env, arr!.k), mir.type(env, pushed.k)],
-        ret: kv(T.Void, null),
+        ret: ty(T.Void, null, VSPAN),
       })
 
       cache[fhash] = fname
 
       return val(
         void_,
-        ex(T.Call, { name: fname, args: [arr!.v, pushed.v] }),
+        ex(T.Call, { name: fname, args: [arr!.v, pushed.v] }, span),
         span,
       )
     },

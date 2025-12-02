@@ -24,18 +24,18 @@ import { execTx } from "./tx"
 export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
   switch (k) {
     case R.Void:
-      return val(void_, ex(T.Block, []), span)
+      return val(void_, ex(T.Block, [], span), span)
     case R.Int: {
       const vr = env.vr.get(idFor("" + v).index)
       if (vr) {
-        return val(vr.ty, ex(T.Local, vr.value), span)
+        return val(vr.ty, ex(T.Local, vr.value, span), span)
       }
-      return val(int, ex(T.Int, v), span)
+      return val(int, ex(T.Int, v, span), span)
     }
     case R.Num: {
       const vr = env.vr.get(idFor("" + v.raw).index)
       if (vr) {
-        return val(vr.ty, ex(T.Local, vr.value), span)
+        return val(vr.ty, ex(T.Local, vr.value, span), span)
       }
 
       if (!env.g.num) {
@@ -44,15 +44,19 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
 
       return val(
         kv(R.Extern, vspan(env.g.num.extern)),
-        ex(T.Opaque, {
-          ty: kv(T.Extern, env.g.num.extern),
-          data: env.g.num.from(v),
-        }),
+        ex(
+          T.Opaque,
+          {
+            ty: lir.ty(T.Extern, env.g.num.extern, span),
+            data: env.g.num.from(v),
+          },
+          span,
+        ),
         span,
       )
     }
     case R.Bool:
-      return val(bool, ex(T.Bool, v), span)
+      return val(bool, ex(T.Bool, v, span), span)
     case R.ArrayFill: {
       const lenRaw = expr(env, v.len)
       const len = asConstInt(v.len.span, lenRaw)
@@ -60,13 +64,13 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
       if (len == null) {
         return val(
           kv(R.ArrayDyn, el.k),
-          ex(T.DynArrayFill, { el: el.v, len: lenRaw.v }),
+          ex(T.DynArrayFill, { el: el.v, len: lenRaw.v }, span),
           span,
         )
       }
       return val(
         kv(R.ArrayFixed, { el: el.k, len }),
-        ex(T.ArrayFill, { el: el.v, len }),
+        ex(T.ArrayFill, { el: el.v, len }, span),
         span,
       )
     }
@@ -87,26 +91,26 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
       if (len == null) {
         return val(
           kv(R.ArrayDyn, el.k),
-          ex(T.DynArrayFrom, { idx, el: el.v, len: lenRaw.v }),
+          ex(T.DynArrayFrom, { idx, el: el.v, len: lenRaw.v }, span),
           span,
         )
       }
       return val(
         kv(R.ArrayFixed, { el: el.k, len }),
-        ex(T.ArrayFrom, { idx, el: el.v, len }),
+        ex(T.ArrayFrom, { idx, el: el.v, len }, span),
         span,
       )
     }
     case R.Local: {
       const vr = env.vr.get(v.data.index)
       if (vr != null) {
-        return val(vr.ty, ex(T.Local, vr.value), span)
+        return val(vr.ty, ex(T.Local, vr.value, span), span)
       }
       const fn = env.fn.get(v.data.index)
       if (fn != null) {
         return val(
           kv(R.FnKnown, { name: v.data, hash: nextHash(), f: fn }),
-          lir.ex(T.Block, []),
+          ex(T.Block, [], span),
           span,
         )
       }
@@ -151,7 +155,7 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
       const f = evalFn(env, v.f)
       return val(
         kv(R.FnKnown, { name: null, hash: v.hash, f: [f] }),
-        ex(T.Block, []),
+        ex(T.Block, [], span),
         span,
       )
     }
@@ -163,10 +167,14 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
       )
       return val(
         kv(R.ArrayFixed, { el: vals.k, len: vals.v.length }),
-        ex(T.ArrayElements, {
-          elTy: type(env, vals.k),
-          els: vals.v.map((x) => x.v),
-        }),
+        ex(
+          T.ArrayElements,
+          {
+            elTy: type(env, vals.k),
+            els: vals.v.map((x) => x.v),
+          },
+          span,
+        ),
         span,
       )
     }
@@ -180,13 +188,13 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
         case R.ArrayFixed:
           return val(
             target.k.v.el,
-            ex(T.ArrayIndex, { target: target.v, index: index.v }),
+            ex(T.ArrayIndex, { target: target.v, index: index.v }, span),
             span,
           )
         case R.ArrayDyn:
           return val(
             target.k.v,
-            ex(T.DynArrayIndex, { target: target.v, index: index.v }),
+            ex(T.DynArrayIndex, { target: target.v, index: index.v }, span),
             span,
           )
       }
@@ -212,12 +220,16 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
 
       return val(
         k,
-        ex(T.IfElse, {
-          condition: cond.v,
-          type: type(env, k),
-          if: b1!.v,
-          else: b0!.v,
-        }),
+        ex(
+          T.IfElse,
+          {
+            condition: cond.v,
+            type: type(env, k),
+            if: b1!.v,
+            else: b0!.v,
+          },
+          span,
+        ),
         span,
       )
     }
@@ -230,10 +242,14 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
 
       return val(
         kv(R.Extern, vspan(env.g.str.extern)),
-        ex(T.Opaque, {
-          ty: kv(T.Extern, env.g.str.extern),
-          data: env.g.str.from(v),
-        }),
+        ex(
+          T.Opaque,
+          {
+            ty: lir.ty(T.Extern, env.g.str.extern, span),
+            data: env.g.str.from(v),
+          },
+          span,
+        ),
         span,
       )
     }
@@ -265,7 +281,7 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
 
       const actualRetval = execTx(env, tx, retval)
 
-      return val(never, ex(T.Return, actualRetval.v), span)
+      return val(never, ex(T.Return, actualRetval.v, span), span)
     }
   }
 }

@@ -50,7 +50,11 @@ export function matches(
     return {
       into,
       exec(env, value) {
-        return val(into, ex(k, { elTy: type(env, elTy), els: [] }), value.s)
+        return val(
+          into,
+          ex(k, { elTy: type(env, elTy), els: [] }, value.s),
+          value.s,
+        )
       },
     }
   }
@@ -60,7 +64,11 @@ export function matches(
       matches(null, sv.el, dv) && {
         into: kv(R.ArrayDyn, sv.el),
         exec(_, value) {
-          return val(kv(R.ArrayDyn, sv.el), ex(T.DynArrayOf, value.v), value.s)
+          return val(
+            kv(R.ArrayDyn, sv.el),
+            ex(T.DynArrayOf, value.v, value.s),
+            value.s,
+          )
         },
       }
     )
@@ -92,7 +100,7 @@ export function matches(
       return {
         into: kv(R.UnitIn, r.into),
         exec(_, value) {
-          return val(kv(R.UnitIn, r.into), ex(T.Block, []), value.s)
+          return val(kv(R.UnitIn, r.into), ex(T.Block, [], value.s), value.s)
         },
       }
     case R.FnKnown:
@@ -126,7 +134,11 @@ export function matchesFinal(
     return {
       into: expected,
       exec(env, value) {
-        return val(expected, ex(k, { elTy: type(env, elTy), els: [] }), value.s)
+        return val(
+          expected,
+          ex(k, { elTy: type(env, elTy), els: [] }, value.s),
+          value.s,
+        )
       },
     }
   }
@@ -158,7 +170,7 @@ export function matchesFinal(
       return {
         into: kv(R.UnitIn, r.into),
         exec(_, value) {
-          return val(kv(R.UnitIn, r.into), ex(T.Block, []), value.s)
+          return val(kv(R.UnitIn, r.into), ex(T.Block, [], value.s), value.s)
         },
       }
     case R.FnKnown:

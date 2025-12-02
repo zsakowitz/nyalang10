@@ -21,10 +21,14 @@ export function castNever(into: TFinal): Tx {
     exec(env, value) {
       return val(
         into,
-        ex(T.CastNever, {
-          target: value.v,
-          into: type(env, into),
-        }),
+        ex(
+          T.CastNever,
+          {
+            target: value.v,
+            into: type(env, into),
+          },
+          value.s,
+        ),
         value.s,
       )
     },
@@ -38,7 +42,7 @@ export function txForUnitIn(tx: Tx): Tx {
   return {
     into: kv(R.UnitIn, tx.into),
     exec(_, value) {
-      return val(kv(R.UnitIn, tx.into), ex(T.Block, []), value.s)
+      return val(kv(R.UnitIn, tx.into), ex(T.Block, [], value.s), value.s)
     },
   }
 }

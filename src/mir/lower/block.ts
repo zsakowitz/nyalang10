@@ -10,20 +10,20 @@ export class Block {
 
   store(v: Value): Value {
     const id = new Id("__")
-    this.v.push(st(T.Let, { mut: false, name: id, val: v.v }))
-    return val(v.k, ex(T.Local, id), v.s)
+    this.v.push(st(T.Let, { mut: false, name: id, val: v.v }, v.s))
+    return val(v.k, ex(T.Local, id, v.s), v.s)
   }
 
-  push(val: Value) {
-    this.v.push(st(T.Expr, val.v))
+  push(v: Value) {
+    this.v.push(st(T.Expr, v.v, v.s))
   }
 
   return(v: Value) {
-    this.v.push(st(T.Expr, v.v))
-    return val(v.k, ex(T.Block, this.v), v.s)
+    this.v.push(st(T.Expr, v.v, v.s))
+    return val(v.k, ex(T.Block, this.v, v.s), v.s)
   }
 
   returnUnitIn(v: TFinal, span: Span) {
-    return this.return(val(kv(R.UnitIn, v), ex(T.Block, []), span))
+    return this.return(val(kv(R.UnitIn, v), ex(T.Block, [], span), span))
   }
 }
