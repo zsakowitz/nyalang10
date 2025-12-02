@@ -53,6 +53,7 @@ export type Expr =
   | { k: T.ArrayFill; v: { el: Expr; len: number } } // evaluates `el`, then constructs a `[typeof el; len]` with the given length, where every element is `el`
   | { k: T.ArrayFrom; v: { idx: Id; el: Expr; len: number } } // constructs an array of length `len` by evaluating `v.el` with `index` bound to 0, 1, 2, ..., `len-1`
   | { k: T.ArrayElements; v: { elTy: Type; els: Expr[] } } // constructs an array by evaluating each element in `.els` in order; each element must have type `.elTy`
+  | { k: T.DynArrayOf; v: Expr } // converts a fixed-size array to a dyn-sized array
   | { k: T.DynArrayFill; v: { el: Expr; len: Expr } } // same as for fixed-length arrays, but constructs a dynamic-length array
   | { k: T.DynArrayFrom; v: { idx: Id; el: Expr; len: Expr } } // same as for fixed-length arrays, but constructs a dynamic-length array
   | { k: T.DynArrayElements; v: { elTy: Type; els: Expr[] } } // same as for fixed-length arrays, but constructs a dynamic-length array

@@ -51,6 +51,8 @@ export function printExpr({ k, v }: Expr): string {
       return `[${yellow}$${v.idx.debug} => ${printExpr(v.el)}; ${v.len}]`
     case T.ArrayElements:
       return `[each ${printType(v.elTy)}; ${v.els.map(printExpr).join(", ")}]`
+    case T.DynArrayOf:
+      return `dyn of ${printExpr(v)}`
     case T.DynArrayFill:
       return `dyn [fill ${printExpr(v.el)}; ${printExpr(v.len)}]`
     case T.DynArrayFrom:

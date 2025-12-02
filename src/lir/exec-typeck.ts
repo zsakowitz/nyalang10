@@ -165,6 +165,11 @@ export function expr(env: Env, { k, v }: Expr): Type {
       v.els.forEach((el) => assertAssignable(expr(env, el), v.elTy))
       return ty(T.Array, { el: v.elTy, len: v.els.length })
     }
+    case T.DynArrayOf: {
+      const target = expr(env, v)
+      lAssertTypeKind(target, "Array", T.Array)
+      return ty(T.DynArray, target.v.el)
+    }
     case T.DynArrayFill:
       assertAssignable(expr(env, v.len), int)
       return ty(T.DynArray, expr(env, v.el))

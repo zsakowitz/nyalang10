@@ -137,6 +137,10 @@ export function expr(env: Env, { k, v }: Expr): unknown {
       if (!cons) lIssue(`Cannot construct '${printType(v.ty)}' via 'T.Opaque'.`)
       return cons!.fromi(v.data)
     }
+    case T.DynArrayOf: {
+      const inner = expr(env, v)
+      return (inner as unknown[]).slice()
+    }
     case T.ArrayFill: {
       const el = expr(env, v.el)
       return Array.from({ length: Number(v.len) | 0 }).fill(el)

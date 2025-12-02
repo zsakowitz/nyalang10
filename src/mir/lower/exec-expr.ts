@@ -33,6 +33,11 @@ export function expr(env: Env, { data: { k, v }, span }: Expr): Value {
       return val(int, ex(T.Int, v), span)
     }
     case R.Num: {
+      const vr = env.vr.get(idFor("" + v.raw).index)
+      if (vr) {
+        return val(vr.ty, ex(T.Local, vr.value), span)
+      }
+
       if (!env.g.num) {
         issue(`'num' literals are not supported in this executor.`, span)
       }

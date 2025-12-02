@@ -1,8 +1,8 @@
-coercion (x: int) -> num { int_to_num(x) }
+coercion (x: int) -> num = int_to_num(x)
 
 struct Complex { re: num, im: num }
 
-coercion (x: num) -> Complex { Complex(x, 0.0) }
+coercion (x: num) -> Complex = Complex(x, 0.0)
 
 fn +(a: Complex, b: Complex) -> Complex {
   Complex(a.re + b.re, a.im + b.im)
@@ -105,35 +105,20 @@ fn hi(a: dyn [int]) {
 
 hi([])
 
-struct Surreal {
-  lhs: dyn [Surreal],
-  rhs: dyn [Surreal],
+struct Sur {
+  lhs: dyn [Sur],
+  rhs: dyn [Sur],
 }
 
-fn Surreal() -> Surreal {
-  Surreal([], [])
+fn Sur(x: dyn [Sur]) -> Sur {
+  Sur(x, [])
 }
 
-Surreal()
+Sur( ; )
 
-fn as_array(x: Surreal) -> [Surreal] = [x]
-fn as_array(x: [Surreal]) -> [Surreal] = x
+fn S0() = Sur( ; )
 
-as_array(Surreal())
-as_array([Surreal()])
-
-fn S(x: [Surreal] | Surreal, y: [Surreal] | Surreal) -> Surreal {
-  let x = as_array(x);
-  let y = as_array(y);
-  Surreal(
-    [i => x[i]; x.len + 0],
-    [i => y[i]; y.len + 0],
-  )
-}
-
-fn S0() = S([], [])
-
-fn S1() = S(S0(), [])
+fn S1() = Sur(S0(); )
 
 S1()
 
@@ -141,8 +126,8 @@ fn map(x: [any], f) -> [any] {
   [i => f(x[i]); x.len]
 }
 
-fn -(x: Surreal) -> Surreal {
-  Surreal(
+fn -(x: Sur) -> Sur {
+  Sur(
     x.rhs.map(|x| -x),
     x.lhs.map(|x| -x),
   )
@@ -170,29 +155,29 @@ fn some(data: [any], test) -> bool {
 
 [2, 4, 3].some(|x| x % 2 == 0)
 
-fn <=(a: Surreal, b: Surreal) -> bool {
+fn <=(a: Sur, b: Sur) -> bool {
   [i => if (b <= a.lhs[i]) return false else {}; a.lhs.len];
-  [i => if (b.rhs[i] <= a) return false else {}; a.lhs.len];
+  [i => if (b.rhs[i] <= a) return false else {}; b.rhs.len];
   true
 }
 
-fn <(a: Surreal, b: Surreal) -> bool {
+fn <(a: Sur, b: Sur) -> bool {
   (a <= b) & !(b <= a)
 }
 
-fn >(a: Surreal, b: Surreal) -> bool {
+fn >(a: Sur, b: Sur) -> bool {
   (b <= a) & !(a <= b)
 }
 
-fn >=(a: Surreal, b: Surreal) -> bool {
+fn >=(a: Sur, b: Sur) -> bool {
   b <= a
 }
 
-fn ==(a: Surreal, b: Surreal) -> bool {
+fn ==(a: Sur, b: Sur) -> bool {
   (a <= b) & (b <= a)
 }
 
-fn !=(a: Surreal, b: Surreal) -> bool {
+fn !=(a: Sur, b: Sur) -> bool {
   !(a == b)
 }
 
@@ -202,3 +187,47 @@ S1() != S0()
 S1() < S0()
 S1() > S0()
 S1() >= S0()
+
+fn join(a: [any], b: [any]) -> dyn [any] {
+  [i => if (i < a.len) {
+    a[i]
+  } else {
+    b[i - a.len]
+  }; a.len + b.len]
+}
+
+join([1,2,3],[4,5,6])
+
+fn +(a: [any], b: any) -> [any] {
+  [i => a[i] + b; a.len]
+}
+
+fn +(a: any, b: [any]) -> [any] {
+  [i => a + b[i]; b.len]
+}
+
+[1,2,3]+4
+
+fn +(a: Sur, b: Sur) -> Sur {
+  Sur(
+    join(a.lhs + b, a + b.lhs),
+    join(a.rhs + b, a + b.rhs),
+  )
+}
+
+fn -(a: Sur, b: Sur) -> Sur {
+  a + -b
+}
+
+S0() - S1()
+
+S1() + S0() == S1()
+
+{
+  let 0 = S0()
+  let 1 = S1()
+  let 2 = 1 + 1
+  let 1.5 = S(1, 2)
+  Sur(1; 2, a: 3)
+  [2 == 1 + 1, 1 < 1.5, 1.5 < 2]
+}

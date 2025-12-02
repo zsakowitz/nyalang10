@@ -13,7 +13,17 @@ import { R } from "@/mir/enum"
 import { issue } from "@/mir/error"
 import { nextHash } from "@/mir/ty/hash"
 import { Id, idFor } from "@/shared/id"
-import { always, any, from, lazy, NO_NL, Parser, seq, type ParserLike } from "."
+import {
+  alt,
+  always,
+  any,
+  from,
+  lazy,
+  NO_NL,
+  Parser,
+  seq,
+  type ParserLike,
+} from "."
 import { at, type WithSpan } from "./span"
 
 const RESERVED =
@@ -28,7 +38,7 @@ function kw(x: string) {
 
 const bigint = from(/\d+(?!\w|\.\d)/y).map(BigInt)
 
-const num = from(/\d+(?=[.e])(\.\d+)?(e[+-]?\d+)?|inf|nan/y).map(
+const num = from(/\d+(?=[.e])(?:\.\d+)?(?:e[+-]?\d+)?|inf|nan/y).map(
   (x): NumData => ({
     raw: x,
     f64:
@@ -119,7 +129,10 @@ const ID_REGEX = new RegExp(
 const id = from(ID_REGEX).map(idFor).span()
 
 const idOrNum = from(
-  new RegExp(ID_REGEX.source + "|" + /\d+(?!\w|\.\d)/.source, "y"),
+  new RegExp(
+    ID_REGEX.source + "|" + /\d+(\.\d+)?(e[+-]?\d+)?|inf|nan/.source,
+    "y",
+  ),
 )
   .map(idFor)
   .span()
@@ -152,8 +165,6 @@ const namedParam = seq([id, maybeType(":")]).map((x) => ({
   type: x[1],
 }))
 // TODO: unnamed `in T` parameters
-
-const namedArg = seq([id, ":", expr]).map((x) => ({ name: x[0], value: x[2] }))
 
 const typeOne_ = any<TTyped["data"]>([
   kw("void").as(kv(R.Void, null)),
@@ -214,23 +225,98 @@ const exprArray = seq([
   return kv(R.ArrayFrom, { bind: el.data.v, el: snd, len })
 })
 
-const fnArgs = seq([NO_NL, "(", expr.alt(namedArg).sepBy(), ")"]).map((raw) => {
-  const args: Expr[] = []
+const fnArgs = seq([
+  NO_NL,
+  "(",
+  alt([
+    from(";").span(),
+    seq([expr, seq([":", expr]).opt(), any([",", ";"]).span().opt()]),
+  ]).many(),
+  ")",
+]).map((raw) => {
+  let arrays: Expr[] | null = null // collects args and becomes non-null if `;` is ever used as a terminator
+  let args: Expr[] = []
+  let terminated = false
+
   const argsNamed: { name: WithSpan<Id>; value: Expr }[] = []
+
   for (const el of raw[2]) {
-    if (el[0] == 0) {
-      if (argsNamed.length) {
+    if (el.k == 0) {
+      // no need to worry about `if (terminated)`, since we can't possible have a `;` without something before it
+      args.push(at(kv(R.ArrayElements, []), el.v.span))
+      continue
+    }
+
+    const [arg1, arg2, terminator] = el.v
+
+    if (terminated) {
+      issue(`Expected ',' or ';' to separate arguments.`, arg1.span)
+    }
+
+    if (!terminator) {
+      terminated = true
+    }
+
+    // if it's a named parameter
+    if (arg2) {
+      if (
+        arg1.data.k != R.Local
+        || arg1.data.v.span.start.idx != arg1.span.start.idx // (a): 23 is invalid
+      ) {
         issue(
-          `Named arguments must be specified after positional arguments.`,
-          el[1].span,
+          `The name of a named argument must be a plain variable.`,
+          arg1.span,
         )
       }
-      args.push(el[1])
-    } else {
-      argsNamed.push(el[1])
+
+      if (terminator?.data == ";") {
+        issue(
+          `The ';' terminator cannot be used for named arguments.`,
+          terminator.span,
+        )
+      }
+
+      argsNamed.push({
+        name: arg1.data.v,
+        value: arg2[1],
+      })
+
+      continue
+    }
+
+    if (argsNamed.length) {
+      issue(
+        `Cannot specify a positional argument after a named argument.`,
+        arg1.span,
+      )
+    }
+
+    args.push(arg1)
+
+    if (terminator?.data == ";") {
+      arrays ??= []
+
+      arrays.push(
+        at(
+          kv(R.ArrayElements, args),
+          args[0]!.span.join(args[args.length - 1]!.span),
+        ),
+      )
+
+      args = []
     }
   }
-  return { args, argsNamed }
+
+  if (arrays && args.length) {
+    arrays.push(
+      at(
+        kv(R.ArrayElements, args),
+        args[0]!.span.join(args[args.length - 1]!.span),
+      ),
+    )
+  }
+
+  return { args: arrays ?? args, argsNamed }
 })
 
 const exprParen = seq(["(", expr, ")"])

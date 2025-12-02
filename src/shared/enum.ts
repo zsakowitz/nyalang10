@@ -21,6 +21,7 @@ export const enum T {
   ArrayFrom,
   ArrayElements,
 
+  DynArrayOf,
   DynArrayFill,
   DynArrayFrom,
   DynArrayElements,
