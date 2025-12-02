@@ -55,6 +55,17 @@ export function matches(
     }
   }
 
+  if (cx && sk == R.ArrayFixed && dk == R.ArrayDyn) {
+    return (
+      matches(null, sv.el, dv) && {
+        into: kv(R.ArrayDyn, sv.el),
+        exec(_, value) {
+          return val(kv(R.ArrayDyn, sv.el), ex(T.DynArrayOf, value.v), value.s)
+        },
+      }
+    )
+  }
+
   switch (sk) {
     case R.Void:
     case R.Never:
@@ -65,12 +76,14 @@ export function matches(
     case R.Extern:
       return dk == sk && sv == dv
     case R.ArrayFixed:
+      // NOTE: `matches` only returns a non-identity `Tx` when `cx != null`, so it's fine to directly return this
       return (
         dk == R.ArrayFixed ? sv.len == dv.len && matches(null, sv.el, dv.el)
         : dk == R.Array ? matches(null, sv.el, dv)
         : false
       )
     case R.ArrayDyn:
+      // NOTE: `matches` only returns a non-identity `Tx` when `cx != null`, so it's fine to directly return this
       return (dk == R.ArrayDyn || dk == R.Array) && matches(null, sv, dv)
     case R.UnitIn:
       const r = dk == R.UnitIn && matches(cx, sv, dv)
